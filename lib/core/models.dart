@@ -1,0 +1,530 @@
+// User Models
+class User {
+  final String id;
+  final String name;
+  final String avatar;
+  final int level;
+  final int xp;
+  final int xpToNextLevel;
+  final int streak;
+  final int totalPoints;
+  final int rank;
+  final int winCount;
+  final int loseCount;
+  final int heartRate;
+  final int calories;
+  final String joinDate;
+  final List<Badge> badges;
+  final UserStats stats;
+  final int ruby;
+  final int stamina;
+  final int maxStamina;
+  final int coins;
+  final int coinsExpiringDays;
+  final bool hasBattlePass;
+  final int battlePassTier;
+  final bool isVIP;
+  final String? vipSlot;
+  final String? equippedSkinFrame;
+  final String? equippedTitle;
+
+  User({
+    required this.id,
+    required this.name,
+    required this.avatar,
+    required this.level,
+    required this.xp,
+    required this.xpToNextLevel,
+    required this.streak,
+    required this.totalPoints,
+    required this.rank,
+    required this.winCount,
+    required this.loseCount,
+    required this.heartRate,
+    required this.calories,
+    required this.joinDate,
+    required this.badges,
+    required this.stats,
+    required this.ruby,
+    required this.stamina,
+    required this.maxStamina,
+    required this.coins,
+    required this.coinsExpiringDays,
+    required this.hasBattlePass,
+    required this.battlePassTier,
+    required this.isVIP,
+    this.vipSlot,
+    this.equippedSkinFrame,
+    this.equippedTitle,
+  });
+
+  User copyWith({
+    String? id,
+    String? name,
+    String? avatar,
+    int? level,
+    int? xp,
+    int? xpToNextLevel,
+    int? streak,
+    int? totalPoints,
+    int? rank,
+    int? winCount,
+    int? loseCount,
+    int? heartRate,
+    int? calories,
+    String? joinDate,
+    List<Badge>? badges,
+    UserStats? stats,
+    int? ruby,
+    int? stamina,
+    int? maxStamina,
+    int? coins,
+    int? coinsExpiringDays,
+    bool? hasBattlePass,
+    int? battlePassTier,
+    bool? isVIP,
+    String? vipSlot,
+    String? equippedSkinFrame,
+    String? equippedTitle,
+  }) {
+    return User(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      avatar: avatar ?? this.avatar,
+      level: level ?? this.level,
+      xp: xp ?? this.xp,
+      xpToNextLevel: xpToNextLevel ?? this.xpToNextLevel,
+      streak: streak ?? this.streak,
+      totalPoints: totalPoints ?? this.totalPoints,
+      rank: rank ?? this.rank,
+      winCount: winCount ?? this.winCount,
+      loseCount: loseCount ?? this.loseCount,
+      heartRate: heartRate ?? this.heartRate,
+      calories: calories ?? this.calories,
+      joinDate: joinDate ?? this.joinDate,
+      badges: badges ?? this.badges,
+      stats: stats ?? this.stats,
+      ruby: ruby ?? this.ruby,
+      stamina: stamina ?? this.stamina,
+      maxStamina: maxStamina ?? this.maxStamina,
+      coins: coins ?? this.coins,
+      coinsExpiringDays: coinsExpiringDays ?? this.coinsExpiringDays,
+      hasBattlePass: hasBattlePass ?? this.hasBattlePass,
+      battlePassTier: battlePassTier ?? this.battlePassTier,
+      isVIP: isVIP ?? this.isVIP,
+      vipSlot: vipSlot ?? this.vipSlot,
+      equippedSkinFrame: equippedSkinFrame ?? this.equippedSkinFrame,
+      equippedTitle: equippedTitle ?? this.equippedTitle,
+    );
+  }
+}
+
+class Badge {
+  final String id;
+  final String name;
+  final String icon;
+  final String color;
+  final bool earned;
+
+  Badge({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.color,
+    required this.earned,
+  });
+}
+
+class UserStats {
+  final int totalWorkouts;
+  final int totalMinutes;
+  final int avgHeartRate;
+  final int totalCalories;
+  final List<int> weeklyMinutes;
+  final List<int> weeklyCalories;
+
+  UserStats({
+    required this.totalWorkouts,
+    required this.totalMinutes,
+    required this.avgHeartRate,
+    required this.totalCalories,
+    required this.weeklyMinutes,
+    required this.weeklyCalories,
+  });
+}
+
+// Battle Models
+class Battle {
+  final String id;
+  final String title;
+  final BattleType type;
+  final BattleStatus status;
+  final List<BattlePlayer> players;
+  final int duration;
+  final String? startedAt;
+  final String? endedAt;
+  final BattleReward reward;
+  final String exerciseType;
+  final ArenaType? arenaType;
+  final int? rubyStake;
+  final int? staminaCost;
+  final BrandPartner? brandPartner;
+  final int? spectatorCount;
+
+  Battle({
+    required this.id,
+    required this.title,
+    required this.type,
+    required this.status,
+    required this.players,
+    required this.duration,
+    this.startedAt,
+    this.endedAt,
+    required this.reward,
+    required this.exerciseType,
+    this.arenaType,
+    this.rubyStake,
+    this.staminaCost,
+    this.brandPartner,
+    this.spectatorCount,
+  });
+}
+
+enum BattleType { ranked, friendly, challenge, ruby_stake, titan, brand_spot }
+
+enum BattleStatus { waiting, active, finished }
+
+enum ArenaType { normal, premium, brand }
+
+class BattlePlayer {
+  final String oderId;
+  final String oderName;
+  final String avatar;
+  final int score;
+  final int heartRate;
+  final int duration;
+  final bool isActive;
+
+  BattlePlayer({
+    required this.oderId,
+    required this.oderName,
+    required this.avatar,
+    required this.score,
+    required this.heartRate,
+    required this.duration,
+    required this.isActive,
+  });
+}
+
+class BattleReward {
+  final int xp;
+  final int coins;
+  final int? ruby;
+  final String? badgeId;
+
+  BattleReward({
+    required this.xp,
+    required this.coins,
+    this.ruby,
+    this.badgeId,
+  });
+}
+
+class BrandPartner {
+  final String name;
+  final String logo;
+  final String location;
+  final String sponsorBonus;
+
+  BrandPartner({
+    required this.name,
+    required this.logo,
+    required this.location,
+    required this.sponsorBonus,
+  });
+}
+
+// Challenge Models
+class Challenge {
+  final String id;
+  final String title;
+  final String description;
+  final ChallengeType type;
+  final int target;
+  final int current;
+  final String unit;
+  final ChallengeReward reward;
+  final String expiresAt;
+  final String icon;
+  final String color;
+  final bool completed;
+
+  Challenge({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.type,
+    required this.target,
+    required this.current,
+    required this.unit,
+    required this.reward,
+    required this.expiresAt,
+    required this.icon,
+    required this.color,
+    required this.completed,
+  });
+}
+
+enum ChallengeType { daily, weekly, monthly, special }
+
+class ChallengeReward {
+  final int xp;
+  final int coins;
+  final int? ruby;
+
+  ChallengeReward({
+    required this.xp,
+    required this.coins,
+    this.ruby,
+  });
+}
+
+// Leaderboard Models
+class LeaderboardEntry {
+  final int rank;
+  final String oderId;
+  final String oderName;
+  final String avatar;
+  final int level;
+  final int points;
+  final bool? isCurrentUser;
+  final bool? isVIP;
+
+  LeaderboardEntry({
+    required this.rank,
+    required this.oderId,
+    required this.oderName,
+    required this.avatar,
+    required this.level,
+    required this.points,
+    this.isCurrentUser,
+    this.isVIP,
+  });
+}
+
+// Activity Models
+class ActivitySession {
+  final String id;
+  final String date;
+  final int duration;
+  final int calories;
+  final int heartRate;
+  final String type;
+  final int xp;
+
+  ActivitySession({
+    required this.id,
+    required this.date,
+    required this.duration,
+    required this.calories,
+    required this.heartRate,
+    required this.type,
+    required this.xp,
+  });
+}
+
+class Friend {
+  final String id;
+  final String name;
+  final String avatar;
+  final int level;
+  final int streak;
+  final bool isOnline;
+  final String lastActive;
+
+  Friend({
+    required this.id,
+    required this.name,
+    required this.avatar,
+    required this.level,
+    required this.streak,
+    required this.isOnline,
+    required this.lastActive,
+  });
+}
+
+class ExerciseType {
+  final String id;
+  final String name;
+  final String duration;
+  final String color;
+
+  ExerciseType({
+    required this.id,
+    required this.name,
+    required this.duration,
+    required this.color,
+  });
+}
+
+// Battle Pass Models
+enum BattlePassRewardType { xp, coins, ruby, voucher, skin, badge }
+
+class BattlePassReward {
+  final BattlePassRewardType type;
+  final int? amount;
+  final String label;
+  final String? description;
+  final String? voucherPartner;
+
+  BattlePassReward({
+    required this.type,
+    this.amount,
+    required this.label,
+    this.description,
+    this.voucherPartner,
+  });
+}
+
+class BattlePassLevel {
+  final int level;
+  final int xpRequired;
+  final BattlePassReward freeReward;
+  final BattlePassReward? premiumReward;
+  final String? mission;
+
+  BattlePassLevel({
+    required this.level,
+    required this.xpRequired,
+    required this.freeReward,
+    this.premiumReward,
+    this.mission,
+  });
+}
+
+class BattlePassSeason {
+  final String id;
+  final String name;
+  final String startDate;
+  final String endDate;
+  final int daysRemaining;
+  final int totalLevels;
+  final int currentLevel;
+  final int currentXP;
+  final int xpToNextLevel;
+  final bool isPremium;
+  final List<BattlePassLevel> levels;
+  final int prizesClaimed;
+  final int totalPrizes;
+
+  BattlePassSeason({
+    required this.id,
+    required this.name,
+    required this.startDate,
+    required this.endDate,
+    required this.daysRemaining,
+    required this.totalLevels,
+    required this.currentLevel,
+    required this.currentXP,
+    required this.xpToNextLevel,
+    required this.isPremium,
+    required this.levels,
+    required this.prizesClaimed,
+    required this.totalPrizes,
+  });
+}
+
+class Voucher {
+  final String id;
+  final String partner;
+  final String partnerLogo;
+  final String value;
+  final String description;
+  final String expiresAt;
+  final String? code;
+  final bool claimed;
+  final String? claimedAt;
+
+  Voucher({
+    required this.id,
+    required this.partner,
+    required this.partnerLogo,
+    required this.value,
+    required this.description,
+    required this.expiresAt,
+    this.code,
+    required this.claimed,
+    this.claimedAt,
+  });
+}
+
+class PremiumArena {
+  final String id;
+  final String name;
+  final String description;
+  final int entryRuby;
+  final int prizePool;
+  final List<PrizeBreakdown> prizePoolBreakdown;
+  final int participants;
+  final int maxParticipants;
+  final ArenaStatus status;
+  final String? startTime;
+  final String exerciseType;
+  final int duration;
+
+  PremiumArena({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.entryRuby,
+    required this.prizePool,
+    required this.prizePoolBreakdown,
+    required this.participants,
+    required this.maxParticipants,
+    required this.status,
+    this.startTime,
+    required this.exerciseType,
+    required this.duration,
+  });
+}
+
+enum ArenaStatus { open, countdown, live, finished }
+
+class PrizeBreakdown {
+  final String position;
+  final String reward;
+
+  PrizeBreakdown({
+    required this.position,
+    required this.reward,
+  });
+}
+
+// Shop Models
+enum SkinRarity { common, rare, epic, legendary }
+
+class SkinItem {
+  final String id;
+  final String name;
+  final SkinType type;
+  final String preview;
+  final int price;
+  final SkinRarity rarity;
+  final bool owned;
+  final bool? limited;
+  final String? season;
+
+  SkinItem({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.preview,
+    required this.price,
+    required this.rarity,
+    required this.owned,
+    this.limited,
+    this.season,
+  });
+}
+
+enum SkinType { avatar_frame, victory_effect, title, badge }
