@@ -1,6 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/models.dart';
-import '../core/mock_data.dart';
+import 'models.dart';
+import 'mock_data.dart';
+import 'services/step_tracking_service.dart';
+
+// Re-export exercise providers
+export 'mock_data_exercise.dart' show 
+  userExerciseStatsProvider,
+  dailyExerciseGoalsProvider,
+  dailyWalkingGoalProvider,
+  recentExerciseSessionsProvider,
+  userMembershipProvider,
+  pushupLeaderboardProvider,
+  pullupLeaderboardProvider,
+  walkingLeaderboardProvider,
+  shopItemsProvider,
+  membershipPlansProvider,
+  userOwnedItemsProvider;
 
 // User State
 class UserNotifier extends StateNotifier<User> {
@@ -67,6 +82,35 @@ class UserNotifier extends StateNotifier<User> {
 
 final userProvider = StateNotifierProvider<UserNotifier, User>((ref) {
   return UserNotifier();
+});
+
+// Step Tracking State
+class StepTrackingNotifier extends StateNotifier<StepState> {
+  final _stepService = StepTrackingService();
+  
+  StepTrackingNotifier() : super(StepState()) {
+    _stepService.onStepUpdate = (newState) {
+      state = newState;
+    };
+  }
+  
+  Future<void> startTracking() async {
+    await _stepService.startTracking();
+  }
+  
+  void stopTracking() {
+    _stepService.stopTracking();
+  }
+  
+  @override
+  void dispose() {
+    _stepService.dispose();
+    super.dispose();
+  }
+}
+
+final stepTrackingProvider = StateNotifierProvider<StepTrackingNotifier, StepState>((ref) {
+  return StepTrackingNotifier();
 });
 
 // Leaderboard Provider
