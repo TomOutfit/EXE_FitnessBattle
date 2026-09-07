@@ -94,12 +94,22 @@ interface AvatarProps {
   online?: boolean;
   level?: number;
   ring?: string;
+  isVIP?: boolean;
 }
 
-export const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 40, online, level, ring }) => {
+export const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 40, online, level, ring, isVIP }) => {
+  const finalRing = isVIP ? '#ffd700' : ring;
   return (
     <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
-      <div style={{ width: size, height: size, borderRadius: '50%', border: ring ? `2px solid ${ring}` : '2px solid var(--border)', padding: 2, background: ring ? 'transparent' : 'var(--bg)' }}>
+      <div style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        border: finalRing ? `2px solid ${finalRing}` : '2px solid var(--border)',
+        padding: 2,
+        background: finalRing ? 'transparent' : 'var(--bg)',
+        boxShadow: isVIP ? '0 0 10px rgba(255,215,0,0.4)' : 'none'
+      }}>
         <img src={src} alt={alt} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { const img = e.currentTarget; img.style.display = 'none'; const fallback = img.nextElementSibling as HTMLElement | null; if (fallback) fallback.style.display = 'flex'; }} />
         <div style={{ display: 'none', position: 'absolute', inset: 2, borderRadius: '50%', background: 'var(--bg3)', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.38, fontWeight: 700, color: 'var(--text2)', lineHeight: 1 }}>{alt[0]?.toUpperCase()}</div>
       </div>
