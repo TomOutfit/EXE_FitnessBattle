@@ -9,6 +9,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { WelcomePage } from './pages/WelcomePage';
 import { ExerciseTrackPage } from './pages/ExerciseTrackPage';
 import { ExerciseCameraPage } from './pages/ExerciseCameraPage';
+import { BattleCameraPage } from './pages/BattleCameraPage';
 import { RankingPage } from './pages/RankingPage';
 import { BottomNav } from './components/navigation/BottomNav';
 import { ToastContainer } from './components/ui';
@@ -37,6 +38,7 @@ const AppShell: React.FC = () => {
         <Route path="/exercise-camera" element={<ExerciseCameraPage />} />
         <Route path="/challenge" element={isOnboarded ? <ChallengePage /> : <WelcomePage />} />
         <Route path="/battle" element={<BattlePage />} />
+        <Route path="/battle-camera" element={<BattleCameraPage />} />
         <Route path="/ranking" element={<RankingPage />} />
         <Route path="/battle-pass" element={<BattlePassPage />} />
         <Route path="/profile" element={<ProfilePage />} />

@@ -34,6 +34,8 @@ interface UserContextValue {
   deductStamina: (amount: number) => boolean;
   refillStamina: () => void;
   buyRuby: (amount: number) => void;
+  addXP: (amount: number) => void;
+  addCoins: (amount: number) => void;
   // Toast
   toasts: ToastData[];
   showToast: (message: string, type?: ToastData['type']) => void;
@@ -157,6 +159,24 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(prev => ({ ...prev, ruby: prev.ruby + amount }));
   };
 
+  const addXP = (amount: number) => {
+    setUser(prev => {
+      const newXp = prev.xp + amount;
+      const xpToNext = prev.xpToNextLevel;
+      const levelUp = newXp >= xpToNext;
+      return {
+        ...prev,
+        xp: levelUp ? newXp - xpToNext : newXp,
+        level: levelUp ? prev.level + 1 : prev.level,
+        xpToNextLevel: levelUp ? Math.floor(xpToNext * 1.5) : xpToNext,
+      };
+    });
+  };
+
+  const addCoins = (amount: number) => {
+    setUser(prev => ({ ...prev, coins: prev.coins + amount }));
+  };
+
   const completeOnboarding = (data: OnboardingData) => {
     const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(data.avatarSeed)}&backgroundColor=${data.avatarColor}`;
 
@@ -243,7 +263,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <UserContext.Provider value={{
       user, setUser, onboardingData, isOnboarded,
       completeOnboarding, updateBattleResult, login, resetOnboarding,
-      upgradeToVIP, deductStamina, refillStamina, buyRuby,
+      upgradeToVIP, deductStamina, refillStamina, buyRuby, addXP, addCoins,
       toasts, showToast, dismissToast
     }}>
       {children}
