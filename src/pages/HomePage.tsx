@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronRight, Zap } from 'lucide-react';
 import { leaderboard } from '../data/mockData';
-import { Avatar, Button } from '../components/ui';
+import { Avatar } from '../components/ui';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 

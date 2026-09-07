@@ -45,6 +45,46 @@ export interface UserStats {
   weeklyCalories: number[];
 }
 
+export type ExerciseType = 'pushup' | 'pullup' | 'walking';
+
+export interface ExerciseInfo {
+  type: ExerciseType;
+  name: string;
+  icon: string;
+  todayCount: number;
+  targetCount: number;
+  unit: string;
+  caloriesPerRep: number;
+  color: string;
+  gradient: string;
+}
+
+export interface ExerciseSession {
+  id: string;
+  type: ExerciseType;
+  startTime: string;
+  durationSeconds: number;
+  repsCount: number;
+  validRepsCount: number;
+  caloriesBurned: number;
+  avgAccuracy: number;
+  antiCheatScore: number;
+  isCheatSuspected: boolean;
+  notes?: string;
+}
+
+export interface ExerciseLeaderboardEntry {
+  rank: number;
+  userId: string;
+  userName: string;
+  avatar: string;
+  bestScore: number;
+  totalSessions: number;
+  avgAccuracy: number;
+  type: ExerciseType;
+  isCurrentUser?: boolean;
+}
+
 export interface Battle {
   id: string;
   title: string;
@@ -98,6 +138,7 @@ export interface Challenge {
   icon: string;
   color: string;
   completed: boolean;
+  claimed?: boolean;
 }
 
 export interface LeaderboardEntry {
@@ -131,7 +172,17 @@ export interface Friend {
   lastActive: string;
 }
 
-// ─── BATTLE PASS ──────────────────────────────────────────────────────────────
+export interface Voucher {
+  id: string;
+  partner: string;
+  partnerLogo: string;
+  value: string;
+  description: string;
+  expiresAt: string;
+  code?: string;
+  claimed: boolean;
+  claimedAt?: string;
+}
 
 export type BattlePassRewardType = 'xp' | 'coins' | 'ruby' | 'voucher' | 'skin' | 'badge';
 
@@ -168,16 +219,29 @@ export interface BattlePassSeason {
   totalPrizes: number;
 }
 
-export interface Voucher {
+export interface VoucherItem {
   id: string;
+  title: string;
   partner: string;
   partnerLogo: string;
-  value: string;
-  description: string;
-  expiresAt: string;
-  code?: string;
+  category: 'gym' | 'clothing' | 'nutrition' | 'drink';
+  discountText: string;
+  coinPrice: number;
+  originalPrice: string;
+  expiresInDays: number;
   claimed: boolean;
-  claimedAt?: string;
+  code?: string;
+}
+
+export interface MembershipPlan {
+  id: 'free' | 'vip' | 'titan';
+  name: string;
+  badge: string;
+  priceMonthly: string;
+  priceYearly: string;
+  color: string;
+  isPopular?: boolean;
+  features: string[];
 }
 
 export interface PremiumArena {
@@ -195,14 +259,12 @@ export interface PremiumArena {
   duration: number;
 }
 
-// ─── SHOP & STORE ─────────────────────────────────────────────────────────────
-
 export interface SkinItem {
   id: string;
   name: string;
   type: 'avatar_frame' | 'victory_effect' | 'title' | 'badge';
   preview: string;
-  price: number; // Ruby price
+  price: number;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   owned: boolean;
   limited?: boolean;

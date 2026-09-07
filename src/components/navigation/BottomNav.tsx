@@ -4,9 +4,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 const NAV_ITEMS = [
   { path: '/', icon: Home, label: 'Trang chủ' },
-  { path: '/challenge', icon: Target, label: 'Thử thách' },
   { path: '/battle', icon: Swords, label: 'Thi đấu' },
-  { path: '/profile', icon: User, label: 'Hồ sơ' },
+  { path: '/challenge', icon: Target, label: 'Thử thách' },
+  { path: '/ranking', icon: Trophy, label: 'Bảng xếp hạng' },
+  { path: '/profile', icon: User, label: 'Cá nhân' },
 ];
 
 export const BottomNav: React.FC = () => {
