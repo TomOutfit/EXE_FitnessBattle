@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { User } from '../types';
 import { currentUser as defaultUser } from '../data/mockData';
+import type { ToastData } from '../components/ui';
 
 interface OnboardingData {
   name: string;
@@ -33,6 +34,10 @@ interface UserContextValue {
   deductStamina: (amount: number) => boolean;
   refillStamina: () => void;
   buyRuby: (amount: number) => void;
+  // Toast
+  toasts: ToastData[];
+  showToast: (message: string, type?: ToastData['type']) => void;
+  dismissToast: (id: string) => void;
 }
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -58,6 +63,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
+  const [toasts, setToasts] = useState<ToastData[]>([]);
+
+  const showToast = useCallback((message: string, type: ToastData['type'] = 'info') => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => dismissToast(id), 3500);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   useEffect(() => {
     setIsOnboarded(localStorage.getItem(ONBOARDED_KEY) === 'true');
@@ -227,7 +243,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <UserContext.Provider value={{
       user, setUser, onboardingData, isOnboarded,
       completeOnboarding, updateBattleResult, login, resetOnboarding,
-      upgradeToVIP, deductStamina, refillStamina, buyRuby
+      upgradeToVIP, deductStamina, refillStamina, buyRuby,
+      toasts, showToast, dismissToast
     }}>
       {children}
     </UserContext.Provider>

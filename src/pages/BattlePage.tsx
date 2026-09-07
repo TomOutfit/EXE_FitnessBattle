@@ -19,7 +19,7 @@ const EXERCISES = [
 type Screen = 'home' | 'battle';
 
 export const BattlePage: React.FC = () => {
-  const { user, deductStamina } = useUser();
+  const { user, deductStamina, showToast } = useUser();
   const [screen, setScreen] = useState<Screen>('home');
   const [selectedExercise, setSelectedExercise] = useState('gym');
   const [selectedOpp, setSelectedOpp] = useState(0);
@@ -30,9 +30,10 @@ export const BattlePage: React.FC = () => {
   const handleStartBattleClick = () => {
     const ok = deductStamina(10);
     if (!ok) {
-      alert('⚡ Bạn đã hết thể lực Stamina (0 HP)!\n\nNạp VIP Premium để nâng trần lên 500 HP Stamina và tiếp tục thi đấu!');
+      showToast('Hết thể lực! Nạp VIP để nhận thêm Stamina', 'warning');
       return;
     }
+    showToast(`⚔️ Bắt đầu thách đấu ${opp.name}!`, 'success');
     setScreen('battle');
   };
 
@@ -83,18 +84,18 @@ export const BattlePage: React.FC = () => {
       <div style={{ padding: '16px 20px 14px', background: 'linear-gradient(180deg, #14141e, var(--bg))', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ marginBottom: 12 }}>
           <h1 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text)', marginBottom: 4 }}>
-            ⚔️ <span style={{ background: 'linear-gradient(135deg, #ff6b35, #ff4757)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Thi Đấu 1v1 Real-Time</span>
+            ⚔️ <span style={{ background: 'linear-gradient(135deg, #ff6b35, #ff4757)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Thi Đấu 1v1</span>
           </h1>
           <p style={{ fontSize: 12, color: 'var(--text3)' }}>
-            Tính năng cốt lõi: Thách đấu trong 60 giây — AI bảo vệ minh bạch
+            Chọn đối thủ và bắt đầu thi đấu trong 60 giây
           </p>
         </div>
 
-        {/* Anti-Cheat Banner */}
+        {/* Info Banner */}
         <div style={{ padding: '10px 14px', background: 'rgba(46,213,115,0.08)', border: '1px solid rgba(46,213,115,0.2)', borderRadius: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
           <Shield size={18} color="#2ed573" />
           <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.3 }}>
-            <strong style={{ color: '#2ed573' }}>Dual Sensor Anti-Cheat:</strong> Quét GPS Tốc độ + Micro Tiếng thở để chặn 100% máy lắc ảo.
+            <strong style={{ color: '#2ed573' }}>Chống gian lận:</strong> GPS + Micro kiểm tra tính trung thực trận đấu
           </div>
         </div>
       </div>
@@ -105,9 +106,9 @@ export const BattlePage: React.FC = () => {
         <div style={{ padding: '10px 14px', background: 'rgba(255,107,53,0.1)', border: '1px solid rgba(255,107,53,0.2)', borderRadius: 12, marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Zap size={14} color="var(--primary)" />
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Thể lực trận đấu:</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Thể lực:</span>
           </div>
-          <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--primary)' }}>{user.stamina}/{user.maxStamina} HP (Tốn 10 HP/trận)</span>
+          <span style={{ fontSize: 12, fontWeight: 900, color: 'var(--primary)' }}>{user.stamina}/{user.maxStamina} HP</span>
         </div>
 
         {/* Exercise Selector */}

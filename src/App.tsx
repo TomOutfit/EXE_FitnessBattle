@@ -4,12 +4,14 @@ import { UserProvider, useUser } from './context/UserContext';
 import { HomePage } from './pages/HomePage';
 import { BattlePassPage } from './pages/BattlePassPage';
 import { BattlePage } from './pages/BattlePage';
+import { ChallengePage } from './pages/ChallengePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { WelcomePage } from './pages/WelcomePage';
 import { BottomNav } from './components/navigation/BottomNav';
+import { ToastContainer } from './components/ui';
 
 const AppShell: React.FC = () => {
-  const { isOnboarded } = useUser();
+  const { isOnboarded, toasts, dismissToast } = useUser();
 
   if (isOnboarded === null) {
     return (
@@ -28,12 +30,14 @@ const AppShell: React.FC = () => {
     }}>
       <Routes>
         <Route path="/" element={isOnboarded ? <HomePage /> : <WelcomePage />} />
+        <Route path="/challenge" element={isOnboarded ? <ChallengePage /> : <WelcomePage />} />
         <Route path="/battle" element={<BattlePage />} />
         <Route path="/battle-pass" element={<BattlePassPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<HomePage />} />
       </Routes>
       {isOnboarded && <BottomNav />}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 };

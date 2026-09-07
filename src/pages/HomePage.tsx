@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, Zap, MapPin } from 'lucide-react';
+import { ChevronRight, Zap } from 'lucide-react';
 import { leaderboard } from '../data/mockData';
 import { Avatar, Button } from '../components/ui';
 import { useNavigate } from 'react-router-dom';
@@ -24,56 +24,7 @@ export const HomePage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div 
             style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-            onClick={() => {
-              const runAutoDemo = confirm("⚡ Bắt đầu chế độ Tự Động Chạy Demo (Auto-Demo Mode)?\n\nHãy chuẩn bị bật trình quay màn hình của bạn. Hệ thống sẽ tự động thực hiện luồng tính năng trong 35 giây tiếp theo.");
-              if (runAutoDemo) {
-                // Phase 1: Go to Battle Page
-                setTimeout(() => { navigate('/battle'); }, 2000);
-                
-                // Phase 2: Start 1v1 Battle
-                setTimeout(() => {
-                  const startBtn = document.querySelector('button') as HTMLButtonElement;
-                  if (startBtn && startBtn.textContent?.includes('THÁCH ĐẤU')) {
-                    startBtn.click();
-                  }
-                }, 6000);
-
-                // Phase 3: Start 60s Game
-                setTimeout(() => {
-                  const actionBtn = document.querySelector('button') as HTMLButtonElement;
-                  if (actionBtn && actionBtn.textContent?.includes('BẮT ĐẦU')) {
-                    actionBtn.click();
-                  }
-                }, 10000);
-
-                // Phase 4: Auto Go Home after match ends
-                setTimeout(() => {
-                  const homeBtn = document.querySelector('button') as HTMLButtonElement;
-                  if (homeBtn && homeBtn.textContent?.includes('Về Trang Chủ')) {
-                    homeBtn.click();
-                  }
-                }, 28000);
-
-                // Phase 5: Go to Battle Pass
-                setTimeout(() => { navigate('/battle-pass'); }, 30000);
-
-                // Phase 6: Open Payment
-                setTimeout(() => {
-                  const premiumBtn = document.querySelector('button') as HTMLButtonElement;
-                  if (premiumBtn && premiumBtn.textContent?.includes('Nâng cấp')) {
-                    premiumBtn.click();
-                  }
-                }, 34000);
-
-                // Phase 7: Pay and finish VIP upgrade
-                setTimeout(() => {
-                  const payBtn = document.querySelector('button') as HTMLButtonElement;
-                  if (payBtn && payBtn.textContent?.includes('Thanh toán')) {
-                    payBtn.click();
-                  }
-                }, 38000);
-              }
-            }}
+            onClick={() => navigate('/profile')}
           >
             <Avatar src={user.avatar} alt={user.name} size={44} online level={user.level} ring="#ff6b35" />
             <div>
@@ -128,30 +79,27 @@ export const HomePage: React.FC = () => {
                 ⚔️
               </div>
               <div>
-                <div style={{ fontSize: 15, fontWeight: 900, color: 'var(--text)', marginBottom: 2 }}>Thi Đấu 1v1 Real-Time (60s)</div>
-                <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700 }}>Tính năng cốt lõi • AI Chống Gian Lận Dual Sensor</div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: 'var(--text)', marginBottom: 2 }}>Thi Đấu 1v1 (60 giây)</div>
+                <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700 }}>Chọn đối thủ & bắt đầu thi đấu</div>
               </div>
             </div>
             <ChevronRight size={22} color="var(--primary)" />
           </div>
         </div>
 
-        {/* B2B Location Gym Spot Highlight */}
-        <div style={{ marginBottom: 20, padding: '14px 16px', background: 'rgba(83,82,237,0.08)', border: '1px solid rgba(83,82,237,0.2)', borderRadius: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <MapPin size={16} color="#5352ed" />
-              <span style={{ fontSize: 13, fontWeight: 800, color: '#5352ed' }}>B2B Gym Spot: California Fitness Q1</span>
-            </div>
-            <span style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(83,82,237,0.15)', borderRadius: 10, color: '#5352ed', fontWeight: 700 }}>SPONSOR SPOT</span>
-          </div>
-          <p style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.4, marginBottom: 10 }}>
-            Check-in thi đấu 1v1 tại phòng California Fitness để nhận <strong>x2 Ruby + Voucher 1 tháng Gym miễn phí</strong>.
-          </p>
-          <Button variant="outline" size="sm" fullWidth onClick={() => navigate('/battle')}>
-            📍 Ghé thăm Gym Spot & Thách đấu ngay
-          </Button>
+        {/* Quick Actions */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          <button onClick={() => navigate('/challenge')} style={{ flex: 1, padding: '14px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+            <span style={{ fontSize: 18 }}>🎯</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Thử thách</span>
+          </button>
+          <button onClick={() => navigate('/battle-pass')} style={{ flex: 1, padding: '14px 10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+            <span style={{ fontSize: 18 }}>👑</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Nâng cấp</span>
+          </button>
         </div>
+
+
 
         {/* Ranking Preview */}
         <div style={{ padding: 16, background: 'linear-gradient(145deg, #1a1a28, #14141e)', border: '1px solid var(--border)', borderRadius: 16 }}>

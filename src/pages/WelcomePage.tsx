@@ -30,37 +30,7 @@ export const WelcomePage: React.FC = () => {
   const [selectedAvatar, setSelectedAvatar] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Secret Auto-Onboarding trigger
-  const runAutoOnboarding = () => {
-    // Stage 1: Register Screen
-    setStep('register');
-    
-    // Stage 2: Fill details
-    setTimeout(() => {
-      setName('Minh Đạt');
-      setEmail('minh.dat@email.com');
-      setPassword('password123');
-    }, 1500);
 
-    // Stage 3: Submit Registration Form
-    setTimeout(() => {
-      setStep('avatar');
-    }, 4500);
-
-    // Stage 4: Enter app
-    setTimeout(() => {
-      setIsLoading(true);
-      const av = AVATARS[1]; // Runner avatar
-      completeOnboarding({ 
-        name: 'Minh Đạt', 
-        avatarSeed: av.seed, 
-        avatarColor: av.color, 
-        avatarEmoji: av.emoji, 
-        email: 'minh.dat@email.com', 
-        password: 'password123' 
-      });
-    }, 7000);
-  };
 
   const handleLogin = () => {
     if (!email.trim() || !password) {
@@ -131,9 +101,7 @@ export const WelcomePage: React.FC = () => {
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 80, gap: 0 }}>
             <div 
-              onClick={runAutoOnboarding}
-              title="Kích hoạt tự động chạy Demo"
-              style={{ width: 80, height: 80, borderRadius: 24, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, boxShadow: '0 0 40px rgba(255,107,53,0.4), 0 0 80px rgba(255,107,53,0.2)', marginBottom: 16, cursor: 'pointer' }}
+              style={{ width: 80, height: 80, borderRadius: 24, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, boxShadow: '0 0 40px rgba(255,107,53,0.4), 0 0 80px rgba(255,107,53,0.2)', marginBottom: 16 }}
             >
               ⚔️
             </div>

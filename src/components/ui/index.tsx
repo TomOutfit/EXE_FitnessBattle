@@ -221,3 +221,65 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ value, max, color = 'v
     </div>
   );
 };
+
+// Toast notification component
+export interface ToastData {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+}
+
+interface ToastProps {
+  toasts: ToastData[];
+  onDismiss: (id: string) => void;
+}
+
+const toastStyles = {
+  success: { bg: 'rgba(46,213,115,0.15)', border: 'rgba(46,213,115,0.3)', text: '#2ed573' },
+  error: { bg: 'rgba(255,71,87,0.15)', border: 'rgba(255,71,87,0.3)', text: '#ff4757' },
+  info: { bg: 'rgba(83,82,237,0.15)', border: 'rgba(83,82,237,0.3)', text: '#5352ed' },
+  warning: { bg: 'rgba(255,215,0,0.15)', border: 'rgba(255,215,0,0.3)', text: '#ffd700' },
+};
+
+const toastIcons = {
+  success: '✅',
+  error: '❌',
+  info: '💡',
+  warning: '⚠️',
+};
+
+export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
+  return (
+    <div style={{
+      position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)',
+      display: 'flex', flexDirection: 'column', gap: 8, zIndex: 9999,
+      width: '90%', maxWidth: 420, pointerEvents: 'none',
+    }}>
+      {toasts.map((toast) => {
+        const s = toastStyles[toast.type];
+        return (
+          <div
+            key={toast.id}
+            onClick={() => onDismiss(toast.id)}
+            style={{
+              padding: '12px 16px',
+              background: s.bg,
+              border: `1px solid ${s.border}`,
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              animation: 'slideUp 0.3s ease-out',
+              pointerEvents: 'auto',
+              cursor: 'pointer',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            }}
+          >
+            <span style={{ fontSize: 18 }}>{toastIcons[toast.type]}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{toast.message}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};

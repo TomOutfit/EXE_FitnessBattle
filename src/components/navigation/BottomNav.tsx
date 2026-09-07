@@ -1,11 +1,11 @@
 import React from 'react';
-import { Home, Swords, Crown, User } from 'lucide-react';
+import { Home, Swords, Trophy, Target, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const NAV_ITEMS = [
   { path: '/', icon: Home, label: 'Trang chủ' },
-  { path: '/battle', icon: Swords, label: 'Thi đấu 1v1' },
-  { path: '/battle-pass', icon: Crown, label: 'Gói VIP' },
+  { path: '/challenge', icon: Target, label: 'Thử thách' },
+  { path: '/battle', icon: Swords, label: 'Thi đấu' },
   { path: '/profile', icon: User, label: 'Hồ sơ' },
 ];
 

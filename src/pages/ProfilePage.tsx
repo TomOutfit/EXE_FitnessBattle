@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Share2, LogOut, Shield, Crown, Flame, Zap, Award, Trophy } from 'lucide-react';
 import { Avatar, XpBar, BadgeIcon } from '../components/ui';
 import { useUser } from '../context/UserContext';
 
 export const ProfilePage: React.FC = () => {
-  const { user, resetOnboarding } = useUser();
+  const { user, resetOnboarding, showToast } = useUser();
   const earnedBadges = user.badges.filter(b => b.earned);
-  const [notification, setNotification] = useState<string | null>(null);
 
   const totalBattles = user.winCount + user.loseCount;
   const winRate = totalBattles > 0 ? Math.round((user.winCount / totalBattles) * 100) : 100;
@@ -14,18 +13,16 @@ export const ProfilePage: React.FC = () => {
   const handleMenuAction = (action: string) => {
     switch (action) {
       case 'share':
-        setNotification('✅ Link Hồ Sơ Khoe Facebook đã sao chép!');
+        showToast('Link hồ sơ đã được sao chép!', 'success');
         navigator.clipboard?.writeText('https://fitnessbattle.app/u/' + user.id);
         break;
       case 'logout':
-        if (window.confirm('Bạn có chắc muốn đăng xuất?')) {
-          resetOnboarding();
-        }
+        showToast('Đã đăng xuất. Hẹn gặp lại!', 'info');
+        setTimeout(() => resetOnboarding(), 1500);
         break;
       default:
-        setNotification('Đang mở cài đặt...');
+        showToast('Tính năng đang phát triển', 'info');
     }
-    setTimeout(() => setNotification(null), 3000);
   };
 
   return (
@@ -154,13 +151,6 @@ export const ProfilePage: React.FC = () => {
         </div>
 
       </div>
-
-      {/* Notification Toast */}
-      {notification && (
-        <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: 'var(--bg-card3)', border: '1px solid var(--primary)', borderRadius: 14, padding: '12px 20px', zIndex: 300, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', animation: 'fadeInUp 0.3s ease-out', whiteSpace: 'nowrap', color: 'var(--text)', fontSize: 12, fontWeight: 700 }}>
-          {notification}
-        </div>
-      )}
     </div>
   );
 };
