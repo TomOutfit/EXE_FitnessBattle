@@ -7,6 +7,9 @@ import { BattlePage } from './pages/BattlePage';
 import { ChallengePage } from './pages/ChallengePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { WelcomePage } from './pages/WelcomePage';
+import { ExerciseTrackPage } from './pages/ExerciseTrackPage';
+import { ExerciseCameraPage } from './pages/ExerciseCameraPage';
+import { RankingPage } from './pages/RankingPage';
 import { BottomNav } from './components/navigation/BottomNav';
 import { ToastContainer } from './components/ui';
 
@@ -30,8 +33,11 @@ const AppShell: React.FC = () => {
     }}>
       <Routes>
         <Route path="/" element={isOnboarded ? <HomePage /> : <WelcomePage />} />
+        <Route path="/exercise" element={<ExerciseTrackPage />} />
+        <Route path="/exercise-camera" element={<ExerciseCameraPage />} />
         <Route path="/challenge" element={isOnboarded ? <ChallengePage /> : <WelcomePage />} />
         <Route path="/battle" element={<BattlePage />} />
+        <Route path="/ranking" element={<RankingPage />} />
         <Route path="/battle-pass" element={<BattlePassPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<HomePage />} />
