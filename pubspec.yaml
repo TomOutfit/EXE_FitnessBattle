@@ -1,6 +1,6 @@
 name: fitness_battle
-description: "Fitness Battle - Gamified Fitness Tracking App"
-publish_to: 'none'
+description: Fitness Battle - Gamified Fitness Tracking App
+publish_to: none
 version: 1.0.0+1
 
 environment:
@@ -22,6 +22,19 @@ dependencies:
   google_fonts: ^6.2.1
   percent_indicator: ^4.2.5
   fl_chart: ^0.70.2
+  
+  # Camera and ML
+  camera: ^0.11.0+2
+  google_mlkit_pose_detection: ^0.13.0
+  permission_handler: ^11.3.1
+  
+  # Sensors
+  pedometer: ^4.0.2
+  
+  # Firebase
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.0
+  cloud_firestore: ^5.5.0
   
   # Utils
   intl: ^0.20.2
