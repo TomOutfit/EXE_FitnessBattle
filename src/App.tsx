@@ -11,6 +11,8 @@ import { ExerciseTrackPage } from './pages/ExerciseTrackPage';
 import { ExerciseCameraPage } from './pages/ExerciseCameraPage';
 import { BattleCameraPage } from './pages/BattleCameraPage';
 import { RankingPage } from './pages/RankingPage';
+import { ShopPage } from './pages/ShopPage';
+import { MembershipPage } from './pages/MembershipPage';
 import { BottomNav } from './components/navigation/BottomNav';
 import { ToastContainer } from './components/ui';
 
@@ -40,6 +42,8 @@ const AppShell: React.FC = () => {
         <Route path="/battle" element={<BattlePage />} />
         <Route path="/battle-camera" element={<BattleCameraPage />} />
         <Route path="/ranking" element={<RankingPage />} />
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/membership" element={<MembershipPage />} />
         <Route path="/battle-pass" element={<BattlePassPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<HomePage />} />
