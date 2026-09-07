@@ -163,5 +163,6 @@ flutter run
 
 ## 👨‍💻 Tác Giả & Bản Quyền
 - **Repository:** [TomOutfit/EXE_FitnessBattle](https://github.com/TomOutfit/EXE_FitnessBattle)
-- **Quản lý & Phát triển:** [TomOutfit](https://github.com/TomOutfit) & [Teng122](https://github.com/Teng122)
+- **Quản lý & Phát triển:** [TomOutfit](https://github.com/TomOutfit) (Nguyễn Bình An) & [Teng122](https://github.com/Teng122) (Đồng Hoàng Nguyên)
+- **Đồng phát triển dự án:** Nguyễn Nhật Huy, Dư Gia Phú, Lê Minh Sang, Trần Văn Hiếu
 - **Phiên bản:** `v1.0.0 (MVP Release)`
