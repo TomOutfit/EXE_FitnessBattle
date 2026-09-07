@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/models.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -63,15 +64,15 @@ class ChallengePage extends ConsumerWidget {
               child: TabBarView(
                 children: [
                   _ChallengeList(
-                    challenges: challenges.where((c) => c.type.name == 'daily').toList(),
+                    challenges: challenges.where((c) => c.type == ChallengeType.daily).toList(),
                     emptyMessage: 'Không có thử thách hàng ngày',
                   ),
                   _ChallengeList(
-                    challenges: challenges.where((c) => c.type.name == 'weekly').toList(),
+                    challenges: challenges.where((c) => c.type == ChallengeType.weekly).toList(),
                     emptyMessage: 'Không có thử thách tuần này',
                   ),
                   _ChallengeList(
-                    challenges: challenges.where((c) => c.type.name == 'monthly').toList(),
+                    challenges: challenges.where((c) => c.type == ChallengeType.monthly).toList(),
                     emptyMessage: 'Không có thử thách tháng này',
                   ),
                 ],
@@ -85,7 +86,7 @@ class ChallengePage extends ConsumerWidget {
 }
 
 class _ChallengeList extends StatelessWidget {
-  final List challenges;
+  final List<Challenge> challenges;
   final String emptyMessage;
 
   const _ChallengeList({

@@ -1,9 +1,10 @@
 import 'models.dart';
 
+// Current User
 final currentUser = User(
   id: 'user-1',
   name: 'Bạn',
-  avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=You&backgroundColor=b6e3f4',
+  avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You&backgroundColor=b6e3f4',
   level: 12,
   xp: 3450,
   xpToNextLevel: 5000,
@@ -14,14 +15,14 @@ final currentUser = User(
   loseCount: 11,
   heartRate: 0,
   calories: 0,
-  joinDate: '2026-01-15',
+  joinDate: '15/01/2026',
   badges: [
-    Badge(id: 'b1', name: 'Warrior', icon: 'shield', color: '#ff6b35', earned: true),
-    Badge(id: 'b2', name: 'Streak 7', icon: 'flame', color: '#f7c948', earned: true),
+    Badge(id: 'b1', name: 'Chiến Binh', icon: 'shield', color: '#ff6b35', earned: true),
+    Badge(id: 'b2', name: 'Chuỗi 7 Ngày', icon: 'flame', color: '#f7c948', earned: true),
     Badge(id: 'b3', name: 'Top 50', icon: 'trophy', color: '#ffd700', earned: true),
-    Badge(id: 'b4', name: 'Cardio King', icon: 'heart-pulse', color: '#ff4757', earned: true),
-    Badge(id: 'b5', name: 'Social Butterfly', icon: 'users', color: '#5352ed', earned: false),
-    Badge(id: 'b6', name: 'Champion', icon: 'crown', color: '#ff6b81', earned: false),
+    Badge(id: 'b4', name: 'Vua Cardio', icon: 'heart-pulse', color: '#ff4757', earned: true),
+    Badge(id: 'b5', name: 'Giao Lưu', icon: 'users', color: '#5352ed', earned: false),
+    Badge(id: 'b6', name: 'Quán Quân', icon: 'crown', color: '#ff6b81', earned: false),
   ],
   stats: UserStats(
     totalWorkouts: 89,
@@ -39,24 +40,26 @@ final currentUser = User(
   hasBattlePass: true,
   battlePassTier: 14,
   isVIP: false,
-  equippedSkinFrame: '🔮 Neon Frame',
-  equippedTitle: '⚡ Titan Warrior',
+  equippedSkinFrame: 'Khung Neon',
+  equippedTitle: 'Chiến Binh Titan',
 );
 
+// Leaderboard
 final leaderboard = [
-  LeaderboardEntry(oderId: 'u1', oderName: 'Minh Đạt', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=MinhDat&backgroundColor=ffdfbf', level: 28, points: 15200, rank: 1, isVIP: true),
-  LeaderboardEntry(oderId: 'u2', oderName: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=ThuHa&backgroundColor=c0aede', level: 25, points: 13800, rank: 2, isVIP: true),
-  LeaderboardEntry(oderId: 'u3', oderName: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=HoangNam&backgroundColor=b6e3f4', level: 24, points: 12100, rank: 3),
-  LeaderboardEntry(oderId: 'u4', oderName: 'Lan Phương', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=LanPhuong&backgroundColor=ffd5dc', level: 22, points: 10500, rank: 4),
-  LeaderboardEntry(oderId: 'u5', oderName: 'Khoa Phạm', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=KhoaPham&backgroundColor=d1f4e0', level: 20, points: 9400, rank: 5),
-  LeaderboardEntry(oderId: 'u6', oderName: 'Thanh Tùng', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=ThanhTung&backgroundColor=ffdfbf', level: 18, points: 8200, rank: 6),
-  LeaderboardEntry(oderId: 'u7', oderName: 'Mai Anh', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=MaiAnh&backgroundColor=c0aede', level: 17, points: 7600, rank: 7),
-  LeaderboardEntry(oderId: 'u8', oderName: 'Quang Minh', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=QuangMinh&backgroundColor=b6e3f4', level: 16, points: 6900, rank: 8),
-  LeaderboardEntry(oderId: 'u9', oderName: 'Hương Giang', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=huonggiang&backgroundColor=ffd5dc', level: 15, points: 6100, rank: 9),
-  LeaderboardEntry(oderId: 'u10', oderName: 'Việt Hoàng', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=VietHoang&backgroundColor=d1f4e0', level: 14, points: 5500, rank: 10),
-  LeaderboardEntry(oderId: 'user-1', oderName: 'Bạn', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=You&backgroundColor=b6e3f4', level: 12, points: 4820, rank: 47, isCurrentUser: true),
+  LeaderboardEntry(rank: 1, oderId: 'u1', oderName: 'Minh Đạt', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=MinhDat&backgroundColor=ffdfbf', level: 28, points: 15200, isVIP: true),
+  LeaderboardEntry(rank: 2, oderId: 'u2', oderName: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=ThuHa&backgroundColor=c0aede', level: 25, points: 13800, isVIP: true),
+  LeaderboardEntry(rank: 3, oderId: 'u3', oderName: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=HoangNam&backgroundColor=b6e3f4', level: 24, points: 12100),
+  LeaderboardEntry(rank: 4, oderId: 'u4', oderName: 'Lan Phương', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=LanPhuong&backgroundColor=ffd5dc', level: 22, points: 10500),
+  LeaderboardEntry(rank: 5, oderId: 'u5', oderName: 'Khoa Phạm', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=KhoaPham&backgroundColor=d1f4e0', level: 20, points: 9400),
+  LeaderboardEntry(rank: 6, oderId: 'u6', oderName: 'Thanh Tùng', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=ThanhTung&backgroundColor=ffdfbf', level: 18, points: 8200),
+  LeaderboardEntry(rank: 7, oderId: 'u7', oderName: 'Mai Anh', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=MaiAnh&backgroundColor=c0aede', level: 17, points: 7600),
+  LeaderboardEntry(rank: 8, oderId: 'u8', oderName: 'Quang Minh', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=QuangMinh&backgroundColor=b6e3f4', level: 16, points: 6900),
+  LeaderboardEntry(rank: 9, oderId: 'u9', oderName: 'Hương Giang', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=huonggiang&backgroundColor=ffd5dc', level: 15, points: 6100),
+  LeaderboardEntry(rank: 10, oderId: 'u10', oderName: 'Việt Hoàng', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=VietHoang&backgroundColor=d1f4e0', level: 14, points: 5500),
+  LeaderboardEntry(rank: 47, oderId: 'user-1', oderName: 'Bạn', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You&backgroundColor=b6e3f4', level: 12, points: 4820, isCurrentUser: true),
 ];
 
+// Battles
 final battles = [
   Battle(
     id: 'b1',
@@ -64,8 +67,8 @@ final battles = [
     type: BattleType.ranked,
     status: BattleStatus.waiting,
     players: [
-      BattlePlayer(oderId: 'u3', oderName: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=HoangNam&backgroundColor=b6e3f4', score: 0, heartRate: 0, duration: 0, isActive: false),
-      BattlePlayer(oderId: 'u4', oderName: 'Lan Phương', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=LanPhuong&backgroundColor=ffd5dc', score: 0, heartRate: 0, duration: 0, isActive: false),
+      BattlePlayer(oderId: 'u3', oderName: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=HoangNam&backgroundColor=b6e3f4', score: 0, heartRate: 0, duration: 0, isActive: false),
+      BattlePlayer(oderId: 'u4', oderName: 'Lan Phương', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=LanPhuong&backgroundColor=ffd5dc', score: 0, heartRate: 0, duration: 0, isActive: false),
     ],
     duration: 15,
     reward: BattleReward(xp: 500, coins: 200),
@@ -77,16 +80,16 @@ final battles = [
     type: BattleType.friendly,
     status: BattleStatus.active,
     players: [
-      BattlePlayer(oderId: 'user-1', oderName: 'Bạn', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=You&backgroundColor=b6e3f4', score: 0, heartRate: 142, duration: 420, isActive: true),
-      BattlePlayer(oderId: 'u2', oderName: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=ThuHa&backgroundColor=c0aede', score: 0, heartRate: 138, duration: 420, isActive: true),
+      BattlePlayer(oderId: 'user-1', oderName: 'Bạn', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You&backgroundColor=b6e3f4', score: 0, heartRate: 142, duration: 420, isActive: true),
+      BattlePlayer(oderId: 'u2', oderName: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=ThuHa&backgroundColor=c0aede', score: 0, heartRate: 138, duration: 420, isActive: true),
     ],
     duration: 15,
-    startedAt: DateTime.now().subtract(const Duration(minutes: 7)).toIso8601String(),
     reward: BattleReward(xp: 300, coins: 100),
     exerciseType: 'Gym',
   ),
 ];
 
+// Challenges
 final challenges = [
   Challenge(
     id: 'c1',
@@ -109,7 +112,7 @@ final challenges = [
     type: ChallengeType.weekly,
     target: 3000,
     current: 2400,
-    unit: 'calories',
+    unit: 'cal',
     reward: ChallengeReward(xp: 800, coins: 300),
     expiresAt: DateTime.now().add(const Duration(days: 5)).toIso8601String(),
     icon: 'zap',
@@ -119,7 +122,7 @@ final challenges = [
   Challenge(
     id: 'c3',
     title: 'Thắng 10 trận Battle',
-    description: 'Thắng 10 trận Battle trong tháng',
+    description: 'Thắng 10 trận Battle trong tháng này',
     type: ChallengeType.monthly,
     target: 10,
     current: 6,
@@ -132,21 +135,24 @@ final challenges = [
   ),
 ];
 
+// Friends
 final friends = [
-  Friend(id: 'u2', name: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=ThuHa&backgroundColor=c0aede', level: 25, streak: 21, isOnline: true, lastActive: 'now'),
-  Friend(id: 'u3', name: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=HoangNam&backgroundColor=b6e3f4', level: 24, streak: 8, isOnline: true, lastActive: 'now'),
-  Friend(id: 'u4', name: 'Lan Phương', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=LanPhuong&backgroundColor=ffd5dc', level: 22, streak: 15, isOnline: false, lastActive: '2 giờ trước'),
-  Friend(id: 'u5', name: 'Khoa Phạm', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=KhoaPham&backgroundColor=d1f4e0', level: 20, streak: 3, isOnline: false, lastActive: '1 ngày trước'),
+  Friend(id: 'u2', name: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=ThuHa&backgroundColor=c0aede', level: 25, streak: 21, isOnline: true, lastActive: 'Vừa xong'),
+  Friend(id: 'u3', name: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=HoangNam&backgroundColor=b6e3f4', level: 24, streak: 8, isOnline: true, lastActive: 'Vừa xong'),
+  Friend(id: 'u4', name: 'Lan Phương', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=LanPhuong&backgroundColor=ffd5dc', level: 22, streak: 15, isOnline: false, lastActive: '2 giờ trước'),
+  Friend(id: 'u5', name: 'Khoa Phạm', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=KhoaPham&backgroundColor=d1f4e0', level: 20, streak: 3, isOnline: false, lastActive: '1 ngày trước'),
 ];
 
+// Recent Activities
 final recentActivities = [
   ActivitySession(id: 'a1', date: 'Hôm nay, 17:30', duration: 45, calories: 380, heartRate: 142, type: 'Gym', xp: 220),
   ActivitySession(id: 'a2', date: 'Hôm qua, 18:00', duration: 30, calories: 280, heartRate: 155, type: 'HIIT', xp: 180),
-  ActivitySession(id: 'a3', date: '19/7, 07:00', duration: 60, calories: 420, heartRate: 138, type: 'Chạy bộ', xp: 300),
-  ActivitySession(id: 'a4', date: '18/7, 18:30', duration: 40, calories: 320, heartRate: 148, type: 'Gym', xp: 200),
-  ActivitySession(id: 'a5', date: '17/7, 07:15', duration: 55, calories: 490, heartRate: 135, type: 'Đạp xe', xp: 270),
+  ActivitySession(id: 'a3', date: '19/07, 07:00', duration: 60, calories: 420, heartRate: 138, type: 'Chạy bộ', xp: 300),
+  ActivitySession(id: 'a4', date: '18/07, 18:30', duration: 40, calories: 320, heartRate: 148, type: 'Gym', xp: 200),
+  ActivitySession(id: 'a5', date: '17/07, 07:15', duration: 55, calories: 490, heartRate: 135, type: 'Đạp xe', xp: 270),
 ];
 
+// Exercise Types
 final exerciseTypes = [
   ExerciseType(id: 'gym', name: 'Gym', duration: '45-60 phút', color: '#ff6b35'),
   ExerciseType(id: 'run', name: 'Chạy bộ', duration: '20-40 phút', color: '#5352ed'),
@@ -184,9 +190,9 @@ List<BattlePassLevel> _makeLevels() {
 
 final battlePassSeason = BattlePassSeason(
   id: 's1',
-  name: 'Mùa Giải #7 — Cyber Sprint',
-  startDate: '2026-07-01',
-  endDate: '2026-08-01',
+  name: 'Mùa Giải #7 - Cyber Sprint',
+  startDate: '01/07/2026',
+  endDate: '01/08/2026',
   daysRemaining: 12,
   totalLevels: 30,
   currentLevel: 14,
@@ -198,13 +204,15 @@ final battlePassSeason = BattlePassSeason(
   totalPrizes: 60,
 );
 
+// Vouchers
 final vouchers = [
-  Voucher(id: 'v1', partner: 'Phúc Long', partnerLogo: '☕', value: '20K', description: 'Giảm 20K cho đơn từ 60K', expiresAt: DateTime.now().add(const Duration(days: 7)).toIso8601String(), claimed: false),
-  Voucher(id: 'v2', partner: 'Shopee', partnerLogo: '🛒', value: '30K', description: 'Miễn phí vận chuyển ShopeeFood', expiresAt: DateTime.now().add(const Duration(days: 10)).toIso8601String(), claimed: true, claimedAt: '20/7/2026'),
-  Voucher(id: 'v3', partner: 'Tiki', partnerLogo: '🎬', value: '50K', description: 'Giảm 50K cho đơn sách/thể thao', expiresAt: DateTime.now().add(const Duration(days: 5)).toIso8601String(), claimed: false),
-  Voucher(id: 'v4', partner: 'Grab', partnerLogo: '🚗', value: '40K', description: 'Voucher GrabBike 40K', expiresAt: DateTime.now().add(const Duration(days: 14)).toIso8601String(), claimed: false),
+  Voucher(id: 'v1', partner: 'Phúc Long', partnerLogo: 'Coffee', value: '20K', description: 'Giảm 20K cho đơn từ 60K', expiresAt: DateTime.now().add(const Duration(days: 7)).toIso8601String(), claimed: false),
+  Voucher(id: 'v2', partner: 'Shopee', partnerLogo: 'Shop', value: '30K', description: 'Miễn phí vận chuyển ShopeeFood', expiresAt: DateTime.now().add(const Duration(days: 10)).toIso8601String(), claimed: true, claimedAt: '20/07/2026'),
+  Voucher(id: 'v3', partner: 'Tiki', partnerLogo: 'Book', value: '50K', description: 'Giảm 50K cho đơn sách/thể thao', expiresAt: DateTime.now().add(const Duration(days: 5)).toIso8601String(), claimed: false),
+  Voucher(id: 'v4', partner: 'Grab', partnerLogo: 'Car', value: '40K', description: 'Voucher GrabBike 40K', expiresAt: DateTime.now().add(const Duration(days: 14)).toIso8601String(), claimed: false),
 ];
 
+// Premium Arenas
 final premiumArenas = [
   PremiumArena(
     id: 'pa1',
@@ -213,10 +221,10 @@ final premiumArenas = [
     entryRuby: 20,
     prizePool: 1000,
     prizePoolBreakdown: [
-      PrizeBreakdown(position: '🥇 Nhất', reward: '400 Ruby + Tay nghe Bluetooth'),
-      PrizeBreakdown(position: '🥈 Nhì', reward: '250 Ruby + Voucher Tiki 100K'),
-      PrizeBreakdown(position: '🥉 Ba', reward: '150 Ruby + Voucher Phúc Long 50K'),
-      PrizeBreakdown(position: '4️⃣–8️⃣', reward: '50 Ruby mỗi người'),
+      PrizeBreakdown(position: 'Nhất', reward: '400 Ruby + Tai nghe Bluetooth'),
+      PrizeBreakdown(position: 'Nhì', reward: '250 Ruby + Voucher Tiki 100K'),
+      PrizeBreakdown(position: 'Ba', reward: '150 Ruby + Voucher Phúc Long 50K'),
+      PrizeBreakdown(position: 'Top 4-8', reward: '50 Ruby mỗi người'),
     ],
     participants: 64,
     maxParticipants: 64,
@@ -227,14 +235,14 @@ final premiumArenas = [
   PremiumArena(
     id: 'pa2',
     name: 'Giải Đua Sức Bền',
-    description: 'Thách đấu 5 vòng — ai trụ được lâu nhất',
+    description: 'Thách đấu 5 vòng - ai trụ được lâu nhất',
     entryRuby: 10,
     prizePool: 500,
     prizePoolBreakdown: [
-      PrizeBreakdown(position: '🥇 Nhất', reward: '200 Ruby + Giày chạy bộ'),
-      PrizeBreakdown(position: '🥈 Nhì', reward: '120 Ruby + Voucher Shopee 80K'),
-      PrizeBreakdown(position: '🥉 Ba', reward: '80 Ruby'),
-      PrizeBreakdown(position: '4️⃣–8️⃣', reward: '25 Ruby'),
+      PrizeBreakdown(position: 'Nhất', reward: '200 Ruby + Giày chạy bộ'),
+      PrizeBreakdown(position: 'Nhì', reward: '120 Ruby + Voucher Shopee 80K'),
+      PrizeBreakdown(position: 'Ba', reward: '80 Ruby'),
+      PrizeBreakdown(position: 'Top 4-8', reward: '25 Ruby'),
     ],
     participants: 28,
     maxParticipants: 32,
@@ -246,7 +254,7 @@ final premiumArenas = [
   PremiumArena(
     id: 'pa3',
     name: 'Trận Cược Ruby',
-    description: 'Mỗi trận tốn 5 Ruby — thắng ăn 8 Ruby',
+    description: 'Mỗi trận tốn 5 Ruby - thắng ăn 8 Ruby',
     entryRuby: 5,
     prizePool: 0,
     prizePoolBreakdown: [],
@@ -258,12 +266,13 @@ final premiumArenas = [
   ),
 ];
 
+// Skin Items
 final skinItems = [
   SkinItem(id: 'frame_neon', name: 'Khung Neon', type: SkinType.avatar_frame, preview: '🔮', price: 50, rarity: SkinRarity.rare, owned: false, limited: true, season: 'Mùa #7'),
   SkinItem(id: 'frame_dragon', name: 'Khung Rồng Lửa', type: SkinType.avatar_frame, preview: '🐉', price: 150, rarity: SkinRarity.legendary, owned: false, limited: true, season: 'Mùa #7'),
-  SkinItem(id: 'title_titan', name: 'Titan Runner', type: SkinType.title, preview: '⚡', price: 30, rarity: SkinRarity.epic, owned: false),
+  SkinItem(id: 'title_titan', name: 'Chiến Binh Titan', type: SkinType.title, preview: '⚡', price: 30, rarity: SkinRarity.epic, owned: false),
   SkinItem(id: 'effect_firework', name: 'Hiệu ứng Pháo Hoa', type: SkinType.victory_effect, preview: '🎆', price: 80, rarity: SkinRarity.rare, owned: false, limited: true, season: 'Mùa #7'),
-  SkinItem(id: 'effect_3d', name: 'Hiệu ứng 3D Chanh Sả', type: SkinType.victory_effect, preview: '✨', price: 200, rarity: SkinRarity.legendary, owned: false),
-  SkinItem(id: 'badge_titan', name: 'Huy hiệu Titan Runner', type: SkinType.badge, preview: '🏅', price: 100, rarity: SkinRarity.epic, owned: false),
-  SkinItem(id: 'badge_cyber', name: 'Huy hiệu Cyber Speedster', type: SkinType.badge, preview: '👑', price: 120, rarity: SkinRarity.legendary, owned: false, limited: true),
+  SkinItem(id: 'effect_3d', name: 'Hiệu ứng 3D Sang Chảnh', type: SkinType.victory_effect, preview: '✨', price: 200, rarity: SkinRarity.legendary, owned: false),
+  SkinItem(id: 'badge_titan', name: 'Huy hiệu Titan', type: SkinType.badge, preview: '🏅', price: 100, rarity: SkinRarity.epic, owned: false),
+  SkinItem(id: 'badge_cyber', name: 'Huy hiệu Siêu Tốc Cyber', type: SkinType.badge, preview: '⚡', price: 120, rarity: SkinRarity.legendary, owned: false, limited: true),
 ];

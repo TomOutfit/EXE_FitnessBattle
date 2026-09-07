@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/models.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -13,6 +15,8 @@ class HomePage extends ConsumerWidget {
     final battles = ref.watch(battlesProvider);
     final challenges = ref.watch(challengesProvider);
     final activities = ref.watch(activitiesProvider);
+    final exerciseStats = ref.watch(userExerciseStatsProvider);
+    final dailyGoals = ref.watch(dailyExerciseGoalsProvider);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -163,6 +167,128 @@ class HomePage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
+            // Exercise Quick Access
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '💪 Tập Luyện Hôm Nay',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => context.go('/exercise'),
+                  child: const Text('Xem tất cả', style: TextStyle(color: AppColors.primary)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _ExerciseQuickCard(
+                    emoji: '💪',
+                    name: 'Hít Đất',
+                    progress: dailyGoals.pushupProgress,
+                    current: dailyGoals.pushupCompleted,
+                    target: dailyGoals.pushupTarget,
+                    color: const Color(0xFFFF6b35),
+                    onTap: () => context.go('/exercise'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ExerciseQuickCard(
+                    emoji: '🏋️',
+                    name: 'Kéo Xà',
+                    progress: dailyGoals.pullupProgress,
+                    current: dailyGoals.pullupCompleted,
+                    target: dailyGoals.pullupTarget,
+                    color: const Color(0xFF5352ed),
+                    onTap: () => context.go('/exercise'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ExerciseQuickCard(
+                    emoji: '🚶',
+                    name: 'Đi Bộ',
+                    progress: dailyGoals.walkingProgress,
+                    current: dailyGoals.walkingCompleted,
+                    target: dailyGoals.walkingTarget,
+                    color: const Color(0xFF2ed573),
+                    onTap: () => context.go('/exercise'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Exercise Stats Summary
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '📊 Thống kê tuần này',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${exerciseStats.weeklyPushups.reduce((a, b) => a + b)} lần hít đất',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        Text(
+                          '${exerciseStats.weeklyPullups.reduce((a, b) => a + b)} lần kéo xà',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.local_fire_department, color: Colors.white, size: 24),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${exerciseStats.currentStreak}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const Text(
+                          'Streak',
+                          style: TextStyle(color: Colors.white70, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Active Battles
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -186,9 +312,9 @@ class HomePage extends ConsumerWidget {
               height: 140,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: battles.where((b) => b.status.name == 'active').length,
+                itemCount: battles.where((b) => b.status == BattleStatus.active).length,
                 itemBuilder: (context, index) {
-                  final battle = battles.where((b) => b.status.name == 'active').toList()[index];
+                  final battle = battles.where((b) => b.status == BattleStatus.active).toList()[index];
                   return Container(
                     width: 280,
                     margin: const EdgeInsets.only(right: 12),
@@ -394,6 +520,92 @@ class HomePage extends ConsumerWidget {
                 ),
               ),
             )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExerciseQuickCard extends StatelessWidget {
+  final String emoji;
+  final String name;
+  final double progress;
+  final int current;
+  final int target;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ExerciseQuickCard({
+    required this.emoji,
+    required this.name,
+    required this.progress,
+    required this.current,
+    required this.target,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: color.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 24)),
+            const SizedBox(height: 4),
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$current',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(
+              '/$target',
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: progress,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

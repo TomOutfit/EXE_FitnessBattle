@@ -59,7 +59,7 @@ class GradientButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: (gradient as LinearGradient).colors.first.withValues(alpha: 0.4),
+            color: (gradient is LinearGradient ? gradient.colors.first : AppColors.primary).withValues(alpha: 0.4),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -145,38 +145,30 @@ class AvatarWidget extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        color: AppColors.surfaceLight,
         border: showBorder
             ? Border.all(color: borderColor ?? AppColors.primary, width: 3)
             : null,
       ),
       child: ClipOval(
-        child: Image.network(
-          avatarUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(
               color: AppColors.surfaceLight,
               child: Icon(
                 Icons.person,
                 size: size * 0.6,
                 color: AppColors.textSecondary,
               ),
-            );
-          },
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              color: AppColors.surfaceLight,
-              child: Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppColors.primary.withValues(alpha: 0.7),
-                  ),
-                ),
+            ),
+            if (avatarUrl.isNotEmpty)
+              Image.network(
+                avatarUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
               ),
-            );
-          },
+          ],
         ),
       ),
     );
@@ -214,7 +206,7 @@ class StatBadge extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w500,
             color: AppColors.textSecondary,

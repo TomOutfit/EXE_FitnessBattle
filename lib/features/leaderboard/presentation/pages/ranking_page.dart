@@ -81,8 +81,8 @@ class RankingPage extends ConsumerWidget {
 
             // Top 3
             Container(
-              height: 160,
-              padding: const EdgeInsets.all(16),
+              height: 220,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -92,7 +92,7 @@ class RankingPage extends ConsumerWidget {
                     _TopThreeCard(
                       entry: leaderboard[1],
                       rank: 2,
-                      height: 120,
+                      height: 70,
                       color: const Color(0xFFC0C0C0),
                     ),
                   const SizedBox(width: 8),
@@ -100,7 +100,7 @@ class RankingPage extends ConsumerWidget {
                   _TopThreeCard(
                     entry: leaderboard[0],
                     rank: 1,
-                    height: 140,
+                    height: 95,
                     color: const Color(0xFFFFD700),
                   ),
                   const SizedBox(width: 8),
@@ -109,7 +109,7 @@ class RankingPage extends ConsumerWidget {
                     _TopThreeCard(
                       entry: leaderboard[2],
                       rank: 3,
-                      height: 100,
+                      height: 50,
                       color: const Color(0xFFCD7F32),
                     ),
                 ],
@@ -246,42 +246,37 @@ class _TopThreeCard extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: color, width: 3),
-            color: AppColors.surface,
-          ),
-          child: ClipOval(
-            child: Image.network(
-              entry.avatar,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Icon(Icons.person, color: color),
-            ),
-          ),
+        AvatarWidget(
+          avatarUrl: entry.avatar,
+          size: 52,
+          showBorder: true,
+          borderColor: color,
         ),
         const SizedBox(height: 4),
-        Text(
-          entry.oderName,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+        SizedBox(
+          width: 80,
+          child: Text(
+            entry.oderName,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          overflow: TextOverflow.ellipsis,
         ),
         Text(
-          '${entry.points} pts',
+          '${entry.points} điểm',
           style: const TextStyle(
             fontSize: 11,
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Container(
-          width: 70,
+          width: 80,
           height: height,
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -296,12 +291,13 @@ class _TopThreeCard extends StatelessWidget {
             children: [
               Text(
                 _getRankEmoji(rank),
-                style: const TextStyle(fontSize: 28),
+                style: const TextStyle(fontSize: 22),
               ),
               Text(
                 '#$rank',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
+                  fontSize: 13,
                   color: color.computeLuminance() > 0.5 
                       ? Colors.black 
                       : Colors.white,

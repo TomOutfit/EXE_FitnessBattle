@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -335,7 +336,14 @@ class ProfilePage extends ConsumerWidget {
                     icon: Icons.shopping_bag,
                     title: 'Cửa hàng',
                     subtitle: 'Skin & Items',
-                    onTap: () {},
+                    onTap: () => context.go('/shop'),
+                  ),
+                  const Divider(color: AppColors.surfaceLight, height: 1),
+                  _MenuItem(
+                    icon: Icons.workspace_premium,
+                    title: 'Membership',
+                    subtitle: 'Nâng cấp tài khoản',
+                    onTap: () => context.go('/membership'),
                   ),
                   const Divider(color: AppColors.surfaceLight, height: 1),
                   _MenuItem(

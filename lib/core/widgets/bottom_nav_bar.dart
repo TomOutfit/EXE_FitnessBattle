@@ -39,7 +39,7 @@ class BottomNavBar extends ConsumerWidget {
               ),
               _NavItem(
                 icon: Icons.emoji_events_rounded,
-                label: 'Battle',
+                label: 'Thi đấu',
                 isSelected: currentIndex == 1,
                 onTap: () {
                   ref.read(selectedIndexProvider.notifier).state = 1;
@@ -57,7 +57,7 @@ class BottomNavBar extends ConsumerWidget {
               ),
               _NavItem(
                 icon: Icons.leaderboard_rounded,
-                label: 'BXH',
+                label: 'Bảng xếp hạng',
                 isSelected: currentIndex == 3,
                 onTap: () {
                   ref.read(selectedIndexProvider.notifier).state = 3;

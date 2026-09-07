@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/models.dart';
+import '../../../../core/models_exercise.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -24,7 +27,7 @@ class BattlePage extends ConsumerWidget {
               child: Row(
                 children: [
                   const Text(
-                    '⚔️ Battle Arena',
+                    '⚔️ Đấu Trường',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -101,7 +104,7 @@ class BattlePage extends ConsumerWidget {
 }
 
 class _BattlesTab extends StatelessWidget {
-  final List battles;
+  final List<Battle> battles;
 
   const _BattlesTab({required this.battles});
 
@@ -110,6 +113,79 @@ class _BattlesTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Start Battle Button - Opens camera battle screen
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            gradient: AppColors.battleGradient,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _showBattleStartDialog(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.sports_mma, color: Colors.white, size: 32),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '⚔️ BẮT ĐẦU ĐẤU CAMERA',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Mở camera 2 người chơi',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
         // Quick Battle Section
         const Text(
           '⚡ Tạo trận nhanh',
@@ -124,10 +200,10 @@ class _BattlesTab extends StatelessWidget {
           children: [
             Expanded(
               child: GradientButton(
-                text: 'Ranked',
+                text: 'Xếp hạng',
                 icon: Icons.military_tech,
                 gradient: AppColors.primaryGradient,
-                onPressed: () {},
+                onPressed: () => _showBattleStartDialog(context),
               ),
             ),
             const SizedBox(width: 12),
@@ -135,8 +211,12 @@ class _BattlesTab extends StatelessWidget {
               child: GradientButton(
                 text: 'Giao hữu',
                 icon: Icons.handshake,
-                gradient: AppColors.secondary.withAlpha(200) as LinearGradient,
-                onPressed: () {},
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF5352ED), Color(0xFF7070FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                onPressed: () => _showBattleStartDialog(context),
               ),
             ),
           ],
@@ -165,15 +245,15 @@ class _BattlesTab extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _getBattleTypeColor(battle.type.name).withValues(alpha: 0.2),
+                        color: _getBattleTypeColor(battle.type).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        _getBattleTypeName(battle.type.name),
+                        _getBattleTypeName(battle.type),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: _getBattleTypeColor(battle.type.name),
+                          color: _getBattleTypeColor(battle.type),
                         ),
                       ),
                     ),
@@ -181,17 +261,17 @@ class _BattlesTab extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: battle.status.name == 'active' 
+                        color: battle.status == BattleStatus.active
                             ? AppColors.success.withValues(alpha: 0.2)
                             : AppColors.warning.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        battle.status.name == 'active' ? 'ĐANG CHƠI' : 'CHỜ',
+                        battle.status == BattleStatus.active ? 'ĐANG CHƠI' : 'CHỜ',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: battle.status.name == 'active' 
+                          color: battle.status == BattleStatus.active 
                               ? AppColors.success
                               : AppColors.warning,
                         ),
@@ -249,7 +329,7 @@ class _BattlesTab extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (battle.status.name == 'waiting')
+                    if (battle.status == BattleStatus.waiting)
                       const GradientButton(
                         text: 'Tham gia',
                         gradient: AppColors.primaryGradient,
@@ -264,35 +344,52 @@ class _BattlesTab extends StatelessWidget {
     );
   }
 
-  Color _getBattleTypeColor(String type) {
+  void _showBattleStartDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _BattleStartSheet(
+        onStartBattle: (exerciseType) {
+          Navigator.pop(context);
+          context.push('/battle-camera?type=${exerciseType.id}');
+        },
+      ),
+    );
+  }
+
+  Color _getBattleTypeColor(BattleType type) {
     switch (type) {
-      case 'ranked':
+      case BattleType.ranked:
         return AppColors.primary;
-      case 'friendly':
+      case BattleType.friendly:
         return AppColors.secondary;
-      case 'challenge':
+      case BattleType.challenge:
         return AppColors.warning;
       default:
         return AppColors.textMuted;
     }
   }
 
-  String _getBattleTypeName(String type) {
+  String _getBattleTypeName(BattleType type) {
     switch (type) {
-      case 'ranked':
-        return 'RANKED';
-      case 'friendly':
+      case BattleType.ranked:
+        return 'XẾP HẠNG';
+      case BattleType.friendly:
         return 'GIAO HỮU';
-      case 'challenge':
+      case BattleType.challenge:
         return 'THÁCH ĐẤU';
-      default:
-        return type.toUpperCase();
+      case BattleType.ruby_stake:
+        return 'CƯỢC RUBY';
+      case BattleType.titan:
+        return 'TITAN';
+      case BattleType.brand_spot:
+        return 'ĐỐI TÁC';
     }
   }
 }
 
 class _PremiumArenasTab extends StatelessWidget {
-  final List arenas;
+  final List<PremiumArena> arenas;
 
   const _PremiumArenasTab({required this.arenas});
 
@@ -313,7 +410,7 @@ class _PremiumArenasTab extends StatelessWidget {
         ...arenas.map((arena) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: AppCard(
-            gradient: arena.status.name == 'live' 
+            gradient: arena.status == ArenaStatus.live 
                 ? AppColors.battleGradient 
                 : null,
             onTap: () {},
@@ -352,15 +449,15 @@ class _PremiumArenasTab extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: _getArenaStatusColor(arena.status.name).withValues(alpha: 0.2),
+                        color: _getArenaStatusColor(arena.status).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        _getArenaStatusName(arena.status.name),
+                        _getArenaStatusName(arena.status),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: _getArenaStatusColor(arena.status.name),
+                          color: _getArenaStatusColor(arena.status),
                         ),
                       ),
                     ),
@@ -438,29 +535,29 @@ class _PremiumArenasTab extends StatelessWidget {
     );
   }
 
-  Color _getArenaStatusColor(String status) {
+  Color _getArenaStatusColor(ArenaStatus status) {
     switch (status) {
-      case 'open':
+      case ArenaStatus.open:
         return AppColors.success;
-      case 'countdown':
+      case ArenaStatus.countdown:
         return AppColors.warning;
-      case 'live':
+      case ArenaStatus.live:
         return AppColors.error;
-      default:
+      case ArenaStatus.finished:
         return AppColors.textMuted;
     }
   }
 
-  String _getArenaStatusName(String status) {
+  String _getArenaStatusName(ArenaStatus status) {
     switch (status) {
-      case 'open':
+      case ArenaStatus.open:
         return 'MỞ';
-      case 'countdown':
+      case ArenaStatus.countdown:
         return 'SẮP BẮT ĐẦU';
-      case 'live':
+      case ArenaStatus.live:
         return 'ĐANG DIỄN RA';
-      default:
-        return status.toUpperCase();
+      case ArenaStatus.finished:
+        return 'KẾT THÚC';
     }
   }
 }
@@ -494,6 +591,239 @@ class _HistoryTab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Bottom sheet for selecting exercise type before starting battle
+class _BattleStartSheet extends StatelessWidget {
+  final Function(ExerciseTypeEnum) onStartBattle;
+
+  const _BattleStartSheet({required this.onStartBattle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.textMuted,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                const Text(
+                  '⚔️ CHỌN BÀI TẬP ĐẤU',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Chọn bài tập để bắt đầu trận đấu camera',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Exercise Options
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                // Push-up Option
+                _ExerciseBattleOption(
+                  exerciseType: ExerciseTypeEnum.pushup,
+                  description: 'Hít đất • Đối thủ bên phải',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6b35), Color(0xFFFF8E53)],
+                  ),
+                  onTap: () => onStartBattle(ExerciseTypeEnum.pushup),
+                ),
+                const SizedBox(height: 12),
+                
+                // Pull-up Option
+                _ExerciseBattleOption(
+                  exerciseType: ExerciseTypeEnum.pullup,
+                  description: 'Kéo xà • Đối thủ bên phải',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF5352ed), Color(0xFF7070FF)],
+                  ),
+                  onTap: () => onStartBattle(ExerciseTypeEnum.pullup),
+                ),
+                const SizedBox(height: 12),
+                
+                // Squat Option
+                _ExerciseBattleOption(
+                  exerciseType: ExerciseTypeEnum.squat,
+                  description: 'Squat • Đối thủ bên phải',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFffa502), Color(0xFFFFBE3D)],
+                  ),
+                  onTap: () => onStartBattle(ExerciseTypeEnum.squat),
+                ),
+              ],
+            ),
+          ),
+          
+          // Info section
+          Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Camera bên trái là bạn, bên phải là đối thủ.\nKết nối 2 thiết bị để chơi cùng nhau!',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Cancel button
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExerciseBattleOption extends StatelessWidget {
+  final ExerciseTypeEnum exerciseType;
+  final String description;
+  final Gradient gradient;
+  final VoidCallback onTap;
+
+  const _ExerciseBattleOption({
+    required this.exerciseType,
+    required this.description,
+    required this.gradient,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: (gradient as LinearGradient).colors.first.withValues(alpha: 0.4),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      exerciseType.emoji,
+                      style: const TextStyle(fontSize: 28),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        exerciseType.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.play_arrow, color: Colors.white, size: 24),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
