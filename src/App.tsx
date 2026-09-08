@@ -9,6 +9,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { WelcomePage } from './pages/WelcomePage';
 import { ExerciseTrackPage } from './pages/ExerciseTrackPage';
 import { ExerciseCameraPage } from './pages/ExerciseCameraPage';
+import { GPSWalkingPage } from './pages/GPSWalkingPage';
 import { BattleCameraPage } from './pages/BattleCameraPage';
 import { RankingPage } from './pages/RankingPage';
 import { ShopPage } from './pages/ShopPage';
@@ -38,6 +39,8 @@ const AppShell: React.FC = () => {
         <Route path="/" element={isOnboarded ? <HomePage /> : <WelcomePage />} />
         <Route path="/exercise" element={<ExerciseTrackPage />} />
         <Route path="/exercise-camera" element={<ExerciseCameraPage />} />
+        <Route path="/gps-walking" element={<GPSWalkingPage />} />
+        <Route path="/walking-tracker" element={<GPSWalkingPage />} />
         <Route path="/challenge" element={isOnboarded ? <ChallengePage /> : <WelcomePage />} />
         <Route path="/battle" element={<BattlePage />} />
         <Route path="/battle-camera" element={<BattleCameraPage />} />

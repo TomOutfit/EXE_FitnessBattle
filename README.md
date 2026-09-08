@@ -80,6 +80,7 @@ graph TB
 | Phân Hệ | Mô Tả Tính Năng | Điểm Nổi Bật |
 |---|---|---|
 | **🏋️ AI Workout Tracker** | Theo dõi các bài tập **Hít Đất (Push-up)**, **Kéo Xà (Pull-up)** và **Đi Bộ (Walking)** | Tự động phân tích góc khớp khuỷu/vai, tính % chuẩn form, phát hiện gian lận. |
+| **🛰️ GPS & Mobile Pedometer** | Theo dõi Đi bộ / Chạy bộ Real-time ngoài trời & trong nhà | Geolocation GPS độ chính xác cao, cảm biến gia tốc nhận diện bước chân, vẽ bản đồ radar lộ trình live, cảnh báo xe máy >25km/h. |
 | **⚔️ Battle Arena 1v1** | Phòng thi đấu 60 giây đối kháng trực tiếp | Chia đôi camera so tài trực tiếp, tính điểm realtime, tiền cược Ruby & quà thưởng. |
 | **🎯 Nhiệm Vụ & Thử Thách** | Nhiệm vụ Hàng ngày, Tuần và Sự kiện Mùa | Nhận thưởng tức thì (+XP, +Coins, +Ruby) và tự động ghi nhận vào lịch sử. |
 | **🛍️ Cửa Hàng Vật Phẩm** | Mua sắm khung avatar, danh hiệu độc quyền, hiệu ứng chiến thắng | Trừ tiền tương tác thực, lưu trữ danh sách vật phẩm đã sở hữu. |

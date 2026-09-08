@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { Flame, Camera, Swords, RefreshCw, Plus, ChevronRight, X } from 'lucide-react';
+import { Flame, Camera, Swords, RefreshCw, Plus, ChevronRight, X, Navigation, Footprints, Smartphone, ShieldCheck } from 'lucide-react';
 
 export const ExerciseTrackPage: React.FC = () => {
   const navigate = useNavigate();
@@ -540,6 +540,107 @@ export const ExerciseTrackPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Primary GPS & Realtime Step Tracking CTA Button */}
+          <button
+            onClick={() => navigate('/gps-walking')}
+            style={{
+              background: 'linear-gradient(135deg, #2ED573 0%, #7BED9F 100%)',
+              border: 'none',
+              borderRadius: 16,
+              padding: 16,
+              color: '#0A0C14',
+              fontWeight: 800,
+              fontSize: 16,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              boxShadow: '0 6px 22px rgba(46, 213, 115, 0.4)',
+              letterSpacing: 0.3
+            }}
+          >
+            <Footprints size={22} color="#0A0C14" />
+            BẮT ĐẦU ĐI BỘ (GPS & BƯỚC CHÂN REALTIME)
+          </button>
+
+          {/* GPS Outdoor & Indoor Sensor Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div
+              onClick={() => navigate('/gps-walking')}
+              style={{
+                background: '#1A1A2E',
+                borderRadius: 16,
+                padding: 14,
+                border: '1px solid #25253D',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(46, 213, 115, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Navigation size={18} color="#2ED573" />
+                </div>
+                <span style={{ fontSize: 10, color: '#2ED573', fontWeight: 700, background: 'rgba(46, 213, 115, 0.1)', padding: '2px 6px', borderRadius: 6 }}>
+                  Vệ tinh
+                </span>
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF' }}>GPS Ngoài trời</div>
+                <div style={{ fontSize: 11, color: '#B0B0C3', marginTop: 2 }}>Đo quãng đường, pace & bản đồ lộ trình live</div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => navigate('/gps-walking')}
+              style={{
+                background: '#1A1A2E',
+                borderRadius: 16,
+                padding: 14,
+                border: '1px solid #25253D',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255, 107, 53, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Smartphone size={18} color="#FF6B35" />
+                </div>
+                <span style={{ fontSize: 10, color: '#FF6B35', fontWeight: 700, background: 'rgba(255, 107, 53, 0.1)', padding: '2px 6px', borderRadius: 6 }}>
+                  Sensor
+                </span>
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF' }}>Pedometer Mobile</div>
+                <div style={{ fontSize: 11, color: '#B0B0C3', marginTop: 2 }}>Cảm biến gia tốc đếm bước chân khi cầm máy</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Anti-cheat verification badge */}
+          <div
+            style={{
+              padding: '12px 14px',
+              background: 'rgba(46, 213, 115, 0.08)',
+              border: '1px solid rgba(46, 213, 115, 0.2)',
+              borderRadius: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10
+            }}
+          >
+            <ShieldCheck size={20} color="#2ED573" />
+            <div style={{ fontSize: 12, color: '#B0B0C3' }}>
+              🛡️ <strong style={{ color: '#FFFFFF' }}>Dual Anti-Cheat GPS:</strong> Tự động lọc rung lắc và chặn gian lận xe máy (&gt;25km/h).
+            </div>
+          </div>
+
           {/* Sync & Manual Entry Buttons */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <button
@@ -548,7 +649,7 @@ export const ExerciseTrackPage: React.FC = () => {
                 background: '#1A1A2E',
                 border: '1px solid #25253D',
                 borderRadius: 16,
-                padding: 16,
+                padding: 14,
                 color: '#FFFFFF',
                 fontWeight: 600,
                 fontSize: 13,
@@ -556,10 +657,10 @@ export const ExerciseTrackPage: React.FC = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 8
+                gap: 6
               }}
             >
-              <RefreshCw size={22} color="#2ED573" />
+              <RefreshCw size={20} color="#2ED573" />
               Đồng bộ Health
             </button>
 
@@ -569,7 +670,7 @@ export const ExerciseTrackPage: React.FC = () => {
                 background: '#1A1A2E',
                 border: '1px solid #25253D',
                 borderRadius: 16,
-                padding: 16,
+                padding: 14,
                 color: '#FFFFFF',
                 fontWeight: 600,
                 fontSize: 13,
@@ -577,11 +678,11 @@ export const ExerciseTrackPage: React.FC = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: 8
+                gap: 6
               }}
             >
-              <Plus size={22} color="#FF6B35" />
-              Nhập bước chân
+              <Plus size={20} color="#FF6B35" />
+              Nhập bước thủ công
             </button>
           </div>
         </div>
