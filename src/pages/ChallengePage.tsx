@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { challenges } from '../data/mockData';
-import { Flame, Zap, Swords, Trophy, CheckCircle, Clock, Gift, Coins } from 'lucide-react';
+import { useUser } from '../context/UserContext';
+import { Flame, Zap, Swords, Trophy, CheckCircle, Clock, Gift, Coins, Check } from 'lucide-react';
 
 export const ChallengePage: React.FC = () => {
+  const { challenges, claimChallenge } = useUser();
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
   const filteredChallenges = challenges.filter(c => c.type === activeTab);
@@ -188,38 +189,76 @@ export const ChallengePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Bottom Rewards & Time */}
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Gift size={16} color="#F7C948" />
-                    <span style={{ fontSize: 12, fontWeight: 500, color: '#FF6B35' }}>
-                      +{challenge.reward.xp} XP
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 12 }}>
-                    <Coins size={16} color="#F7C948" />
-                    <span style={{ fontSize: 12, fontWeight: 500, color: '#F7C948' }}>
-                      +{challenge.reward.coins} Coins
-                    </span>
-                  </div>
-
-                  <div style={{ marginLeft: 'auto' }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        background: '#25253D',
-                        padding: '4px 10px',
-                        borderRadius: 12
-                      }}
-                    >
-                      <Clock size={14} color="#6B6B80" />
-                      <span style={{ fontSize: 11, color: '#6B6B80' }}>
-                        {getTimeRemaining(challenge.expiresAt)}
+                {/* Bottom Rewards & Action */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Gift size={16} color="#F7C948" />
+                      <span style={{ fontSize: 12, fontWeight: 500, color: '#FF6B35' }}>
+                        +{challenge.reward.xp} XP
                       </span>
                     </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Coins size={16} color="#F7C948" />
+                      <span style={{ fontSize: 12, fontWeight: 500, color: '#F7C948' }}>
+                        +{challenge.reward.coins} Coins
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {challenge.completed ? (
+                      challenge.claimed ? (
+                        <div
+                          style={{
+                            background: '#25253D',
+                            color: '#6B6B80',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            padding: '6px 12px',
+                            borderRadius: 10,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <Check size={14} /> Đã nhận
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => claimChallenge(challenge.id)}
+                          style={{
+                            background: 'linear-gradient(135deg, #2ED573 0%, #7BED9F 100%)',
+                            border: 'none',
+                            color: '#000000',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            padding: '6px 14px',
+                            borderRadius: 10,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Nhận thưởng
+                        </button>
+                      )
+                    ) : (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          background: '#25253D',
+                          padding: '4px 10px',
+                          borderRadius: 12
+                        }}
+                      >
+                        <Clock size={14} color="#6B6B80" />
+                        <span style={{ fontSize: 11, color: '#6B6B80' }}>
+                          {getTimeRemaining(challenge.expiresAt)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

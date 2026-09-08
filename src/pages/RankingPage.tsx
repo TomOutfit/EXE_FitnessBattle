@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
-import { leaderboard } from '../data/mockData';
 import { Trophy } from 'lucide-react';
 
 export const RankingPage: React.FC = () => {
-  const { user } = useUser();
+  const { user, leaderboard } = useUser();
   const [activeTab, setActiveTab] = useState<'season' | 'weekly'>('season');
 
   const top1 = leaderboard[0];

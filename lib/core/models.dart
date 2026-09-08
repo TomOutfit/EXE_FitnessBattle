@@ -188,6 +188,42 @@ class Battle {
     this.brandPartner,
     this.spectatorCount,
   });
+
+  Battle copyWith({
+    String? id,
+    String? title,
+    BattleType? type,
+    BattleStatus? status,
+    List<BattlePlayer>? players,
+    int? duration,
+    String? startedAt,
+    String? endedAt,
+    BattleReward? reward,
+    String? exerciseType,
+    ArenaType? arenaType,
+    int? rubyStake,
+    int? staminaCost,
+    BrandPartner? brandPartner,
+    int? spectatorCount,
+  }) {
+    return Battle(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      players: players ?? this.players,
+      duration: duration ?? this.duration,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      reward: reward ?? this.reward,
+      exerciseType: exerciseType ?? this.exerciseType,
+      arenaType: arenaType ?? this.arenaType,
+      rubyStake: rubyStake ?? this.rubyStake,
+      staminaCost: staminaCost ?? this.staminaCost,
+      brandPartner: brandPartner ?? this.brandPartner,
+      spectatorCount: spectatorCount ?? this.spectatorCount,
+    );
+  }
 }
 
 enum BattleType { ranked, friendly, challenge, ruby_stake, titan, brand_spot }
@@ -273,6 +309,36 @@ class Challenge {
     required this.color,
     required this.completed,
   });
+
+  Challenge copyWith({
+    String? id,
+    String? title,
+    String? description,
+    ChallengeType? type,
+    int? target,
+    int? current,
+    String? unit,
+    ChallengeReward? reward,
+    String? expiresAt,
+    String? icon,
+    String? color,
+    bool? completed,
+  }) {
+    return Challenge(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      type: type ?? this.type,
+      target: target ?? this.target,
+      current: current ?? this.current,
+      unit: unit ?? this.unit,
+      reward: reward ?? this.reward,
+      expiresAt: expiresAt ?? this.expiresAt,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+      completed: completed ?? this.completed,
+    );
+  }
 }
 
 enum ChallengeType { daily, weekly, monthly, special }
@@ -310,6 +376,28 @@ class LeaderboardEntry {
     this.isCurrentUser,
     this.isVIP,
   });
+
+  LeaderboardEntry copyWith({
+    int? rank,
+    String? oderId,
+    String? oderName,
+    String? avatar,
+    int? level,
+    int? points,
+    bool? isCurrentUser,
+    bool? isVIP,
+  }) {
+    return LeaderboardEntry(
+      rank: rank ?? this.rank,
+      oderId: oderId ?? this.oderId,
+      oderName: oderName ?? this.oderName,
+      avatar: avatar ?? this.avatar,
+      level: level ?? this.level,
+      points: points ?? this.points,
+      isCurrentUser: isCurrentUser ?? this.isCurrentUser,
+      isVIP: isVIP ?? this.isVIP,
+    );
+  }
 }
 
 // Activity Models
@@ -525,6 +613,30 @@ class SkinItem {
     this.limited,
     this.season,
   });
+
+  SkinItem copyWith({
+    String? id,
+    String? name,
+    SkinType? type,
+    String? preview,
+    int? price,
+    SkinRarity? rarity,
+    bool? owned,
+    bool? limited,
+    String? season,
+  }) {
+    return SkinItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      preview: preview ?? this.preview,
+      price: price ?? this.price,
+      rarity: rarity ?? this.rarity,
+      owned: owned ?? this.owned,
+      limited: limited ?? this.limited,
+      season: season ?? this.season,
+    );
+  }
 }
 
 enum SkinType { avatar_frame, victory_effect, title, badge }

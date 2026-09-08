@@ -103,13 +103,13 @@ class BattlePage extends ConsumerWidget {
   }
 }
 
-class _BattlesTab extends StatelessWidget {
+class _BattlesTab extends ConsumerWidget {
   final List<Battle> battles;
 
   const _BattlesTab({required this.battles});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -330,9 +330,14 @@ class _BattlesTab extends StatelessWidget {
                       ),
                     ),
                     if (battle.status == BattleStatus.waiting)
-                      const GradientButton(
+                      GradientButton(
                         text: 'Tham gia',
                         gradient: AppColors.primaryGradient,
+                        onPressed: () {
+                          final user = ref.read(userProvider);
+                          ref.read(battlesProvider.notifier).joinBattle(battle.id, user);
+                          context.push('/battle-camera?type=pushup');
+                        },
                       ),
                   ],
                 ),

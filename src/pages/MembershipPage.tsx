@@ -3,7 +3,7 @@ import { useUser } from '../context/UserContext';
 import { Check, CheckCircle, X, Sparkles, Percent, RefreshCw } from 'lucide-react';
 
 interface PlanDetail {
-  id: string;
+  id: 'basic' | 'premium' | 'vip';
   name: string;
   emoji: string;
   durationDays: number;
@@ -16,7 +16,7 @@ interface PlanDetail {
 }
 
 export const MembershipPage: React.FC = () => {
-  const { user, upgradeToVIP, showToast } = useUser();
+  const { membership, upgradeMembership } = useUser();
   const [selectedPlan, setSelectedPlan] = useState<PlanDetail | null>(null);
 
   const plans: PlanDetail[] = [
@@ -80,10 +80,11 @@ export const MembershipPage: React.FC = () => {
   ];
 
   const handleSubscribe = (plan: PlanDetail) => {
-    upgradeToVIP();
+    upgradeMembership(plan.id);
     setSelectedPlan(null);
-    showToast?.(`Chúc mừng bạn đã nâng cấp gói ${plan.name} thành công!`, 'success');
   };
+
+  const isCurrentTier = (tier: string) => membership.tier === tier;
 
   return (
     <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
@@ -97,21 +98,21 @@ export const MembershipPage: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            background: user.isVIP ? 'rgba(243, 156, 18, 0.2)' : '#1A1A2E',
+            background: membership.tier !== 'free' ? 'rgba(243, 156, 18, 0.2)' : '#1A1A2E',
             padding: '6px 12px',
             borderRadius: 20,
-            border: user.isVIP ? '1px solid #F39C12' : '1px solid #25253D'
+            border: membership.tier !== 'free' ? '1px solid #F39C12' : '1px solid #25253D'
           }}
         >
-          <span style={{ fontSize: 16 }}>{user.isVIP ? '👑' : '🌱'}</span>
-          <span style={{ fontWeight: 600, color: user.isVIP ? '#F39C12' : '#B0B0C3', fontSize: 13 }}>
-            {user.isVIP ? 'VIP Member' : 'Free Member'}
+          <span style={{ fontSize: 16 }}>{membership.tier === 'vip' ? '👑' : membership.tier === 'premium' ? '🥈' : membership.tier === 'basic' ? '🥉' : '🌱'}</span>
+          <span style={{ fontWeight: 600, color: membership.tier !== 'free' ? '#F39C12' : '#B0B0C3', fontSize: 13 }}>
+            {membership.tier.toUpperCase()} Member
           </span>
         </div>
       </div>
 
       {/* Current Membership Status Banner */}
-      {user.isVIP ? (
+      {membership.tier !== 'free' ? (
         <div
           style={{
             background: 'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
@@ -136,12 +137,12 @@ export const MembershipPage: React.FC = () => {
                 marginRight: 16
               }}
             >
-              👑
+              {membership.tier === 'vip' ? '👑' : membership.tier === 'premium' ? '🥈' : '🥉'}
             </div>
             <div>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>VIP Member</div>
+              <div style={{ fontSize: 22, fontWeight: 700 }}>{membership.tier.toUpperCase()} Member</div>
               <div style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.85)', marginTop: 2 }}>
-                Hết hạn: 31/12/2026
+                Hết hạn: {membership.expiryDate || '31/12/2026'}
               </div>
             </div>
           </div>
@@ -159,19 +160,19 @@ export const MembershipPage: React.FC = () => {
           >
             <div>
               <Sparkles size={18} style={{ margin: '0 auto 4px' }} />
-              <div style={{ fontSize: 16, fontWeight: 700 }}>+35%</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>+{membership.dailyBonusPercent}%</div>
               <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.8)' }}>Bonus Điểm</div>
             </div>
             <div style={{ width: 1, height: 30, background: 'rgba(255, 255, 255, 0.25)' }} />
             <div>
               <Percent size={18} style={{ margin: '0 auto 4px' }} />
-              <div style={{ fontSize: 16, fontWeight: 700 }}>-50%</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>-{membership.battleCostReduction}%</div>
               <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.8)' }}>Giảm Phí</div>
             </div>
             <div style={{ width: 1, height: 30, background: 'rgba(255, 255, 255, 0.25)' }} />
             <div>
               <RefreshCw size={18} style={{ margin: '0 auto 4px' }} />
-              <div style={{ fontSize: 16, fontWeight: 700 }}>∞</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{membership.unlimitedSync ? '∞' : 'Có'}</div>
               <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.8)' }}>Sync</div>
             </div>
           </div>
@@ -221,7 +222,7 @@ export const MembershipPage: React.FC = () => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
         {plans.map((plan) => {
-          const isCurrent = (plan.id === 'vip' && user.isVIP);
+          const isCurrent = isCurrentTier(plan.id);
 
           return (
             <div
@@ -330,7 +331,7 @@ export const MembershipPage: React.FC = () => {
       </div>
 
       {/* Perks section */}
-      {user.isVIP && (
+      {membership.perks && membership.perks.length > 0 && (
         <div>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 12 }}>
             ✨ Quyền lợi của bạn
@@ -344,14 +345,7 @@ export const MembershipPage: React.FC = () => {
               border: '1px solid #25253D'
             }}
           >
-            {[
-              '+35% điểm thưởng toàn hệ thống',
-              'Giảm 50% phí tham gia đấu trường',
-              'Đồng bộ dữ liệu thời gian thực',
-              'Phân tích góc khớp AI chuẩn thi đấu',
-              'Mở khóa toàn bộ Khung Avatar & Danh hiệu',
-              'Hỗ trợ ưu tiên 24/7'
-            ].map((perk, i, arr) => (
+            {membership.perks.map((perk, i, arr) => (
               <React.Fragment key={i}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' }}>
                   <div

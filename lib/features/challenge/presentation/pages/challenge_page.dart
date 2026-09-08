@@ -85,7 +85,7 @@ class ChallengePage extends ConsumerWidget {
   }
 }
 
-class _ChallengeList extends StatelessWidget {
+class _ChallengeList extends ConsumerWidget {
   final List<Challenge> challenges;
   final String emptyMessage;
 
@@ -95,7 +95,7 @@ class _ChallengeList extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (challenges.isEmpty) {
       return Center(
         child: Column(
@@ -243,26 +243,45 @@ class _ChallengeList extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.timer, size: 14, color: AppColors.textMuted),
-                          const SizedBox(width: 4),
-                          Text(
-                            _getTimeRemaining(challenge.expiresAt),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textMuted,
+                    if (challenge.completed)
+                      ElevatedButton(
+                        onPressed: () {
+                          ref.read(challengesProvider.notifier).claimReward(challenge.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Đã nhận thưởng +${challenge.reward.xp} XP, +${challenge.reward.coins} Coins!'),
+                              backgroundColor: AppColors.success,
                             ),
-                          ),
-                        ],
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Nhận thưởng', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.timer, size: 14, color: AppColors.textMuted),
+                            const SizedBox(width: 4),
+                            Text(
+                              _getTimeRemaining(challenge.expiresAt),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ],

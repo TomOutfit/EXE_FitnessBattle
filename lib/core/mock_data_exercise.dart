@@ -176,6 +176,8 @@ class ShopItemsNotifier extends StateNotifier<List<ShopItem>> {
       return item;
     }).toList();
   }
+
+  void buyItem(String itemId) => purchaseItem(itemId);
 }
 
 // Membership Plans Provider

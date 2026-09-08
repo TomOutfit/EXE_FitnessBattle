@@ -551,8 +551,6 @@ class _MembershipPlanCard extends StatelessWidget {
         return const Color(0xFF9b59b6);
       case MembershipTier.vip:
         return const Color(0xFFf39c12);
-      default:
-        return AppColors.primary;
     }
   }
 

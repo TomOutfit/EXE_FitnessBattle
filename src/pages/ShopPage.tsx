@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
-import { skinItems } from '../data/mockData';
 import { Check } from 'lucide-react';
 import type { SkinItem } from '../types';
 
 type ShopCategory = 'all' | 'frames' | 'titles' | 'effects' | 'badges' | 'consumables' | 'bundles';
 
 export const ShopPage: React.FC = () => {
-  const { user, buyRuby, showToast } = useUser();
+  const { user, skinItems, buyShopItem } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<ShopCategory>('all');
   const [selectedItem, setSelectedItem] = useState<SkinItem | null>(null);
 
@@ -55,14 +54,10 @@ export const ShopPage: React.FC = () => {
   });
 
   const handleBuy = (item: SkinItem) => {
-    if (user.ruby < item.price) {
-      showToast?.('Bạn không đủ Ruby!', 'error');
-      return;
+    const success = buyShopItem(item.id);
+    if (success) {
+      setSelectedItem(null);
     }
-    buyRuby(-item.price);
-    item.owned = true;
-    setSelectedItem(null);
-    showToast?.(`Đã mua thành công ${item.name}!`, 'success');
   };
 
   return (
@@ -346,7 +341,7 @@ export const ShopPage: React.FC = () => {
             </div>
 
             <div style={{ fontSize: 13, color: '#B0B0C3', marginBottom: 16 }}>
-              Vật phẩm trang trí cao cấp trong hệ thống Fitness Battle
+              {selectedItem.owned ? 'Bạn đã sở hữu vật phẩm này!' : 'Vật phẩm trang trí cao cấp trong hệ thống Fitness Battle'}
             </div>
 
             {/* Price badge */}
@@ -382,24 +377,26 @@ export const ShopPage: React.FC = () => {
                   cursor: 'pointer'
                 }}
               >
-                Hủy
+                Đóng
               </button>
 
-              <button
-                onClick={() => handleBuy(selectedItem)}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  background: 'linear-gradient(135deg, #FF4757 0%, #FF6B81 100%)',
-                  border: 'none',
-                  borderRadius: 12,
-                  color: '#FFFFFF',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                Mua ngay
-              </button>
+              {!selectedItem.owned && (
+                <button
+                  onClick={() => handleBuy(selectedItem)}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    background: 'linear-gradient(135deg, #FF4757 0%, #FF6B81 100%)',
+                    border: 'none',
+                    borderRadius: 12,
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Mua ngay
+                </button>
+              )}
             </div>
           </div>
         </div>

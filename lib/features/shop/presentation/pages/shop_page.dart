@@ -277,7 +277,21 @@ class _ShopPageState extends ConsumerState<ShopPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              // Handle purchase
+              final user = ref.read(userProvider);
+              if (item.currency == 'ruby' && user.ruby < item.price) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Bạn không đủ Ruby!'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                return;
+              }
+              if (item.currency == 'ruby') {
+                ref.read(userProvider.notifier).buyRuby(-item.price);
+              }
+              ref.read(shopItemsProvider.notifier).buyItem(item.id);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

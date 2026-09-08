@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { exercises } from '../data/mockData';
 import { Flame, Camera, Swords, RefreshCw, Plus, ChevronRight, X } from 'lucide-react';
 
 export const ExerciseTrackPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, showToast } = useUser();
+  const { user, exercises, addManualSteps, showToast } = useUser();
   const [activeTab, setActiveTab] = useState<'pushup' | 'pullup' | 'walking'>('pushup');
-  const [manualSteps, setManualSteps] = useState('');
+  const [manualStepsInput, setManualStepsInput] = useState('');
   const [showStepModal, setShowStepModal] = useState(false);
 
   const pushupEx = exercises.find(e => e.type === 'pushup') || exercises[0];
@@ -16,19 +15,20 @@ export const ExerciseTrackPage: React.FC = () => {
   const walkingEx = exercises.find(e => e.type === 'walking') || exercises[2];
 
   const handleSyncHealth = () => {
-    showToast?.('Đang kết nối Apple Health / Google Fit... Đồng bộ thành công!', 'success');
+    const randomSteps = 1200 + Math.floor(Math.random() * 800);
+    addManualSteps(randomSteps);
+    showToast?.(`Đã đồng bộ thành công +${randomSteps.toLocaleString()} bước từ Apple Health / Google Fit!`, 'success');
   };
 
   const handleAddManualSteps = () => {
-    const steps = parseInt(manualSteps, 10);
+    const steps = parseInt(manualStepsInput, 10);
     if (isNaN(steps) || steps <= 0) {
       showToast?.('Vui lòng nhập số bước hợp lệ', 'error');
       return;
     }
-    walkingEx.todayCount += steps;
+    addManualSteps(steps);
     setShowStepModal(false);
-    setManualSteps('');
-    showToast?.(`Đã ghi nhận thêm ${steps.toLocaleString()} bước chân!`, 'success');
+    setManualStepsInput('');
   };
 
   return (
@@ -629,8 +629,8 @@ export const ExerciseTrackPage: React.FC = () => {
             <input
               type="number"
               placeholder="Nhập số bước (VD: 2500)"
-              value={manualSteps}
-              onChange={(e) => setManualSteps(e.target.value)}
+              value={manualStepsInput}
+              onChange={(e) => setManualStepsInput(e.target.value)}
               style={{
                 width: '100%',
                 padding: '12px 16px',

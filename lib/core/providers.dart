@@ -113,19 +113,91 @@ final stepTrackingProvider = StateNotifierProvider<StepTrackingNotifier, StepSta
   return StepTrackingNotifier();
 });
 
-// Leaderboard Provider
-final leaderboardProvider = Provider<List<LeaderboardEntry>>((ref) {
-  return leaderboard;
+// Leaderboard State
+class LeaderboardNotifier extends StateNotifier<List<LeaderboardEntry>> {
+  LeaderboardNotifier() : super(leaderboard);
+
+  void updateUserPoints(String userId, int newPoints) {
+    final updated = state.map((entry) {
+      if (entry.oderId == userId || entry.isCurrentUser == true) {
+        return entry.copyWith(points: newPoints);
+      }
+      return entry;
+    }).toList();
+    updated.sort((a, b) => b.points.compareTo(a.points));
+    state = updated.asMap().entries.map((e) => e.value.copyWith(rank: e.key + 1)).toList();
+  }
+}
+
+final leaderboardProvider = StateNotifierProvider<LeaderboardNotifier, List<LeaderboardEntry>>((ref) {
+  return LeaderboardNotifier();
 });
 
-// Battles Provider
-final battlesProvider = Provider<List<Battle>>((ref) {
-  return battles;
+// Battles State
+class BattlesNotifier extends StateNotifier<List<Battle>> {
+  BattlesNotifier() : super(battles);
+
+  void joinBattle(String battleId, User user) {
+    state = state.map((b) {
+      if (b.id == battleId && b.status == BattleStatus.waiting) {
+        return b.copyWith(
+          status: BattleStatus.active,
+          players: [
+            b.players[0],
+            BattlePlayer(
+              oderId: user.id,
+              oderName: user.name,
+              avatar: user.avatar,
+              score: 0,
+              heartRate: 138,
+              duration: 0,
+              isActive: true,
+            ),
+          ],
+        );
+      }
+      return b;
+    }).toList();
+  }
+
+  void addBattle(Battle newBattle) {
+    state = [newBattle, ...state];
+  }
+}
+
+final battlesProvider = StateNotifierProvider<BattlesNotifier, List<Battle>>((ref) {
+  return BattlesNotifier();
 });
 
-// Challenges Provider
-final challengesProvider = Provider<List<Challenge>>((ref) {
-  return challenges;
+// Challenges State
+class ChallengesNotifier extends StateNotifier<List<Challenge>> {
+  ChallengesNotifier() : super(challenges);
+
+  void updateProgress(String challengeId, int increment) {
+    state = state.map((c) {
+      if (c.id == challengeId) {
+        final newCur = c.current + increment;
+        return c.copyWith(
+          current: newCur,
+          completed: newCur >= c.target,
+        );
+      }
+      return c;
+    }).toList();
+  }
+
+  void claimReward(String challengeId) {
+    state = state.map((c) {
+      if (c.id == challengeId) {
+        return c.copyWith(completed: true);
+      }
+      return c;
+    }).toList();
+  }
+}
+
+final challengesProvider = StateNotifierProvider<ChallengesNotifier, List<Challenge>>((ref) {
+  return ChallengesNotifier();
 });
 
 // Friends Provider
@@ -133,9 +205,17 @@ final friendsProvider = Provider<List<Friend>>((ref) {
   return friends;
 });
 
-// Activities Provider
-final activitiesProvider = Provider<List<ActivitySession>>((ref) {
-  return recentActivities;
+// Activities State
+class ActivitiesNotifier extends StateNotifier<List<ActivitySession>> {
+  ActivitiesNotifier() : super(recentActivities);
+
+  void addActivity(ActivitySession session) {
+    state = [session, ...state];
+  }
+}
+
+final activitiesProvider = StateNotifierProvider<ActivitiesNotifier, List<ActivitySession>>((ref) {
+  return ActivitiesNotifier();
 });
 
 // Exercise Types Provider
@@ -158,9 +238,22 @@ final premiumArenasProvider = Provider<List<PremiumArena>>((ref) {
   return premiumArenas;
 });
 
-// Skin Items Provider
-final skinItemsProvider = Provider<List<SkinItem>>((ref) {
-  return skinItems;
+// Skin Items State
+class SkinItemsNotifier extends StateNotifier<List<SkinItem>> {
+  SkinItemsNotifier() : super(skinItems);
+
+  void buyItem(String itemId) {
+    state = state.map((item) {
+      if (item.id == itemId) {
+        return item.copyWith(owned: true);
+      }
+      return item;
+    }).toList();
+  }
+}
+
+final skinItemsProvider = StateNotifierProvider<SkinItemsNotifier, List<SkinItem>>((ref) {
+  return SkinItemsNotifier();
 });
 
 // Navigation State

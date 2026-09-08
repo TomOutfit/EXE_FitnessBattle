@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { battles, premiumArenas } from '../data/mockData';
+import { premiumArenas } from '../data/mockData';
 import { Zap, Swords, ChevronRight, History, Award, Users, Clock, Info } from 'lucide-react';
 
 export const BattlePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, battles, joinBattle } = useUser();
   const [activeTab, setActiveTab] = useState<'battles' | 'arenas' | 'history'>('battles');
   const [showExerciseSheet, setShowExerciseSheet] = useState(false);
 
@@ -320,7 +320,10 @@ export const BattlePage: React.FC = () => {
 
                     {!isActive && (
                       <button
-                        onClick={() => navigate('/battle-camera?type=pushup')}
+                        onClick={() => {
+                          joinBattle(battle.id);
+                          navigate('/battle-camera?type=pushup');
+                        }}
                         style={{
                           background: 'linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%)',
                           border: 'none',
@@ -444,10 +447,10 @@ export const BattlePage: React.FC = () => {
         >
           <History size={48} color="#6B6B80" style={{ margin: '0 auto 12px' }} />
           <div style={{ fontSize: 16, fontWeight: 600, color: '#FFFFFF', marginBottom: 4 }}>
-            Chưa có trận đấu nào
+            {user.winCount + user.loseCount > 0 ? `Đã hoàn thành ${user.winCount + user.loseCount} trận` : 'Chưa có trận đấu nào'}
           </div>
           <div style={{ fontSize: 13, color: '#B0B0C3' }}>
-            Tham gia trận đấu để xem lịch sử tại đây
+            {user.winCount + user.loseCount > 0 ? `Tỉ lệ thắng: ${Math.round((user.winCount / (user.winCount + user.loseCount)) * 100)}% (${user.winCount}W - ${user.loseCount}L)` : 'Tham gia trận đấu để xem lịch sử tại đây'}
           </div>
         </div>
       )}
