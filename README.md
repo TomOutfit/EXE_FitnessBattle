@@ -1,168 +1,228 @@
-# 🏋️ Fitness Battle — Nền Tảng Luyện Tập Thể Thao Đấu Trường AI Real-Time
+<p align="center">
+  <img src="public/Logo.png" alt="Fitness Battle Logo" width="160" style="border-radius: 28px; box-shadow: 0 8px 32px rgba(255, 107, 53, 0.4);" />
+</p>
+
+<h1 align="center">⚔️ FITNESS BATTLE 🏋️</h1>
+
+<p align="center">
+  <b>Hệ Sinh Thái Luyện Tập Thể Thao Gamification & Đấu Trường AI Real-Time</b>
+</p>
 
 <p align="center">
   <a href="https://exe-fitness-battle.vercel.app" target="_blank">
     <img src="https://img.shields.io/badge/Live_Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel Live Demo" />
   </a>
-  <img src="https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" />
+  <img src="https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/AI_Vision-Google_ML_Kit-FF6F00?style=for-the-badge&logo=google&logoColor=white" alt="Google ML Kit" />
 </p>
 
-> 🚀 **Fitness Battle** là hệ sinh thái luyện tập thể thao thông minh kết hợp trí tuệ nhân tạo (AI Pose Tracking) và cơ chế Gamification: Đấu trường thi đấu thời gian thực 1v1 (Battle Arena), Thử thách (Challenges), Bảng xếp hạng (Leaderboards), Đổi Voucher quà tặng & Gói Hội Viên VIP. Dự án bao gồm cả **Frontend Web App** và **Mobile App (Flutter)**.
+---
+
+## 📌 Mục Lục
+- [Giới Thiệu Dự Án](#-giới-thiệu-dự-án)
+- [Kiến Trúc Hệ Thống](#-kiến-trúc-hệ-thống)
+- [Tính Năng Trọng Tâm](#-tính-năng-trọng-tâm)
+- [Ngăn Xếp Công Nghệ (Tech Stack)](#-ngăn-xếp-công-nghệ-tech-stack)
+- [Cấu Trúc Thư Mục](#-cấu-trúc-thư-mục)
+- [Hướng Dẫn Cài Đặt & Chạy Môi Trường Local](#-hướng-dẫn-cài-đặt--chạy-môi-trường-local)
+- [Triển Khai & Phân Phối (Deployment)](#-triển-khai--phân-phối-deployment)
+  - [Triển Khai Web Trên Vercel](#1-triển-khai-web-lên-vercel)
+  - [Build Mobile App (Android & iOS)](#2-build--triển-khai-mobile-app-flutter)
+- [Đội Ngũ Phát Triển & Bản Quyền](#-đội-ngũ-phát-triển--bản-quyền)
 
 ---
 
-## 🌐 1. Triển Khai Frontend Web Lên Vercel (Deployment)
+## 📖 Giới Thiệu Dự Án
 
-### 🔗 Link Web Dự Án Chính Thức:
-👉 **[https://exe-fitness-battle.vercel.app](https://exe-fitness-battle.vercel.app)**
-
----
-
-### 🚀 Hướng Dẫn Deploy Web Lên Vercel
-
-#### Cách 1: Deploy Tự Động Qua Vercel Dashboard (Khuyên dùng)
-1. Truy cập [Vercel Dashboard](https://vercel.com) và đăng nhập bằng tài khoản GitHub.
-2. Nhấn **"Add New..."** ➔ Chọn **"Project"**.
-3. Import repository: `TomOutfit/EXE_FitnessBattle`.
-4. Thiết lập cấu hình dự án (Project Settings):
-   - **Framework Preset**: `Vite`
-   - **Root Directory**: `./` (hoặc thư mục chứa `package.json` của Web)
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-   - **Install Command**: `npm install`
-5. Nhấn **"Deploy"**. Vercel sẽ tự động build và cấp phát URL production dạng `https://exe-fitness-battle.vercel.app`.
-
-#### Cách 2: Deploy Qua Vercel CLI
-```bash
-# Cài đặt Vercel CLI toàn cục
-npm install -g vercel
-
-# Đăng nhập tài khoản Vercel
-vercel login
-
-# Deploy trực tiếp từ thư mục dự án
-vercel --prod
-```
-
-> **Ghi chú định tuyến SPA:** Dự án đã cấu hình sẵn file [`vercel.json`](file:///d:/Coder-Program/FitnessBattle_EXE/Demo%20MVP/vercel.json) để xử lý định tuyến phía client (Client-side Routing), đảm bảo tất cả các URL (`/exercise`, `/battle`, `/ranking`, `/shop`, `/membership`) hoạt động trơn tru mà không bị lỗi 404 khi tải lại trang.
+**Fitness Battle** là giải pháp công nghệ thể thao thế hệ mới giải quyết vấn đề thiếu động lực và nhàm chán khi tập luyện thể dục tại nhà bằng cách **Game hóa (Gamification)** toàn diện hành trình rèn luyện:
+- 🤖 **AI Pose Tracking:** Ứng dụng thị giác máy tính nhận diện tư thế, đếm rep tự động và cảnh báo sai form thời gian thực.
+- ⚔️ **Đấu Trường 1v1 (Battle Arena):** Thách đấu bạn bè trong phòng đấu 60s, so tài thể lực và phân định thắng thua trực tiếp.
+- 🎯 **Hệ Thống Thử Thách & Phần Thưởng:** Nhiệm vụ hàng ngày/hàng tuần tích lũy XP, Ruby, Coins để nâng hạng và mở khóa skin độc quyền.
+- 🌐 **Đồng Bộ Hoàn Hảo Web & Mobile:** Trải nghiệm thống nhất 1:1 giữa nền tảng Web App (React + TypeScript) và Mobile App (Flutter).
 
 ---
 
-## 📱 2. Hướng Dẫn Build & Triển Khai Mobile App (Flutter)
-
-Mobile App được xây dựng bằng Flutter 3.x, tối ưu hóa cho cả hai nền tảng **Android** và **iOS**.
-
-### 🛠️ Yêu Cầu Môi Trường
-- Flutter SDK `>=3.22.0`
-- Dart SDK `>=3.4.0`
-- Android Studio / Xcode
-- Android SDK (API Level 24 trở lên)
-
----
-
-### 🤖 A. Build Cho Nền Tảng Android
-
-#### 1. Build File Cài Đặt Trực Tiếp (APK)
-```bash
-# Di chuyển vào thư mục Mobile App
-cd fitness_battle
-
-# Cài đặt dependencies
-flutter pub get
-
-# Build file APK Release (tất cả kiến trúc CPU)
-flutter build apk --release
-
-# Hoặc build APK tách theo từng kiến trúc CPU (tối ưu dung lượng tải)
-flutter build apk --release --split-per-abi
-```
-📍 *File APK sau khi build nằm tại:* `build/app/outputs/flutter-apk/app-release.apk`
-
-#### 2. Build Android App Bundle (AAB) Để Đăng Lên Google Play Store
-```bash
-flutter build appbundle --release
-```
-📍 *File AAB sau khi build nằm tại:* `build/app/outputs/bundle/release/app-release.aab`
-
----
-
-### 🍏 B. Build Cho Nền Tảng iOS
-
-```bash
-# Di chuyển vào thư mục iOS và cài CocoaPods
-cd fitness_battle/ios
-pod install
-cd ..
-
-# Build file IPA Release
-flutter build ipa --release
-```
-📍 *Mở Xcode để tải lên TestFlight hoặc App Store Connect qua Organizer.*
-
----
-
-### 🚀 C. Các Kênh Phân Phối Mobile Khuyên Dùng
-
-| Kênh | Mục Đích | Hướng Dẫn Tóm Tắt |
-|---|---|---|
-| **Firebase App Distribution** | Thử nghiệm nội bộ (Internal Testing) | Tải file `.apk` lên Firebase Console ➔ Mời email tester tải app qua App Tester. |
-| **Google Play Internal Track** | Thử nghiệm Google Play | Tải file `.aab` lên Google Play Console ➔ Danh sách tester nhận bản cập nhật trực tiếp từ CH Play. |
-| **Apple TestFlight** | Thử nghiệm iOS | Phân phối bản build iOS cho tối đa 10,000 tester qua ứng dụng TestFlight. |
-| **GitHub Releases** | Tải trực tiếp file APK | Đính kèm `app-release.apk` vào tab **Releases** của GitHub Repo `TomOutfit/EXE_FitnessBattle`. |
-
----
-
-## ✨ 3. Các Tính Năng Nổi Bật Của Hệ Thống
+## 🏗️ Kiến Trúc Hệ Thống
 
 ```mermaid
-graph TD
-  User((Người Chơi)) --> Mode1[🏋️ Luyện Tập AI Camera]
-  User --> Mode2[⚔️ Đấu Trường 1v1]
-  User --> Mode3[🎯 Thử Thách & Nhiệm Vụ]
-  User --> Mode4[🛍️ Đổi Quà Voucher & VIP]
+graph TB
+    subgraph Client_Applications ["📱 Nền Tảng Ứng Dụng Client"]
+        Web["🌐 React Web App<br/>(TypeScript + Vite + UserContext)"]
+        Mobile["📲 Flutter Mobile App<br/>(Dart + Riverpod StateNotifiers)"]
+    end
 
-  Mode1 --> Counter[Bộ Đếm Reps Tự Động & Chống Gian Lận]
-  Mode2 --> Arena[Trận Đấu Camera 60s Real-Time]
-  Mode3 --> Reward[Nhận Thưởng XP & Xu Tích Lũy]
-  Mode4 --> Benefits[Tăng Thể Lực 500 HP + x1.5 Điểm]
+    subgraph Core_Engine ["⚡ Động Cơ Xử Lý Trung Tâm"]
+        AI_Vision["👁️ AI Vision Engine<br/>(Google ML Kit / Pose Detection)"]
+        AntiCheat["🛡️ Anti-Cheat & Accuracy Analyzer"]
+        GameEngine["🎮 Gamification & Level Engine"]
+    end
+
+    subgraph Feature_Modules ["🎯 Các Phân Hệ Chức Năng"]
+        Workout["🏋️ Theo Dõi Bài Tập<br/>(Push-up, Pull-up, Steps)"]
+        BattleArena["⚔️ Đấu Trường 1v1 Real-time"]
+        QuestSystem["📜 Thử Thách & Nhiệm Vụ"]
+        ShopVIP["🛍️ Cửa Hàng & Gói VIP"]
+        Leaderboard["🏆 Bảng Xếp Hạng Toàn Mùa"]
+    end
+
+    Web --> Core_Engine
+    Mobile --> Core_Engine
+    Core_Engine --> Feature_Modules
 ```
-
-- **🏋️ AI Camera & Pose Tracking:** Nhận diện và đếm số rep chuẩn xác cho các bài tập **Hít Đất (Push-up)**, **Kéo Xà (Pull-up)**, **Đi Bộ (Walking)** kèm cảnh báo chống gian lận (Anti-cheat).
-- **⚔️ Đấu Trường Real-Time 1v1:** Thi đấu trực tiếp qua Camera chia đôi màn hình trong 60 giây, tự động so điểm và phân định thắng/thua.
-- **🏆 Bảng Xếp Hạng Đa Dạng:** Bục vinh quang 3D (🥇 🥈 🥉) cho bảng xếp hạng Toàn Mùa và từng bộ môn riêng biệt.
-- **🎯 Hệ Thống Thử Thách:** Nhiệm vụ Hàng ngày, Hàng tuần với tính năng Nhận Thưởng cộng dồn XP và Xu ngay lập tức.
-- **🛍️ Cửa Hàng Voucher & Gói VIP:** Đổi Xu lấy voucher Phúc Long, Shopee, WheyStore, Cali Fitness; nâng cấp VIP Pro tăng thể lực lên 500 HP.
 
 ---
 
-## 💻 4. Chạy Dự Án Ở Môi Trường Local
+## 🌟 Tính Năng Trọng Tâm
 
-### Chạy Frontend Web (React / Vite)
-```bash
-# Cài đặt thư viện
-npm install
+| Phân Hệ | Mô Tả Tính Năng | Điểm Nổi Bật |
+|---|---|---|
+| **🏋️ AI Workout Tracker** | Theo dõi các bài tập **Hít Đất (Push-up)**, **Kéo Xà (Pull-up)** và **Đi Bộ (Walking)** | Tự động phân tích góc khớp khuỷu/vai, tính % chuẩn form, phát hiện gian lận. |
+| **⚔️ Battle Arena 1v1** | Phòng thi đấu 60 giây đối kháng trực tiếp | Chia đôi camera so tài trực tiếp, tính điểm realtime, tiền cược Ruby & quà thưởng. |
+| **🎯 Nhiệm Vụ & Thử Thách** | Nhiệm vụ Hàng ngày, Tuần và Sự kiện Mùa | Nhận thưởng tức thì (+XP, +Coins, +Ruby) và tự động ghi nhận vào lịch sử. |
+| **🛍️ Cửa Hàng Vật Phẩm** | Mua sắm khung avatar, danh hiệu độc quyền, hiệu ứng chiến thắng | Trừ tiền tương tác thực, lưu trữ danh sách vật phẩm đã sở hữu. |
+| **👑 Gói Hội Viên (VIP)** | 4 hạng thẻ: Free, Basic, Premium và VIP Pro | Nhận đặc quyền x1.5 điểm thưởng, giảm phí tạo phòng battle, bảo toàn streak. |
+| **🏆 Bảng Xếp Hạng Đa Năng** | Bảng xếp hạng điểm tổng và bảng xếp hạng riêng từng môn | Vinh danh Top 3 Podium (🥇 🥈 🥉), tự động cập nhật thứ hạng của cá nhân. |
 
-# Chạy server phát triển
-npm run dev
+---
 
-# Kiểm tra & Build Production
-npm run build
+## 💻 Ngăn Xếp Công Nghệ (Tech Stack)
+
+### 1. Frontend Web App
+- **Framework:** React 19 (TypeScript)
+- **Bundler & Build Tool:** Vite 6
+- **Routing:** React Router v7 (SPA routing với Vercel Rewrites)
+- **State Management:** React Context API + LocalStorage Persistent Store
+- **Styling & UI:** Vanilla CSS Variables & Design Tokens (Dark Mode, Glassmorphism, Glow FX)
+- **Icons:** Lucide React
+
+### 2. Mobile App (Flutter)
+- **Framework:** Flutter 3.x / Dart SDK ^3.13.0
+- **State Management:** Flutter Riverpod 2.6.x (`StateNotifierProvider`)
+- **Navigation:** GoRouter 14.8.x (`ShellRoute` Bottom Navigation)
+- **AI & Vision:** Google ML Kit Pose Detection & Camera 0.11.x
+- **Sensors:** Pedometer (Đếm bước chân phần cứng)
+- **Charts & UI:** FL Chart, Percent Indicator, Google Fonts
+
+---
+
+## 📂 Cấu Trúc Thư Mục
+
+```
+FitnessBattle_EXE/Demo MVP/
+├── public/                     # Static assets (Logo.png, Favicon, Icons)
+├── assets/images/              # Flutter mobile assets (Logo.png)
+│
+├── src/                        # 🌐 SOURCE CODE REACT WEB
+│   ├── components/             # Reusable UI components & Bottom Navigation
+│   ├── context/                # UserContext.tsx (Reactive Centralized Store)
+│   ├── data/                   # Initial Seed Mock Data
+│   ├── pages/                  # Màn hình (Home, Battle, Exercise, Shop, v.v.)
+│   ├── types/                  # TypeScript Data Models
+│   ├── App.tsx                 # App Shell & Router
+│   ├── index.css               # Design System Tokens & Animations
+│   └── main.tsx                # React entry point
+│
+├── lib/                        # 📱 SOURCE CODE FLUTTER MOBILE
+│   ├── core/                   # Theme, Base Models, Providers & Widgets
+│   ├── features/               # Các module chức năng (Clean Architecture):
+│   │   ├── home/               # Màn hình chính & Dashboard
+│   │   ├── exercise/           # AI Camera Tracking & Pedometer
+│   │   ├── battle/             # Đấu trường 1v1 & Matchmaking
+│   │   ├── challenge/          # Thử thách & Claim Reward
+│   │   ├── shop/               # Cửa hàng skin & vật phẩm
+│   │   ├── membership/         # Nâng cấp gói hội viên
+│   │   ├── leaderboard/        # Bảng xếp hạng toàn mùa
+│   │   └── profile/            # Hồ sơ cá nhân & Cài đặt
+│   ├── router/                 # GoRouter App Routing
+│   └── main.dart               # Flutter entry point
+│
+├── CHAY_DEMO.bat               # Script chạy nhanh cả Web & Mobile
+├── pubspec.yaml                # Cấu hình Flutter dependencies
+├── package.json                # Cấu hình Web dependencies
+└── vercel.json                 # Cấu hình triển khai Vercel SPA
 ```
 
-### Chạy Mobile App (Flutter)
+---
+
+## 🚀 Hướng Dẫn Cài Đặt & Chạy Môi Trường Local
+
+### Cách 1: Chạy Tự Động Bằng 1 Click (Windows)
+Chạy file script [**`CHAY_DEMO.bat`**](file:///d:/Coder-Program/FitnessBattle_EXE/Demo%20MVP/CHAY_DEMO.bat) tại thư mục gốc của dự án để khởi động đồng thời cả Web và Mobile.
+
+---
+
+### Cách 2: Chạy Từng Nền Tảng Thủ Công
+
+#### 🌐 1. Chạy Frontend Web (React / Vite)
 ```bash
-cd fitness_battle
+# 1. Di chuyển vào thư mục dự án
+cd "Demo MVP"
+
+# 2. Cài đặt các gói thư viện
+npm install
+
+# 3. Khởi động máy chủ phát triển
+npm run dev
+```
+> Truy cập trình duyệt tại địa chỉ: `http://localhost:5173`
+
+#### 📲 2. Chạy Mobile App (Flutter)
+```bash
+# 1. Di chuyển vào thư mục dự án
+cd "Demo MVP"
+
+# 2. Tải dependencies Flutter
 flutter pub get
+
+# 3. Khởi chạy ứng dụng (trên máy ảo Android/iOS hoặc thiết bị thật)
 flutter run
 ```
 
 ---
 
-## 👨‍💻 Tác Giả & Bản Quyền
+## 🌐 Triển Khai & Phân Phối (Deployment)
+
+### 1. Triển Khai Web Lên Vercel
+🔗 **Link Production Chính Thức:** [https://exe-fitness-battle.vercel.app](https://exe-fitness-battle.vercel.app)
+
+#### Deploy qua Vercel Dashboard:
+1. Kết nối kho lưu trữ GitHub `TomOutfit/EXE_FitnessBattle` trên [Vercel Dashboard](https://vercel.com).
+2. Thiết lập cấu hình:
+   - **Framework Preset:** `Vite`
+   - **Root Directory:** `./`
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+3. Bấm **Deploy**. Vercel tự động nhận diện file `vercel.json` để kích hoạt SPA rewrite routing.
+
+---
+
+### 2. Build & Triển Khai Mobile App (Flutter)
+
+```bash
+# Build Android APK Release (cài đặt trực tiếp)
+flutter build apk --release
+
+# Build Android App Bundle (AAB - Đăng Google Play Store)
+flutter build appbundle --release
+
+# Build iOS IPA Release (Đăng Apple App Store / TestFlight)
+flutter build ipa --release
+```
+
+---
+
+## 👨‍💻 Đội Ngũ Phát Triển & Bản Quyền
+
 - **Repository:** [TomOutfit/EXE_FitnessBattle](https://github.com/TomOutfit/EXE_FitnessBattle)
-- **Quản lý & Phát triển:** [TomOutfit](https://github.com/TomOutfit) (Nguyễn Bình An) & [Teng122](https://github.com/Teng122) (Đồng Hoàng Nguyên)
-- **Đồng phát triển dự án:** Nguyễn Nhật Huy, Dư Gia Phú, Lê Minh Sang, Trần Văn Hiếu
+- **Chủ trì & Quản lý Dự án:** [TomOutfit](https://github.com/TomOutfit) (Nguyễn Bình An)
+- **Đồng sáng lập & Lập trình chính:** [Teng122](https://github.com/Teng122) (Đồng Hoàng Nguyên)
+- **Thành viên phát triển:** Nguyễn Nhật Huy, Dư Gia Phú, Lê Minh Sang, Trần Văn Hiếu
 - **Phiên bản:** `v1.0.0 (MVP Release)`
+- **Giấy phép:** MIT License
+
+<p align="center">
+  <sub>Made with ❤️ by <b>TomOutfit</b> & <b>Teng122</b> for EXE Fitness Battle Project.</sub>
+</p>
