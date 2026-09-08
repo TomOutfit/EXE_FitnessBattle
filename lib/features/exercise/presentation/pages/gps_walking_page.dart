@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/app_card.dart';
-import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/mock_data_exercise.dart';
 
 class GPSCoordinatePoint {
@@ -281,10 +280,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                   ],
                 ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.add(
-                  Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
-                  Border.all(color: AppColors.secondary.withValues(alpha: 0.4)),
-                ),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
