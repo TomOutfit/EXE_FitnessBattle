@@ -51,6 +51,8 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
   double _gpsAccuracy = 4.5;
   String? _antiCheatWarning;
   bool _isSimulating = true;
+  String _movementState = 'walking'; // 'walking', 'stationary', 'fake_shaking'
+  int _consecutiveStationaryShakes = 0;
 
   final List<GPSCoordinatePoint> _routePoints = [];
   Timer? _trackerTimer;
@@ -81,6 +83,8 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
       _isPaused = false;
       _isCompleted = false;
       _antiCheatWarning = null;
+      _movementState = 'walking';
+      _consecutiveStationaryShakes = 0;
     });
 
     _startTimers();
@@ -99,34 +103,47 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
       setState(() {
         _elapsedSeconds++;
 
-        // Simulate GPS & Step accumulation
+        // Simulate GPS & Step accumulation with realistic walking pattern
         if (_isSimulating) {
-          final double angle = (_elapsedSeconds * 4 * pi) / 180;
-          final double radius = 0.0018 + sin(angle * 0.5) * 0.0006;
-          final double newLat = baseLat + radius * cos(angle);
-          final double newLng = baseLng + radius * sin(angle);
-
-          final double simSpeed = 4.8 + sin(angle) * 0.8; // ~5.2 km/h
-          _currentSpeedKmh = double.parse(simSpeed.toStringAsFixed(1));
-
-          final int stepDelta = 2 + (Random().nextInt(2));
-          _steps += stepDelta;
-
-          final double distDelta = (simSpeed * 1000) / 3600; // ~1.4 m/s
-          _distanceMeters += distDelta;
-
-          _routePoints.add(GPSCoordinatePoint(
-            lat: newLat,
-            lng: newLng,
-            speed: simSpeed,
-            timestamp: DateTime.now(),
-          ));
-
-          // Anti-cheat verification
-          if (_currentSpeedKmh > 25.0) {
-            _antiCheatWarning = 'Tốc độ quá nhanh (>25km/h). Đã tạm dừng đếm để chống gian lận xe máy!';
-          } else {
+          if (_movementState == 'stationary') {
+            // Standing still: speed = 0, no steps accumulated
+            _currentSpeedKmh = 0.0;
+            _cadence = 0;
             _antiCheatWarning = null;
+          } else if (_movementState == 'fake_shaking') {
+            // Shaking phone while standing still: block step accumulation
+            _currentSpeedKmh = 0.0;
+            _cadence = 180;
+            _antiCheatWarning = '🚫 PHÁT HIỆN LẮC TAY TẠI CHỖ: Đã tạm dừng đếm bước do không có di chuyển thực tế!';
+          } else {
+            // Valid Walking movement
+            final double angle = (_elapsedSeconds * 4 * pi) / 180;
+            final double radius = 0.0018 + sin(angle * 0.5) * 0.0006;
+            final double newLat = baseLat + radius * cos(angle);
+            final double newLng = baseLng + radius * sin(angle);
+
+            final double simSpeed = 4.8 + sin(angle) * 0.8; // ~5.2 km/h
+            _currentSpeedKmh = double.parse(simSpeed.toStringAsFixed(1));
+
+            final int stepDelta = 2 + (Random().nextInt(2));
+            _steps += stepDelta;
+
+            final double distDelta = (simSpeed * 1000) / 3600; // ~1.4 m/s
+            _distanceMeters += distDelta;
+
+            _routePoints.add(GPSCoordinatePoint(
+              lat: newLat,
+              lng: newLng,
+              speed: simSpeed,
+              timestamp: DateTime.now(),
+            ));
+
+            // Anti-cheat verification
+            if (_currentSpeedKmh > 25.0) {
+              _antiCheatWarning = 'Tốc độ quá nhanh (>25km/h). Đã tạm dừng đếm để chống gian lận xe máy!';
+            } else {
+              _antiCheatWarning = null;
+            }
           }
         }
 
@@ -436,7 +453,70 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+
+            // Real-Time Movement State Badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: _movementState == 'walking'
+                    ? const Color(0xFF2ED573).withValues(alpha: 0.12)
+                    : _movementState == 'fake_shaking'
+                    ? AppColors.error.withValues(alpha: 0.2)
+                    : const Color(0xFFF7C948).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _movementState == 'walking'
+                      ? const Color(0xFF2ED573).withValues(alpha: 0.4)
+                      : _movementState == 'fake_shaking'
+                      ? AppColors.error
+                      : const Color(0xFFF7C948).withValues(alpha: 0.4),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _movementState == 'walking'
+                              ? const Color(0xFF2ED573)
+                              : _movementState == 'fake_shaking'
+                              ? AppColors.error
+                              : const Color(0xFFF7C948),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _movementState == 'walking'
+                            ? '🟢 Đang di chuyển thực tế (Đang tính điểm)'
+                            : _movementState == 'fake_shaking'
+                            ? '🚫 Lắc tay tại chỗ bị chặn (Không tính)'
+                            : '⏸️ Đang đứng yên tại chỗ (Không tính bước)',
+                        style: TextStyle(
+                          color: _movementState == 'walking'
+                              ? const Color(0xFF2ED573)
+                              : _movementState == 'fake_shaking'
+                              ? AppColors.error
+                              : const Color(0xFFF7C948),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    _movementState == 'walking' ? 'Ghi nhận' : 'Tạm dừng',
+                    style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
 
             // Anti-Cheat Alert
             if (_antiCheatWarning != null)
