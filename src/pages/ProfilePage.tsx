@@ -1,271 +1,657 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Share2, LogOut, Crown, Flame, Zap, Award, Trophy, ShoppingBag, ChevronRight, ShieldCheck } from 'lucide-react';
-import { Avatar, XpBar, BadgeIcon } from '../components/ui';
 import { useUser } from '../context/UserContext';
+import {
+  Trophy,
+  Swords,
+  Flame,
+  Dumbbell,
+  Clock,
+  Heart,
+  Calendar,
+  ChevronRight,
+  Shield,
+  Users,
+  Award,
+  Crown,
+  Gift,
+  ShoppingBag,
+  Settings,
+  X
+} from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, resetOnboarding, showToast } = useUser();
-  const earnedBadges = user.badges.filter(b => b.earned);
+  const { user, buyRuby, resetOnboarding } = useUser();
+  const [showBuyRubyModal, setShowBuyRubyModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  const totalBattles = user.winCount + user.loseCount;
-  const winRate = totalBattles > 0 ? Math.round((user.winCount / totalBattles) * 100) : 100;
-
-  const handleMenuAction = (action: string) => {
-    switch (action) {
-      case 'share':
-        showToast('Link hồ sơ cá nhân đã được sao chép!', 'success');
-        navigator.clipboard?.writeText('https://fitnessbattle.app/u/' + user.id);
-        break;
-      case 'logout':
-        showToast('Đã đăng xuất. Hẹn gặp lại bạn!', 'info');
-        setTimeout(() => resetOnboarding(), 1200);
-        break;
+  const getBadgeIcon = (icon: string, color: string) => {
+    switch (icon) {
+      case 'shield':
+        return <Shield size={24} color={color} />;
+      case 'flame':
+        return <Flame size={24} color={color} />;
+      case 'trophy':
+        return <Trophy size={24} color={color} />;
+      case 'heart-pulse':
+        return <Heart size={24} color={color} />;
+      case 'users':
+        return <Users size={24} color={color} />;
+      case 'crown':
+        return <Crown size={24} color={color} />;
       default:
-        showToast('Tính năng đang được cập nhật', 'info');
+        return <Award size={24} color={color} />;
     }
   };
 
   return (
-    <div style={{ padding: '0 0 100px', maxWidth: 680, margin: '0 auto' }}>
-      {/* Cover Banner */}
-      <div style={{ background: 'linear-gradient(180deg, #14141e, var(--bg))', padding: '16px 20px 0', position: 'relative' }}>
-        <div 
-          style={{ 
-            height: 120, 
-            background: 'linear-gradient(135deg, #ff6b35, #ff4757, #5352ed)', 
-            borderRadius: '20px', 
-            position: 'relative', 
-            overflow: 'hidden', 
-            border: '1px solid rgba(255,107,53,0.3)', 
-            boxShadow: '0 8px 24px rgba(255,107,53,0.2)' 
-          }}
-        >
-          <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(255,255,255,0.06) 12px, rgba(255,255,255,0.06) 24px)' }} />
-          <div style={{ position: 'absolute', top: 12, right: 12, padding: '4px 10px', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', borderRadius: 12, fontSize: 10, fontWeight: 800, color: '#ffd700', border: '1px solid rgba(255,215,0,0.3)' }}>
-            🔥 CHIẾN BINH ID #{user.id || '88412'}
-          </div>
-        </div>
-
-        {/* Avatar & Action Button */}
-        <div style={{ marginTop: -45, padding: '0 16px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 12 }}>
-          <div style={{ position: 'relative' }}>
-            <div 
+    <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
+      {/* Profile Header Card */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%)',
+          borderRadius: 20,
+          padding: 20,
+          color: '#FFFFFF',
+          marginBottom: 16,
+          boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+          {/* Avatar with Level Badge */}
+          <div style={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
+            <img
+              src={user.avatar}
+              alt={user.name}
               style={{
-                padding: 4, 
+                width: 80,
+                height: 80,
                 borderRadius: '50%',
-                background: user.isVIP ? 'linear-gradient(135deg, #ffd700, #ff6b35)' : 'var(--gradient-primary)',
-                boxShadow: '0 0 20px rgba(255,107,53,0.5)'
+                objectFit: 'cover',
+                background: '#25253D',
+                border: '3px solid rgba(255,255,255,0.4)'
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                background: '#FF6B35',
+                color: '#FFFFFF',
+                borderRadius: '50%',
+                width: 26,
+                height: 26,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 800,
+                border: '2px solid #FFFFFF'
               }}
             >
-              <Avatar src={user.avatar} alt={user.name} size={78} ring="transparent" />
+              {user.level}
             </div>
-            {user.isVIP && (
-              <div 
-                style={{ 
-                  position: 'absolute', 
-                  bottom: 0, 
-                  right: 0, 
-                  width: 28, 
-                  height: 28, 
-                  borderRadius: '50%', 
-                  background: 'linear-gradient(135deg, #ffd700, #ff6b35)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  border: '2px solid #0e0e1a', 
-                  boxShadow: '0 0 10px #ffd700' 
-                }}
-              >
-                <Crown size={15} color="#000" />
+          </div>
+
+          {/* User Info */}
+          <div style={{ marginLeft: 16, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 22, fontWeight: 700 }}>{user.name}</span>
+              {user.isVIP && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    background: 'rgba(255,255,255,0.2)',
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    fontSize: 10,
+                    fontWeight: 800
+                  }}
+                >
+                  <span>💎</span> VIP
+                </div>
+              )}
+            </div>
+
+            {user.equippedTitle && (
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
+                {user.equippedTitle}
               </div>
             )}
-          </div>
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button 
-              onClick={() => handleMenuAction('share')} 
-              style={{ 
-                padding: '8px 14px', 
-                borderRadius: 12, 
-                background: 'rgba(255,215,0,0.12)', 
-                border: '1px solid rgba(255,215,0,0.3)', 
-                fontSize: 12, 
-                fontWeight: 800, 
-                color: '#ffd700', 
-                cursor: 'pointer', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 6 
-              }}
-            >
-              <Share2 size={14} /> Chia Sẻ
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
+              <Calendar size={14} />
+              <span>Tham gia: {user.joinDate}</span>
+            </div>
           </div>
         </div>
 
-        {/* Name, Title & Level XP */}
-        <div style={{ padding: '0 16px 14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)' }}>{user.name}</h1>
-            {user.isVIP ? (
-              <span style={{ fontSize: 10, padding: '2px 8px', background: 'linear-gradient(135deg, #ffd700, #ff6b35)', borderRadius: 10, color: '#000', fontWeight: 900 }}>
-                HỘI VIÊN VIP
-              </span>
-            ) : (
-              <span style={{ fontSize: 10, padding: '2px 8px', background: 'rgba(255,255,255,0.1)', borderRadius: 10, color: 'var(--text3)', fontWeight: 700 }}>
-                MIỄN PHÍ
-              </span>
-            )}
+        {/* XP Progress Bar */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'rgba(255,255,255,0.9)', marginBottom: 6 }}>
+            <span>Cấp {user.level}</span>
+            <span>{user.xp} / {user.xpToNextLevel} XP</span>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700, marginBottom: 12 }}>
-            {user.equippedTitle || '⚔️ Đấu Sĩ Thể Lực Real-Time'}
+          <div style={{ height: 8, background: 'rgba(0,0,0,0.2)', borderRadius: 4, overflow: 'hidden' }}>
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.min(100, Math.round((user.xp / user.xpToNextLevel) * 100))}%`,
+                background: '#FFFFFF',
+                borderRadius: 4,
+                transition: 'width 0.4s ease'
+              }}
+            />
           </div>
-
-          <XpBar xp={user.xp} xpToNext={user.xpToNextLevel} level={user.level} />
         </div>
       </div>
 
-      {/* Stats HUD */}
-      <div style={{ padding: '16px 20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
-          {[
-            { label: 'Hạng Server', value: `#${user.rank}`, icon: Trophy, color: '#ffd700' },
-            { label: 'Tỉ Lệ Thắng', value: `${winRate}%`, icon: Flame, color: '#ff6b35' },
-            { label: 'Thắng/Thua', value: `${user.winCount}W-${user.loseCount}L`, icon: Award, color: '#2ed573' },
-            { label: 'Thể Lực HP', value: `${user.stamina}⚡`, icon: Zap, color: '#5352ed' },
-          ].map((stat, i) => {
-            const Icon = stat.icon;
+      {/* Stats Grid (3 columns) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+        {/* Total Points */}
+        <div
+          style={{
+            background: '#1A1A2E',
+            borderRadius: 16,
+            padding: 16,
+            textAlign: 'center',
+            border: '1px solid #25253D'
+          }}
+        >
+          <Trophy size={28} color="#F7C948" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
+            {user.totalPoints}
+          </div>
+          <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
+            Tổng điểm
+          </div>
+        </div>
+
+        {/* Matches */}
+        <div
+          style={{
+            background: '#1A1A2E',
+            borderRadius: 16,
+            padding: 16,
+            textAlign: 'center',
+            border: '1px solid #25253D'
+          }}
+        >
+          <Swords size={28} color="#FF6B35" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+            {user.winCount}W - {user.loseCount}L
+          </div>
+          <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
+            Trận đấu
+          </div>
+        </div>
+
+        {/* Streak */}
+        <div
+          style={{
+            background: '#1A1A2E',
+            borderRadius: 16,
+            padding: 16,
+            textAlign: 'center',
+            border: '1px solid #25253D'
+          }}
+        >
+          <Flame size={28} color="#FF4757" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
+            {user.streak}
+          </div>
+          <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
+            Streak
+          </div>
+        </div>
+      </div>
+
+      {/* Overview Stats Card */}
+      <div
+        style={{
+          background: '#1A1A2E',
+          borderRadius: 16,
+          padding: 16,
+          border: '1px solid #25253D',
+          marginBottom: 16
+        }}
+      >
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 16 }}>
+          📈 Thống kê tổng quan
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Workouts */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'rgba(255, 107, 53, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 12
+              }}
+            >
+              <Dumbbell size={20} color="#FF6B35" />
+            </div>
+            <span style={{ fontSize: 14, color: '#B0B0C3', flex: 1 }}>
+              Tổng bài tập
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
+              {user.stats?.totalWorkouts || 89}
+            </span>
+          </div>
+
+          {/* Time */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'rgba(83, 82, 237, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 12
+              }}
+            >
+              <Clock size={20} color="#5352ED" />
+            </div>
+            <span style={{ fontSize: 14, color: '#B0B0C3', flex: 1 }}>
+              Tổng thời gian
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
+              {user.stats?.totalMinutes || 2840} phút
+            </span>
+          </div>
+
+          {/* Calories */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'rgba(255, 71, 87, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 12
+              }}
+            >
+              <Flame size={20} color="#FF4757" />
+            </div>
+            <span style={{ fontSize: 14, color: '#B0B0C3', flex: 1 }}>
+              Calories đốt
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
+              {user.stats?.totalCalories?.toLocaleString() || '42,500'}
+            </span>
+          </div>
+
+          {/* Heart Rate */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'rgba(46, 213, 115, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 12
+              }}
+            >
+              <Heart size={20} color="#2ED573" />
+            </div>
+            <span style={{ fontSize: 14, color: '#B0B0C3', flex: 1 }}>
+              Nhịp tim TB
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
+              {user.stats?.avgHeartRate || 135} BPM
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Badges Card */}
+      <div
+        style={{
+          background: '#1A1A2E',
+          borderRadius: 16,
+          padding: 16,
+          border: '1px solid #25253D',
+          marginBottom: 16
+        }}
+      >
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 16 }}>
+          🏅 Huy hiệu
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          {user.badges?.map((badge) => {
+            const color = badge.color || '#FF6B35';
             return (
-              <div 
-                key={i} 
-                style={{ 
-                  padding: '12px 6px', 
-                  textAlign: 'center', 
-                  background: 'linear-gradient(145deg, #181826, #10101a)', 
-                  border: `1px solid ${stat.color}30`, 
-                  borderRadius: 16 
+              <div
+                key={badge.id}
+                style={{
+                  width: 82,
+                  padding: 12,
+                  borderRadius: 12,
+                  background: badge.earned ? `${color}25` : '#25253D',
+                  border: `1px solid ${badge.earned ? color : '#6B6B80'}`,
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center'
                 }}
               >
-                <Icon size={16} color={stat.color} style={{ margin: '0 auto 4px' }} />
-                <div style={{ fontSize: 14, fontWeight: 900, color: stat.color }}>{stat.value}</div>
-                <div style={{ fontSize: 9, color: 'var(--text4)', marginTop: 2 }}>{stat.label}</div>
+                {getBadgeIcon(badge.icon, badge.earned ? color : '#6B6B80')}
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 500,
+                    color: badge.earned ? '#FFFFFF' : '#6B6B80',
+                    marginTop: 6,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: 70
+                  }}
+                >
+                  {badge.name}
+                </div>
               </div>
             );
           })}
         </div>
-
-        {/* Quick Menu Shortcuts */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
-          <div 
-            onClick={() => navigate('/membership')}
-            style={{
-              padding: '14px 16px',
-              background: 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,107,53,0.08))',
-              border: '1px solid rgba(255,215,0,0.3)',
-              borderRadius: 16,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Crown size={20} color="#ffd700" />
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>Nâng Cấp VIP Pro</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Tăng thể lực 500 HP, mở khóa AI phân tích & đấu trường ruby</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color="#ffd700" />
-          </div>
-
-          <div 
-            onClick={() => navigate('/shop')}
-            style={{
-              padding: '14px 16px',
-              background: 'linear-gradient(135deg, rgba(83,82,237,0.12), rgba(46,213,115,0.08))',
-              border: '1px solid rgba(83,82,237,0.3)',
-              borderRadius: 16,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <ShoppingBag size={20} color="#5352ed" />
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>Cửa Hàng Quà Tặng & Voucher</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Đổi {user.coins} Xu lấy voucher Gym, Thời trang, Dinh dưỡng</div>
-              </div>
-            </div>
-            <ChevronRight size={18} color="#5352ed" />
-          </div>
-        </div>
-
-        {/* Badges Collection */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>🏅 Bộ Sưu Tập Huy Hiệu ({earnedBadges.length}/{user.badges.length})</span>
-          </div>
-          <div style={{ padding: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, display: 'flex', gap: 14, overflowX: 'auto' }}>
-            {earnedBadges.map(badge => (
-              <div key={badge.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                <BadgeIcon badgeId={badge.id} name={badge.name} color={badge.color} earned={true} size={40} />
-                <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 700 }}>{badge.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Settings & Logout */}
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button 
-            onClick={() => handleMenuAction('security')} 
-            style={{ 
-              flex: 1, 
-              padding: '12px', 
-              background: 'var(--bg-card)', 
-              border: '1px solid var(--border)', 
-              borderRadius: 14, 
-              fontSize: 13, 
-              fontWeight: 700, 
-              color: 'var(--text2)', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              gap: 6 
-            }}
-          >
-            <ShieldCheck size={16} color="#2ed573" /> Bảo Mật
-          </button>
-
-          <button 
-            onClick={() => handleMenuAction('logout')} 
-            style={{ 
-              flex: 1, 
-              padding: '12px', 
-              background: 'rgba(255,71,87,0.1)', 
-              border: '1px solid rgba(255,71,87,0.25)', 
-              borderRadius: 14, 
-              fontSize: 13, 
-              fontWeight: 800, 
-              color: '#ff4757', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              gap: 6 
-            }}
-          >
-            <LogOut size={16} color="#ff4757" /> Đăng Xuất
-          </button>
-        </div>
-
       </div>
+
+      {/* Menu List */}
+      <div
+        style={{
+          background: '#1A1A2E',
+          borderRadius: 16,
+          border: '1px solid #25253D',
+          overflow: 'hidden',
+          marginBottom: 16
+        }}
+      >
+        {/* Battle Pass */}
+        <MenuItem
+          icon={<Award size={22} color="#FF6B35" />}
+          title="Battle Pass"
+          subtitle="Mùa #7 — Cyber Sprint"
+          onTap={() => navigate('/battlepass')}
+        />
+        <div style={{ height: 1, background: '#25253D' }} />
+
+        {/* Vouchers */}
+        <MenuItem
+          icon={<Gift size={22} color="#FF6B35" />}
+          title="Voucher của tôi"
+          subtitle="3 voucher đang có"
+          onTap={() => navigate('/shop')}
+        />
+        <div style={{ height: 1, background: '#25253D' }} />
+
+        {/* Shop */}
+        <MenuItem
+          icon={<ShoppingBag size={22} color="#FF6B35" />}
+          title="Cửa hàng"
+          subtitle="Skin & Items"
+          onTap={() => navigate('/shop')}
+        />
+        <div style={{ height: 1, background: '#25253D' }} />
+
+        {/* Membership */}
+        <MenuItem
+          icon={<Crown size={22} color="#FF6B35" />}
+          title="Membership"
+          subtitle="Nâng cấp tài khoản"
+          onTap={() => navigate('/membership')}
+        />
+        <div style={{ height: 1, background: '#25253D' }} />
+
+        {/* Settings */}
+        <MenuItem
+          icon={<Settings size={22} color="#FF6B35" />}
+          title="Cài đặt"
+          subtitle="Tài khoản & Thông báo"
+          onTap={() => setShowSettingsModal(true)}
+        />
+      </div>
+
+      {/* Ruby Section */}
+      <div
+        style={{
+          background: '#1A1A2E',
+          borderRadius: 16,
+          padding: 16,
+          border: '1px solid #25253D',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 20
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 24 }}>💎</span>
+          <div>
+            <div style={{ fontSize: 12, color: '#B0B0C3' }}>Ruby</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+              {user.ruby}
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setShowBuyRubyModal(true)}
+          style={{
+            background: 'linear-gradient(135deg, #FF4757 0%, #FF6B81 100%)',
+            border: 'none',
+            borderRadius: 10,
+            padding: '8px 20px',
+            color: '#FFFFFF',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(255, 71, 87, 0.3)'
+          }}
+        >
+          Mua
+        </button>
+      </div>
+
+      {/* Buy Ruby Modal */}
+      {showBuyRubyModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16
+          }}
+          onClick={() => setShowBuyRubyModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#1A1A2E',
+              borderRadius: 20,
+              padding: 24,
+              width: '100%',
+              maxWidth: 380,
+              border: '1px solid #25253D'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>💎 Mua Ruby</span>
+              <button
+                onClick={() => setShowBuyRubyModal(false)}
+                style={{ background: 'none', border: 'none', color: '#6B6B80', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              {[
+                { amount: 50, price: '25.000đ' },
+                { amount: 120, price: '59.000đ' },
+                { amount: 300, price: '129.000đ' },
+                { amount: 800, price: '299.000đ' }
+              ].map((pack) => (
+                <div
+                  key={pack.amount}
+                  onClick={() => {
+                    buyRuby(pack.amount);
+                    setShowBuyRubyModal(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    background: '#25253D',
+                    borderRadius: 12,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>💎</span>
+                    <span style={{ fontWeight: 700, color: '#FFFFFF' }}>{pack.amount} Ruby</span>
+                  </div>
+                  <span style={{ color: '#FF6B35', fontWeight: 600 }}>{pack.price}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16
+          }}
+          onClick={() => setShowSettingsModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#1A1A2E',
+              borderRadius: 20,
+              padding: 24,
+              width: '100%',
+              maxWidth: 380,
+              border: '1px solid #25253D'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>⚙️ Cài Đặt</span>
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                style={{ background: 'none', border: 'none', color: '#6B6B80', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                resetOnboarding();
+                setShowSettingsModal(false);
+                navigate('/onboarding');
+              }}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'rgba(255, 71, 87, 0.15)',
+                border: '1px solid rgba(255, 71, 87, 0.4)',
+                borderRadius: 12,
+                color: '#FF4757',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: 'pointer'
+              }}
+            >
+              Đăng xuất / Reset tài khoản
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface MenuItemProps {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  onTap: () => void;
+}
+
+const MenuItem: React.FC<MenuItemProps> = ({ icon, title, subtitle, onTap }) => {
+  return (
+    <div
+      onClick={onTap}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: 16,
+        cursor: 'pointer'
+      }}
+    >
+      <div
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          background: '#25253D',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: 12,
+          flexShrink: 0
+        }}
+      >
+        {icon}
+      </div>
+
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#FFFFFF' }}>{title}</div>
+        <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>{subtitle}</div>
+      </div>
+
+      <ChevronRight size={18} color="#6B6B80" />
     </div>
   );
 };

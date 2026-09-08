@@ -1,383 +1,230 @@
 import React, { useState } from 'react';
-import { Star, TrendingUp, CheckCircle2, Award, Gift, ChevronRight } from 'lucide-react';
-import { challenges as initialChallenges } from '../data/mockData';
-import { useUser } from '../context/UserContext';
-import { QuickStats } from '../components/challenge/ChallengeList';
-import type { Challenge } from '../types';
+import { challenges } from '../data/mockData';
+import { Flame, Zap, Swords, Trophy, CheckCircle, Clock, Gift, Coins } from 'lucide-react';
 
 export const ChallengePage: React.FC = () => {
-  const { user, addXP, addCoins, showToast } = useUser();
-  const [challengeList] = useState<Challenge[]>(initialChallenges);
-  const [activeTab, setActiveTab] = useState<'all' | 'daily' | 'weekly' | 'special'>('all');
-  const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
-  const [claimedIds, setClaimedIds] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
-  const completed = challengeList.filter(c => c.completed);
-  const total = challengeList.length;
-  const progress = Math.round((completed.length / total) * 100);
+  const filteredChallenges = challenges.filter(c => c.type === activeTab);
 
-  const earnedXP = completed.reduce((sum, c) => sum + c.reward.xp, 0);
-  const earnedCoins = completed.reduce((sum, c) => sum + c.reward.coins, 0);
-
-  const filteredChallenges = activeTab === 'all' 
-    ? challengeList 
-    : challengeList.filter(c => c.type === activeTab);
-
-  const handleClaimReward = (c: Challenge, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (claimedIds.includes(c.id)) {
-      showToast('Bạn đã nhận phần thưởng này rồi!', 'info');
-      return;
+  const getChallengeIcon = (iconName: string, color: string) => {
+    switch (iconName) {
+      case 'flame':
+        return <Flame size={28} color={color} />;
+      case 'zap':
+        return <Zap size={28} color={color} />;
+      case 'swords':
+        return <Swords size={28} color={color} />;
+      default:
+        return <Trophy size={28} color={color} />;
     }
-    setClaimedIds(prev => [...prev, c.id]);
-    addXP(c.reward.xp);
-    addCoins(c.reward.coins);
-    showToast(`🎉 Nhận thành công +${c.reward.xp} XP & +${c.reward.coins} Coins!`, 'success');
   };
 
-  const iconMap: Record<string, string> = {
-    flame: '🔥',
-    zap: '⚡',
-    swords: '⚔️',
-    'heart-pulse': '💓',
-    trophy: '🏆'
+  const getTimeRemaining = (expiresAt: string) => {
+    const diff = new Date(expiresAt).getTime() - Date.now();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    if (days > 0) return `${days} ngày`;
+    if (hours > 0) return `${hours} giờ`;
+    return '1 giờ';
   };
 
   return (
-    <div style={{ padding: '0 0 80px', maxWidth: 680, margin: '0 auto' }}>
+    <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
       {/* Header */}
-      <div style={{ padding: '16px 20px 20px', background: 'linear-gradient(180deg, #14141e, var(--bg))', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ marginBottom: 16 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Award size={24} color="#ffd700" /> Thử Thách
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--text3)', marginTop: 2 }}>Hoàn thành nhiệm vụ rèn luyện, thu thập XP và Coins nâng cấp nhân vật</p>
-        </div>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#FFFFFF', margin: '0 0 16px 0' }}>
+        🏆 Thử thách
+      </h1>
 
-        {/* Overall Progress Banner */}
-        <div style={{ padding: 18, background: 'linear-gradient(145deg, rgba(255,215,0,0.08), rgba(255,107,53,0.06))', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 18, marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 2 }}>Tiến độ thử thách mùa</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#ffd700' }}>
-                {completed.length}/{total} <span style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 500 }}>đã hoàn thành</span>
-              </div>
-            </div>
-            <div style={{ width: 58, height: 58, borderRadius: '50%', background: `conic-gradient(#ffd700 0% ${progress}%, var(--bg4) ${progress}% 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: '#ffd700' }}>
-                {progress}%
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ flex: 1, padding: '10px 14px', background: 'rgba(46,213,115,0.1)', border: '1px solid rgba(46,213,115,0.2)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <TrendingUp size={16} color="#2ed573" />
-              <div>
-                <div style={{ fontSize: 12, color: '#2ed573', fontWeight: 800 }}>+{earnedXP.toLocaleString()} XP</div>
-                <div style={{ fontSize: 10, color: 'var(--text4)' }}>Tổng XP tích lũy</div>
-              </div>
-            </div>
-            <div style={{ flex: 1, padding: '10px 14px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Star size={16} color="#ffd700" />
-              <div>
-                <div style={{ fontSize: 12, color: '#ffd700', fontWeight: 800 }}>+{earnedCoins.toLocaleString()} Coins</div>
-                <div style={{ fontSize: 10, color: 'var(--text4)' }}>Tổng Coins tích lũy</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tab Filters */}
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
-          {[
-            { id: 'all', label: 'Tất cả' },
-            { id: 'daily', label: 'Hàng ngày' },
-            { id: 'weekly', label: 'Hàng tuần' },
-            { id: 'special', label: 'Đặc biệt' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              style={{
-                flex: 1,
-                padding: '9px 12px',
-                borderRadius: 12,
-                fontSize: 13,
-                fontWeight: 700,
-                whiteSpace: 'nowrap',
-                background: activeTab === tab.id ? 'var(--gradient-primary)' : 'var(--bg-card)',
-                border: `1px solid ${activeTab === tab.id ? 'transparent' : 'var(--border)'}`,
-                color: activeTab === tab.id ? '#fff' : 'var(--text3)',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: activeTab === tab.id ? '0 4px 12px rgba(255,107,53,0.3)' : 'none'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      {/* Tabs */}
+      <div
+        style={{
+          display: 'flex',
+          background: '#1A1A2E',
+          borderRadius: 12,
+          padding: 4,
+          marginBottom: 16
+        }}
+      >
+        <button
+          onClick={() => setActiveTab('daily')}
+          style={{
+            flex: 1,
+            padding: '10px 0',
+            border: 'none',
+            borderRadius: 10,
+            background: activeTab === 'daily' ? '#FF6B35' : 'transparent',
+            color: activeTab === 'daily' ? '#FFFFFF' : '#6B6B80',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Hàng ngày
+        </button>
+        <button
+          onClick={() => setActiveTab('weekly')}
+          style={{
+            flex: 1,
+            padding: '10px 0',
+            border: 'none',
+            borderRadius: 10,
+            background: activeTab === 'weekly' ? '#FF6B35' : 'transparent',
+            color: activeTab === 'weekly' ? '#FFFFFF' : '#6B6B80',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Tuần này
+        </button>
+        <button
+          onClick={() => setActiveTab('monthly')}
+          style={{
+            flex: 1,
+            padding: '10px 0',
+            border: 'none',
+            borderRadius: 10,
+            background: activeTab === 'monthly' ? '#FF6B35' : 'transparent',
+            color: activeTab === 'monthly' ? '#FFFFFF' : '#6B6B80',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Tháng này
+        </button>
       </div>
 
-      {/* Body Content */}
-      <div style={{ padding: '0 20px' }}>
-        <div style={{ marginBottom: 20 }}>
-          <QuickStats
-            totalWorkouts={user.stats?.totalWorkouts || 24}
-            totalMinutes={user.stats?.totalMinutes || 480}
-            avgHeartRate={user.stats?.avgHeartRate || 138}
-            totalCalories={user.stats?.totalCalories || 3650}
-            streak={user.streak || 5}
-          />
+      {/* Challenge List */}
+      {filteredChallenges.length === 0 ? (
+        <div
+          style={{
+            background: '#1A1A2E',
+            borderRadius: 16,
+            padding: '48px 16px',
+            border: '1px solid #25253D',
+            textAlign: 'center',
+            marginTop: 20
+          }}
+        >
+          <Trophy size={64} color="#6B6B80" style={{ margin: '0 auto 16px' }} />
+          <div style={{ fontSize: 16, color: '#B0B0C3' }}>
+            Không có thử thách nào
+          </div>
         </div>
-
-        {/* Challenge List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {filteredChallenges.map(challenge => {
-            const isClaimed = claimedIds.includes(challenge.id);
-            const isReadyToClaim = challenge.completed && !isClaimed;
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {filteredChallenges.map((challenge) => {
+            const color = challenge.color || '#FF6B35';
+            const pct = Math.min(100, Math.round((challenge.current / challenge.target) * 100));
 
             return (
               <div
                 key={challenge.id}
-                onClick={() => setSelectedChallenge(challenge)}
                 style={{
-                  background: 'linear-gradient(145deg, #14141e, #1a1a28)',
-                  border: `1px solid ${challenge.completed ? 'rgba(46,213,115,0.3)' : 'var(--border)'}`,
+                  background: '#1A1A2E',
                   borderRadius: 16,
                   padding: 16,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  position: 'relative'
+                  border: '1px solid #25253D'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 16 }}>
                   <div
                     style={{
-                      width: 46,
-                      height: 46,
-                      borderRadius: 12,
-                      background: `${challenge.color}20`,
-                      border: `1px solid ${challenge.color}40`,
+                      width: 56,
+                      height: 56,
+                      borderRadius: 16,
+                      background: `${color}25`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: 24,
+                      marginRight: 16,
                       flexShrink: 0
                     }}
                   >
-                    {iconMap[challenge.icon] || '🏆'}
+                    {getChallengeIcon(challenge.icon, color)}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <h3 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 2 }}>{challenge.title}</h3>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF' }}>
+                        {challenge.title}
+                      </div>
                       {challenge.completed && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(46,213,115,0.15)', padding: '2px 8px', borderRadius: 8 }}>
-                          <CheckCircle2 size={12} color="#2ed573" />
-                          <span style={{ fontSize: 10, color: '#2ed573', fontWeight: 700 }}>Hoàn thành</span>
-                        </div>
+                        <CheckCircle size={20} color="#2ED573" />
                       )}
                     </div>
-                    <p style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.4 }}>{challenge.description}</p>
+                    <div style={{ fontSize: 13, color: '#B0B0C3', marginTop: 4 }}>
+                      {challenge.description}
+                    </div>
                   </div>
                 </div>
 
-                {/* Progress bar */}
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, color: 'var(--text4)' }}>Tiến trình</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: challenge.completed ? '#2ed573' : 'var(--text)' }}>
-                      {challenge.current} / {challenge.target} {challenge.unit}
+                {/* Progress bar info */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#FFFFFF' }}>
+                      {challenge.current}/{challenge.target} {challenge.unit}
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color }}>
+                      {pct}%
                     </span>
                   </div>
-                  <div style={{ height: 8, background: 'var(--bg4)', borderRadius: 4, overflow: 'hidden' }}>
+
+                  <div style={{ height: 10, background: '#25253D', borderRadius: 5, overflow: 'hidden' }}>
                     <div
                       style={{
                         height: '100%',
-                        width: `${Math.min((challenge.current / challenge.target) * 100, 100)}%`,
-                        background: challenge.completed ? '#2ed573' : challenge.color,
-                        borderRadius: 4,
-                        transition: 'width 0.6s ease-out'
+                        width: `${pct}%`,
+                        background: color,
+                        borderRadius: 5,
+                        transition: 'width 0.4s ease'
                       }}
                     />
                   </div>
                 </div>
 
-                {/* Rewards & Action */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', background: 'rgba(255,215,0,0.1)', borderRadius: 8 }}>
-                      <Star size={12} color="#ffd700" />
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#ffd700' }}>+{challenge.reward.xp} XP</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', background: 'rgba(255,165,2,0.1)', borderRadius: 8 }}>
-                      <Gift size={12} color="#ffa502" />
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#ffa502' }}>+{challenge.reward.coins} C</span>
-                    </div>
+                {/* Bottom Rewards & Time */}
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Gift size={16} color="#F7C948" />
+                    <span style={{ fontSize: 12, fontWeight: 500, color: '#FF6B35' }}>
+                      +{challenge.reward.xp} XP
+                    </span>
                   </div>
 
-                  {isReadyToClaim ? (
-                    <button
-                      onClick={(e) => handleClaimReward(challenge, e)}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 12 }}>
+                    <Coins size={16} color="#F7C948" />
+                    <span style={{ fontSize: 12, fontWeight: 500, color: '#F7C948' }}>
+                      +{challenge.reward.coins} Coins
+                    </span>
+                  </div>
+
+                  <div style={{ marginLeft: 'auto' }}>
+                    <div
                       style={{
-                        padding: '6px 14px',
-                        background: 'linear-gradient(135deg, #2ed573, #10ac84)',
-                        border: 'none',
-                        borderRadius: 10,
-                        color: '#fff',
-                        fontSize: 12,
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 10px rgba(46,213,115,0.4)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 4
+                        gap: 4,
+                        background: '#25253D',
+                        padding: '4px 10px',
+                        borderRadius: 12
                       }}
                     >
-                      <Gift size={13} /> Nhận thưởng
-                    </button>
-                  ) : isClaimed ? (
-                    <span style={{ fontSize: 11, color: 'var(--text4)', fontWeight: 600 }}>✓ Đã nhận</span>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, color: 'var(--text4)', fontSize: 12 }}>
-                      <span>Chi tiết</span>
-                      <ChevronRight size={14} />
+                      <Clock size={14} color="#6B6B80" />
+                      <span style={{ fontSize: 11, color: '#6B6B80' }}>
+                        {getTimeRemaining(challenge.expiresAt)}
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Challenge Detail Modal */}
-      {selectedChallenge && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.8)',
-            zIndex: 200,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center'
-          }}
-          onClick={() => setSelectedChallenge(null)}
-        >
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 480,
-              background: 'var(--bg-card)',
-              borderRadius: '24px 24px 0 0',
-              padding: 24,
-              border: '1px solid var(--border)'
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div
-                  style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 14,
-                    background: `${selectedChallenge.color}20`,
-                    border: `1px solid ${selectedChallenge.color}40`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 28
-                  }}
-                >
-                  {iconMap[selectedChallenge.icon] || '🏆'}
-                </div>
-                <div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', marginBottom: 2 }}>{selectedChallenge.title}</h3>
-                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>
-                    Thử thách {selectedChallenge.type === 'daily' ? 'Hàng ngày' : selectedChallenge.type === 'weekly' ? 'Hàng tuần' : 'Đặc biệt'}
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedChallenge(null)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  background: 'var(--bg3)',
-                  border: '1px solid var(--border)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: 'var(--text)'
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 18, lineHeight: 1.6 }}>{selectedChallenge.description}</p>
-
-            <div style={{ marginBottom: 18 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: 'var(--text3)' }}>Tiến trình thực hiện</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: selectedChallenge.completed ? '#2ed573' : 'var(--text)' }}>
-                  {selectedChallenge.current}/{selectedChallenge.target} {selectedChallenge.unit}
-                </span>
-              </div>
-              <div style={{ height: 10, background: 'var(--bg4)', borderRadius: 5, overflow: 'hidden' }}>
-                <div
-                  style={{
-                    height: '100%',
-                    width: `${Math.min((selectedChallenge.current / selectedChallenge.target) * 100, 100)}%`,
-                    background: selectedChallenge.completed ? '#2ed573' : selectedChallenge.color,
-                    borderRadius: 5
-                  }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-              <div style={{ flex: 1, padding: '12px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 14, textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#ffd700' }}>+{selectedChallenge.reward.xp}</div>
-                <div style={{ fontSize: 11, color: 'var(--text4)' }}>XP Thưởng</div>
-              </div>
-              <div style={{ flex: 1, padding: '12px', background: 'rgba(255,165,2,0.1)', border: '1px solid rgba(255,165,2,0.2)', borderRadius: 14, textAlign: 'center' }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#ffa502' }}>+{selectedChallenge.reward.coins}</div>
-                <div style={{ fontSize: 11, color: 'var(--text4)' }}>Coins Thưởng</div>
-              </div>
-            </div>
-
-            {selectedChallenge.completed && !claimedIds.includes(selectedChallenge.id) && (
-              <button
-                onClick={() => {
-                  handleClaimReward(selectedChallenge);
-                  setSelectedChallenge(null);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  background: 'linear-gradient(135deg, #2ed573, #10ac84)',
-                  border: 'none',
-                  borderRadius: 14,
-                  color: '#fff',
-                  fontSize: 15,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(46,213,115,0.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8
-                }}
-              >
-                <Gift size={18} /> Nhận phần thưởng ngay
-              </button>
-            )}
-          </div>
         </div>
       )}
     </div>

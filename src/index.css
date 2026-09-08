@@ -7,44 +7,51 @@
 }
 
 :root {
-  --bg: #0a0a0f;
-  --bg2: #111118;
-  --bg3: #1a1a25;
-  --bg4: #22222f;
-  --bg-card: #14141e;
-  --bg-card2: #1a1a2a;
-  --bg-card3: #202035;
+  --bg: #0F0F23;
+  --bg2: #14142B;
+  --bg3: #1A1A2E;
+  --bg4: #25253D;
+  --bg-card: #1A1A2E;
+  --bg-card2: #25253D;
+  --bg-card3: #2E2E4A;
 
-  --primary: #ff6b35;
-  --primary-dark: #e85a25;
-  --primary-light: #ff8c5a;
-  --secondary: #5352ed;
-  --secondary-dark: #4342d0;
-  --accent: #f7c948;
-  --accent-dark: #e0b030;
+  --primary: #FF6B35;
+  --primary-dark: #E85A25;
+  --primary-light: #FF8E53;
+  --secondary: #5352ED;
+  --secondary-dark: #4342D0;
+  --accent: #F7C948;
+  --accent-dark: #E0B030;
 
-  --success: #2ed573;
-  --danger: #ff4757;
-  --warning: #ffa502;
-  --info: #1e90ff;
+  --success: #2ED573;
+  --danger: #FF4757;
+  --error: #FF4757;
+  --warning: #F7C948;
+  --info: #1E90FF;
 
-  --text: #ffffff;
-  --text2: #e0e0e8;
-  --text3: #9898b0;
-  --text4: #5a5a75;
+  --text: #FFFFFF;
+  --text-primary: #FFFFFF;
+  --text2: #B0B0C3;
+  --text-secondary: #B0B0C3;
+  --text3: #B0B0C3;
+  --text4: #6B6B80;
+  --text-muted: #6B6B80;
 
-  --border: #2a2a3d;
-  --border2: #1e1e2d;
+  --border: #25253D;
+  --border2: #1E1E38;
 
-  --gradient-primary: linear-gradient(135deg, #ff6b35, #ff4757);
-  --gradient-secondary: linear-gradient(135deg, #5352ed, #7c3aed);
-  --gradient-accent: linear-gradient(135deg, #f7c948, #ff6b35);
-  --gradient-dark: linear-gradient(180deg, #111118, #0a0a0f);
-  --gradient-card: linear-gradient(145deg, #14141e, #1a1a28);
-  --gradient-success: linear-gradient(135deg, #2ed573, #7bed9f);
-  --gradient-gold: linear-gradient(135deg, #ffd700, #ff6b35);
-  --gradient-silver: linear-gradient(135deg, #c0c0c0, #a0a0b0);
-  --gradient-bronze: linear-gradient(135deg, #cd7f32, #a05020);
+  --gradient-primary: linear-gradient(135deg, #FF6B35, #FF8E53);
+  --gradient-secondary: linear-gradient(135deg, #5352ED, #7070FF);
+  --gradient-battle: linear-gradient(135deg, #FF4757, #FF6B81);
+  --gradient-accent: linear-gradient(135deg, #F7C948, #FFD93D);
+  --gradient-coin: linear-gradient(135deg, #F7C948, #FFD93D);
+  --gradient-ruby: linear-gradient(135deg, #FF4757, #FF6B81);
+  --gradient-dark: linear-gradient(180deg, #1A1A2E, #0F0F23);
+  --gradient-card: linear-gradient(145deg, #1A1A2E, #25253D);
+  --gradient-success: linear-gradient(135deg, #2ED573, #7BED9F);
+  --gradient-gold: linear-gradient(180deg, rgba(255,215,0,0.8), rgba(255,215,0,0.4));
+  --gradient-silver: linear-gradient(180deg, rgba(192,192,192,0.8), rgba(192,192,192,0.4));
+  --gradient-bronze: linear-gradient(180deg, rgba(205,127,50,0.8), rgba(205,127,50,0.4));
 
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
@@ -56,8 +63,8 @@
   --radius-xs: 6px;
   --radius-sm: 10px;
   --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
   --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;

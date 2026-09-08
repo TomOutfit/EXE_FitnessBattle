@@ -1,216 +1,515 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Crown, Check, ArrowLeft, Zap, Star } from 'lucide-react';
-import { membershipPlans } from '../data/mockData';
 import { useUser } from '../context/UserContext';
+import { Check, CheckCircle, X, Sparkles, Percent, RefreshCw } from 'lucide-react';
+
+interface PlanDetail {
+  id: string;
+  name: string;
+  emoji: string;
+  durationDays: number;
+  price: number;
+  priceFormatted: string;
+  color: string;
+  isPopular?: boolean;
+  features: string[];
+  notIncluded: string[];
+}
 
 export const MembershipPage: React.FC = () => {
-  const navigate = useNavigate();
   const { user, upgradeToVIP, showToast } = useUser();
-  const [isYearly, setIsYearly] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<string>(user.isVIP ? 'vip' : 'vip');
+  const [selectedPlan, setSelectedPlan] = useState<PlanDetail | null>(null);
 
-  const handleSubscribe = (planId: string) => {
-    if (planId === 'free') {
-      showToast('Bạn đang sử dụng Gói Miễn Phí', 'info');
-      return;
+  const plans: PlanDetail[] = [
+    {
+      id: 'basic',
+      name: 'Basic',
+      emoji: '🥉',
+      durationDays: 30,
+      price: 49000,
+      priceFormatted: '49.000',
+      color: '#3498DB',
+      features: [
+        '+10% điểm thưởng mỗi ngày',
+        'Giảm 10% phí tham gia đấu trường',
+        'Mở khóa phòng chờ riêng',
+        'Lưu lịch sử tập 30 ngày'
+      ],
+      notIncluded: [
+        'Không giới hạn đồng bộ thiết bị',
+        'Phân tích góc khớp AI chuyên sâu'
+      ]
+    },
+    {
+      id: 'premium',
+      name: 'Premium',
+      emoji: '🥈',
+      durationDays: 90,
+      price: 129000,
+      priceFormatted: '129.000',
+      color: '#9B59B6',
+      isPopular: true,
+      features: [
+        '+20% điểm thưởng mỗi ngày',
+        'Giảm 25% phí tham gia đấu trường',
+        'Đồng bộ dữ liệu không giới hạn',
+        'Phân tích tư thế AI thời gian thực',
+        'Khung avatar & hiệu ứng riêng'
+      ],
+      notIncluded: [
+        'Huấn luyện viên cá nhân AI 1v1'
+      ]
+    },
+    {
+      id: 'vip',
+      name: 'VIP',
+      emoji: '👑',
+      durationDays: 365,
+      price: 399000,
+      priceFormatted: '399.000',
+      color: '#F39C12',
+      features: [
+        '+35% điểm thưởng toàn hệ thống',
+        'Giảm 50% phí tham gia đấu trường',
+        'Đồng bộ dữ liệu thời gian thực',
+        'Phân tích góc khớp AI chuẩn thi đấu',
+        'Mở khóa toàn bộ Khung Avatar & Danh hiệu',
+        'Hỗ trợ ưu tiên 24/7'
+      ],
+      notIncluded: []
     }
+  ];
+
+  const handleSubscribe = (plan: PlanDetail) => {
     upgradeToVIP();
-    showToast('🎉 Nâng cấp Gói VIP Pro thành công! Thể lực tối đa tăng lên 500 & Nhận ngay +100 Ruby!', 'success');
+    setSelectedPlan(null);
+    showToast?.(`Chúc mừng bạn đã nâng cấp gói ${plan.name} thành công!`, 'success');
   };
 
   return (
-    <div style={{ padding: '0 0 80px', maxWidth: 680, margin: '0 auto' }}>
+    <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
       {/* Header */}
-      <div style={{ padding: '16px 20px 20px', background: 'linear-gradient(180deg, #14141e, var(--bg))', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 12,
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'var(--text)'
-            }}
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Crown size={22} color="#ffd700" /> Gói Hội Viên VIP
-            </h1>
-            <p style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>Mở khóa toàn bộ tiềm năng tập luyện cùng AI</p>
-          </div>
-        </div>
-
-        {/* Current VIP Status Card */}
-        {user.isVIP && (
-          <div
-            style={{
-              padding: '12px 16px',
-              background: 'linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,107,53,0.1))',
-              border: '1px solid rgba(255,215,0,0.3)',
-              borderRadius: 14,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 12
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Crown size={20} color="#ffd700" />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#ffd700' }}>Bạn đang là Hội Viên VIP Pro</div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Hạn sử dụng: Vĩnh viễn (Bản MVP Demo)</div>
-              </div>
-            </div>
-            <div style={{ padding: '4px 10px', background: 'rgba(255,215,0,0.2)', borderRadius: 20, fontSize: 11, fontWeight: 800, color: '#ffd700' }}>
-              ĐANG HOẠT ĐỘNG
-            </div>
-          </div>
-        )}
-
-        {/* Billing Cycle Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: !isYearly ? 'var(--text)' : 'var(--text3)' }}>Theo Tháng</span>
-          <button
-            onClick={() => setIsYearly(prev => !prev)}
-            style={{
-              width: 50,
-              height: 26,
-              borderRadius: 14,
-              background: isYearly ? 'var(--gradient-primary)' : 'var(--bg4)',
-              border: 'none',
-              padding: 3,
-              cursor: 'pointer',
-              position: 'relative',
-              transition: 'all 0.2s'
-            }}
-          >
-            <div
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: '50%',
-                background: '#fff',
-                transform: isYearly ? 'translateX(24px)' : 'translateX(0)',
-                transition: 'transform 0.2s'
-              }}
-            />
-          </button>
-          <span style={{ fontSize: 13, fontWeight: 700, color: isYearly ? 'var(--text)' : 'var(--text3)', display: 'flex', alignItems: 'center', gap: 4 }}>
-            Theo Năm <span style={{ fontSize: 10, background: 'rgba(46,213,115,0.2)', color: '#2ed573', padding: '2px 6px', borderRadius: 6 }}>-25%</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
+          👑 Membership
+        </h1>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: user.isVIP ? 'rgba(243, 156, 18, 0.2)' : '#1A1A2E',
+            padding: '6px 12px',
+            borderRadius: 20,
+            border: user.isVIP ? '1px solid #F39C12' : '1px solid #25253D'
+          }}
+        >
+          <span style={{ fontSize: 16 }}>{user.isVIP ? '👑' : '🌱'}</span>
+          <span style={{ fontWeight: 600, color: user.isVIP ? '#F39C12' : '#B0B0C3', fontSize: 13 }}>
+            {user.isVIP ? 'VIP Member' : 'Free Member'}
           </span>
         </div>
       </div>
 
-      {/* Plan Cards */}
-      <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {membershipPlans.map(plan => {
-          const isSelected = selectedPlan === plan.id;
-          const isCurrentActive = (plan.id === 'vip' && user.isVIP) || (plan.id === 'free' && !user.isVIP);
+      {/* Current Membership Status Banner */}
+      {user.isVIP ? (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
+            borderRadius: 20,
+            padding: 20,
+            color: '#FFFFFF',
+            marginBottom: 24,
+            boxShadow: '0 8px 24px rgba(243, 156, 18, 0.3)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: 16,
+                background: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 32,
+                marginRight: 16
+              }}
+            >
+              👑
+            </div>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 700 }}>VIP Member</div>
+              <div style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.85)', marginTop: 2 }}>
+                Hết hạn: 31/12/2026
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              borderRadius: 12,
+              padding: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-around',
+              textAlign: 'center'
+            }}
+          >
+            <div>
+              <Sparkles size={18} style={{ margin: '0 auto 4px' }} />
+              <div style={{ fontSize: 16, fontWeight: 700 }}>+35%</div>
+              <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.8)' }}>Bonus Điểm</div>
+            </div>
+            <div style={{ width: 1, height: 30, background: 'rgba(255, 255, 255, 0.25)' }} />
+            <div>
+              <Percent size={18} style={{ margin: '0 auto 4px' }} />
+              <div style={{ fontSize: 16, fontWeight: 700 }}>-50%</div>
+              <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.8)' }}>Giảm Phí</div>
+            </div>
+            <div style={{ width: 1, height: 30, background: 'rgba(255, 255, 255, 0.25)' }} />
+            <div>
+              <RefreshCw size={18} style={{ margin: '0 auto 4px' }} />
+              <div style={{ fontSize: 16, fontWeight: 700 }}>∞</div>
+              <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.8)' }}>Sync</div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            background: '#1A1A2E',
+            borderRadius: 20,
+            padding: 20,
+            border: '1px solid #25253D',
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: 24
+          }}
+        >
+          <div
+            style={{
+              width: 60,
+              height: 60,
+              borderRadius: 16,
+              background: '#25253D',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 32,
+              marginRight: 16
+            }}
+          >
+            🌱
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+              Free Member
+            </div>
+            <div style={{ fontSize: 13, color: '#B0B0C3', marginTop: 2 }}>
+              Nâng cấp để nhận nhiều ưu đãi độc quyền!
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Membership Plans List */}
+      <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 12 }}>
+        📦 Gói Membership
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+        {plans.map((plan) => {
+          const isCurrent = (plan.id === 'vip' && user.isVIP);
 
           return (
             <div
               key={plan.id}
-              onClick={() => setSelectedPlan(plan.id)}
+              onClick={() => setSelectedPlan(plan)}
               style={{
-                background: isSelected ? 'linear-gradient(145deg, #181826, #222238)' : 'linear-gradient(145deg, #14141e, #1a1a28)',
-                border: isSelected ? `2px solid ${plan.color}` : '1px solid var(--border)',
-                borderRadius: 20,
-                padding: 20,
-                position: 'relative',
+                background: '#1A1A2E',
+                borderRadius: 16,
+                padding: 16,
+                border: plan.isPopular
+                  ? `2px solid ${plan.color}`
+                  : isCurrent
+                    ? '2px solid #2ED573'
+                    : '1px solid #25253D',
                 cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: isSelected ? `0 8px 24px ${plan.color}25` : 'none'
+                transition: 'all 0.2s'
               }}
             >
-              {plan.isPopular && (
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
                 <div
                   style={{
-                    position: 'absolute',
-                    top: 14,
-                    right: 14,
-                    background: 'linear-gradient(135deg, #ff6b35, #ff4757)',
-                    padding: '4px 10px',
-                    borderRadius: 20,
-                    fontSize: 10,
-                    fontWeight: 800,
-                    color: '#fff',
+                    width: 50,
+                    height: 50,
+                    borderRadius: 12,
+                    background: `${plan.color}25`,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 4
+                    justifyContent: 'center',
+                    fontSize: 28,
+                    marginRight: 14,
+                    flexShrink: 0
                   }}
                 >
-                  <Star size={10} fill="#fff" /> KHUYÊN DÙNG
+                  {plan.emoji}
                 </div>
-              )}
 
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: 'var(--text)' }}>{plan.name}</h3>
-                <span style={{ fontSize: 11, color: plan.color, fontWeight: 800, textTransform: 'uppercase' }}>{plan.badge}</span>
-              </div>
-
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 24, fontWeight: 900, color: plan.color }}>
-                  {isYearly ? plan.priceYearly : plan.priceMonthly}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                {plan.features.map((feature, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--text2)' }}>
-                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: `${plan.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Check size={12} color={plan.color} />
-                    </div>
-                    <span>{feature}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+                      {plan.name}
+                    </span>
+                    {isCurrent && (
+                      <span
+                        style={{
+                          background: 'rgba(46, 213, 115, 0.2)',
+                          color: '#2ED573',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 8
+                        }}
+                      >
+                        ĐANG DÙNG
+                      </span>
+                    )}
+                    {plan.isPopular && (
+                      <span
+                        style={{
+                          background: `${plan.color}25`,
+                          color: plan.color,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 8
+                        }}
+                      >
+                        PHỔ BIẾN
+                      </span>
+                    )}
                   </div>
+                  <div style={{ fontSize: 13, color: '#B0B0C3', marginTop: 2 }}>
+                    {plan.durationDays} ngày
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: plan.color }}>
+                    {plan.priceFormatted}đ
+                  </div>
+                  <div style={{ fontSize: 11, color: '#6B6B80' }}>
+                    /{plan.durationDays} ngày
+                  </div>
+                </div>
+              </div>
+
+              {/* Mini feature tags */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {plan.features.slice(0, 3).map((feat, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: '#25253D',
+                      color: '#B0B0C3',
+                      fontSize: 11,
+                      padding: '4px 8px',
+                      borderRadius: 8
+                    }}
+                  >
+                    {feat}
+                  </span>
                 ))}
               </div>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSubscribe(plan.id);
-                }}
-                disabled={isCurrentActive}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  borderRadius: 14,
-                  background: isCurrentActive ? 'var(--bg4)' : plan.id === 'free' ? 'var(--bg3)' : `linear-gradient(135deg, ${plan.color}, #ff4757)`,
-                  border: 'none',
-                  color: isCurrentActive ? 'var(--text4)' : '#fff',
-                  fontSize: 14,
-                  fontWeight: 800,
-                  cursor: isCurrentActive ? 'default' : 'pointer',
-                  boxShadow: !isCurrentActive && plan.id !== 'free' ? `0 4px 16px ${plan.color}40` : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6
-                }}
-              >
-                {isCurrentActive ? (
-                  <span>Gói Hiện Tại</span>
-                ) : plan.id === 'free' ? (
-                  <span>Chọn Gói Này</span>
-                ) : (
-                  <>
-                    <Zap size={16} fill="#fff" /> Nâng Cấp Ngay
-                  </>
-                )}
-              </button>
             </div>
           );
         })}
       </div>
+
+      {/* Perks section */}
+      {user.isVIP && (
+        <div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 12 }}>
+            ✨ Quyền lợi của bạn
+          </div>
+
+          <div
+            style={{
+              background: '#1A1A2E',
+              borderRadius: 16,
+              padding: 16,
+              border: '1px solid #25253D'
+            }}
+          >
+            {[
+              '+35% điểm thưởng toàn hệ thống',
+              'Giảm 50% phí tham gia đấu trường',
+              'Đồng bộ dữ liệu thời gian thực',
+              'Phân tích góc khớp AI chuẩn thi đấu',
+              'Mở khóa toàn bộ Khung Avatar & Danh hiệu',
+              'Hỗ trợ ưu tiên 24/7'
+            ].map((perk, i, arr) => (
+              <React.Fragment key={i}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' }}>
+                  <div
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      background: 'rgba(46, 213, 115, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <Check size={14} color="#2ED573" />
+                  </div>
+                  <span style={{ fontSize: 14, color: '#FFFFFF' }}>{perk}</span>
+                </div>
+                {i < arr.length - 1 && (
+                  <div style={{ height: 1, background: '#25253D', margin: '6px 0' }} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Plan Details Modal Sheet */}
+      {selectedPlan && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center'
+          }}
+          onClick={() => setSelectedPlan(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 640,
+              background: '#0F0F23',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              padding: '16px 20px 32px',
+              borderTop: '1px solid #25253D',
+              boxShadow: '0 -8px 24px rgba(0,0,0,0.5)'
+            }}
+          >
+            {/* Handle bar */}
+            <div
+              style={{
+                width: 40,
+                height: 4,
+                background: '#6B6B80',
+                borderRadius: 2,
+                margin: '0 auto 16px'
+              }}
+            />
+
+            {/* Plan Header */}
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 16,
+                  background: `${selectedPlan.color}25`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 32,
+                  marginRight: 16
+                }}
+              >
+                {selectedPlan.emoji}
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
+                  {selectedPlan.name} Membership
+                </div>
+                <div style={{ fontSize: 13, color: '#B0B0C3' }}>
+                  {selectedPlan.durationDays} ngày
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: selectedPlan.color }}>
+                  {selectedPlan.priceFormatted}đ
+                </div>
+                <div style={{ fontSize: 11, color: '#6B6B80' }}>
+                  /{selectedPlan.durationDays} ngày
+                </div>
+              </div>
+            </div>
+
+            {/* Features list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+              {selectedPlan.features.map((feature, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <CheckCircle size={18} color="#2ED573" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, color: '#FFFFFF' }}>{feature}</span>
+                </div>
+              ))}
+
+              {selectedPlan.notIncluded.map((feature, idx) => (
+                <div key={`not-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <X size={18} color="#6B6B80" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: 14, color: '#6B6B80' }}>{feature}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Buy button */}
+            <button
+              onClick={() => handleSubscribe(selectedPlan)}
+              style={{
+                width: '100%',
+                padding: 14,
+                borderRadius: 14,
+                background: `linear-gradient(135deg, ${selectedPlan.color} 0%, #FF6B35 100%)`,
+                border: 'none',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: 16,
+                cursor: 'pointer',
+                marginBottom: 12,
+                boxShadow: `0 4px 16px ${selectedPlan.color}40`
+              }}
+            >
+              MUA NGAY
+            </button>
+
+            <button
+              onClick={() => setSelectedPlan(null)}
+              style={{
+                width: '100%',
+                background: 'none',
+                border: 'none',
+                color: '#6B6B80',
+                fontSize: 15,
+                cursor: 'pointer'
+              }}
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,388 +1,581 @@
-import { ChevronRight, Zap, Trophy, ShoppingBag, Crown, Play, Flame, Dumbbell, Footprints, Target } from 'lucide-react';
-import { leaderboard, exercises } from '../data/mockData';
-import { Avatar } from '../components/ui';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { battles, challenges, recentActivities, exercises } from '../data/mockData';
+import { Flame, Coins, Zap, Trophy, CheckCircle, Flag, Dumbbell } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Chào buổi sáng' : hour < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
-  const dayPart = hour < 12 ? '👋' : hour < 18 ? '💪' : '🌙';
+  const pushupEx = exercises.find(e => e.type === 'pushup') || exercises[0];
+  const pullupEx = exercises.find(e => e.type === 'pullup') || exercises[1];
+  const walkingEx = exercises.find(e => e.type === 'walking') || exercises[2];
+
+  const activeBattles = battles.filter(b => b.status === 'active' || b.status === 'waiting');
 
   return (
-    <div style={{ paddingBottom: 90, maxWidth: 680, margin: '0 auto' }}>
-      {/* Top Header */}
-      <div style={{ background: 'linear-gradient(180deg, #14141e, var(--bg))', padding: '16px 20px 0', position: 'sticky', top: 0, zIndex: 50 }}>
-        {/* User Info */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div 
-            style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
-            onClick={() => navigate('/profile')}
-          >
-            <Avatar src={user.avatar} alt={user.name} size={46} online level={user.level} isVIP={user.isVIP} />
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                {greeting} {dayPart}
-                {user.isVIP && (
-                  <span style={{ fontSize: 10, padding: '2px 8px', background: 'linear-gradient(135deg, #ffd700, #ff6b35)', borderRadius: 10, color: '#000', fontWeight: 900 }}>
-                    VIP
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
-                {user.name} • Cấp {user.level} • {user.totalPoints.toLocaleString()} pts
-              </div>
-            </div>
-          </div>
-          <button 
-            onClick={() => navigate('/profile')} 
-            style={{ 
-              width: 38, 
-              height: 38, 
-              borderRadius: 12, 
-              background: 'var(--bg-card)', 
-              border: '1px solid var(--border)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              cursor: 'pointer' 
+    <div style={{ padding: '16px', maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+        {/* Avatar */}
+        <div 
+          style={{ position: 'relative', width: 56, height: 56, cursor: 'pointer', flexShrink: 0 }}
+          onClick={() => navigate('/profile')}
+        >
+          <img
+            src={user.avatar}
+            alt={user.name}
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: '2px solid #25253D',
+              background: '#25253D'
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              background: '#FF6B35',
+              color: '#FFFFFF',
+              borderRadius: 10,
+              padding: '1px 5px',
+              fontSize: 10,
+              fontWeight: 800,
+              border: '2px solid #0F0F23'
             }}
           >
-            <span style={{ fontSize: 18 }}>👤</span>
-          </button>
+            {user.level}
+          </div>
         </div>
 
-        {/* Currency & Stamina Resource Bar */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          {/* Stamina Bar */}
-          <div 
-            style={{ 
-              flex: 1.2, 
-              padding: '8px 10px', 
-              background: 'rgba(255,107,53,0.1)', 
-              border: '1px solid rgba(255,107,53,0.25)', 
-              borderRadius: 14, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between' 
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Zap size={15} color="var(--primary)" />
-              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--primary)' }}>
-                {user.stamina}/{user.maxStamina} HP
-              </span>
+        {/* User Info */}
+        <div style={{ marginLeft: 12, flex: 1 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
+            Xin chào, {user.name}! 👋
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            <Flame size={16} color="#FF6B35" />
+            <span style={{ fontSize: 13, color: '#B0B0C3' }}>
+              {user.streak} ngày liên tiếp
+            </span>
+          </div>
+        </div>
+
+        {/* Ruby Counter */}
+        <div
+          onClick={() => navigate('/shop')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: '#1A1A2E',
+            padding: '8px 14px',
+            borderRadius: 20,
+            cursor: 'pointer',
+            border: '1px solid #25253D'
+          }}
+        >
+          <span style={{ fontSize: 16 }}>💎</span>
+          <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14 }}>
+            {user.ruby}
+          </span>
+        </div>
+      </div>
+
+      {/* XP Progress Card */}
+      <div
+        style={{
+          background: '#1A1A2E',
+          borderRadius: 16,
+          padding: 16,
+          border: '1px solid #25253D',
+          marginBottom: 20
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #FF6B35, #FF8E53)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#FFFFFF',
+                fontWeight: 800,
+                fontSize: 12
+              }}
+            >
+              {user.level}
             </div>
-            {!user.isVIP && (
-              <button 
-                onClick={() => navigate('/membership')} 
-                style={{ 
-                  fontSize: 10, 
-                  padding: '2px 8px', 
-                  background: 'var(--gradient-primary)', 
-                  border: 'none', 
-                  borderRadius: 8, 
-                  color: '#fff', 
-                  fontWeight: 800, 
-                  cursor: 'pointer' 
-                }}
-              >
-                +VIP
-              </button>
-            )}
+            <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14 }}>
+              Cấp {user.level}
+            </span>
           </div>
-
-          {/* Ruby Currency */}
-          <div 
-            style={{ 
-              flex: 1, 
-              padding: '8px 10px', 
-              background: 'rgba(83,82,237,0.1)', 
-              border: '1px solid rgba(83,82,237,0.25)', 
-              borderRadius: 14, 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6, 
-              cursor: 'pointer' 
-            }} 
-            onClick={() => navigate('/shop')}
-          >
-            <span style={{ fontSize: 14 }}>💎</span>
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#5352ed' }}>{user.ruby} Ruby</span>
-          </div>
-
-          {/* Coins / Points */}
-          <div 
-            style={{ 
-              flex: 1, 
-              padding: '8px 10px', 
-              background: 'rgba(255,215,0,0.1)', 
-              border: '1px solid rgba(255,215,0,0.25)', 
-              borderRadius: 14, 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6,
-              cursor: 'pointer'
+          <span style={{ color: '#B0B0C3', fontSize: 12 }}>
+            {user.xp} / {user.xpToNextLevel} XP
+          </span>
+        </div>
+        {/* Progress Bar */}
+        <div style={{ height: 8, background: '#25253D', borderRadius: 4, overflow: 'hidden' }}>
+          <div
+            style={{
+              height: '100%',
+              width: `${Math.min(100, Math.round((user.xp / user.xpToNextLevel) * 100))}%`,
+              background: 'linear-gradient(90deg, #FF6B35, #FF8E53)',
+              borderRadius: 4,
+              transition: 'width 0.4s ease'
             }}
-            onClick={() => navigate('/shop')}
-          >
-            <span style={{ fontSize: 14 }}>🪙</span>
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#ffd700' }}>{user.coins} Xu</span>
+          />
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+        {/* Coins */}
+        <div
+          onClick={() => navigate('/shop')}
+          style={{
+            background: '#1A1A2E',
+            borderRadius: 16,
+            padding: 16,
+            textAlign: 'center',
+            border: '1px solid #25253D',
+            cursor: 'pointer'
+          }}
+        >
+          <Coins size={28} color="#F7C948" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
+            {user.coins}
+          </div>
+          <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
+            Coins
+          </div>
+        </div>
+
+        {/* Stamina */}
+        <div
+          style={{
+            background: '#1A1A2E',
+            borderRadius: 16,
+            padding: 16,
+            textAlign: 'center',
+            border: '1px solid #25253D'
+          }}
+        >
+          <Zap size={28} color="#5352ED" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
+            {user.stamina}/{user.maxStamina}
+          </div>
+          <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
+            Stamina
+          </div>
+        </div>
+
+        {/* Rank */}
+        <div
+          onClick={() => navigate('/ranking')}
+          style={{
+            background: '#1A1A2E',
+            borderRadius: 16,
+            padding: 16,
+            textAlign: 'center',
+            border: '1px solid #25253D',
+            cursor: 'pointer'
+          }}
+        >
+          <Trophy size={28} color="#FF6B35" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
+            #{user.rank}
+          </div>
+          <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
+            Hạng
           </div>
         </div>
       </div>
 
-      <div style={{ padding: '0 20px', marginTop: 14 }}>
-        {/* CORE ACTION BANNER: START 1V1 BATTLE */}
-        <div 
-          style={{ 
-            marginBottom: 20, 
-            padding: '18px 20px', 
-            background: 'linear-gradient(135deg, rgba(255,107,53,0.2), rgba(83,82,237,0.15))', 
-            border: '2px solid rgba(255,107,53,0.4)', 
-            borderRadius: 20, 
-            cursor: 'pointer', 
-            boxShadow: '0 8px 24px rgba(255,107,53,0.25)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }} 
-          onClick={() => navigate('/battle')}
+      {/* Exercise Quick Access */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+          💪 Tập Luyện Hôm Nay
+        </span>
+        <button
+          onClick={() => navigate('/exercise')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#FF6B35',
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer'
+          }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div 
-              style={{ 
-                width: 48, 
-                height: 48, 
-                borderRadius: 16, 
-                background: 'var(--gradient-primary)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                fontSize: 24, 
-                boxShadow: '0 0 16px rgba(255,107,53,0.5)' 
-              }}
-            >
-              ⚔️
-            </div>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text)', marginBottom: 2 }}>
-                Đấu Trường Camera 1v1 (60s)
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700 }}>
-                Ghép đối thủ trực tiếp & so tài đếm số lần chuẩn xác
-              </div>
-            </div>
+          Xem tất cả
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+        {/* Pushup */}
+        <ExerciseQuickCard
+          emoji="💪"
+          name="Hít Đất"
+          current={pushupEx.todayCount}
+          target={pushupEx.targetCount}
+          color="#FF6B35"
+          onTap={() => navigate('/exercise')}
+        />
+        {/* Pullup */}
+        <ExerciseQuickCard
+          emoji="🏋️"
+          name="Kéo Xà"
+          current={pullupEx.todayCount}
+          target={pullupEx.targetCount}
+          color="#5352ED"
+          onTap={() => navigate('/exercise')}
+        />
+        {/* Walking */}
+        <ExerciseQuickCard
+          emoji="🚶"
+          name="Đi Bộ"
+          current={walkingEx.todayCount}
+          target={walkingEx.targetCount}
+          color="#2ED573"
+          onTap={() => navigate('/exercise')}
+        />
+      </div>
+
+      {/* Weekly Stats Summary Banner */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%)',
+          borderRadius: 16,
+          padding: 16,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 24,
+          color: '#FFFFFF'
+        }}
+      >
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>
+            📊 Thống kê tuần này
           </div>
-          <ChevronRight size={24} color="var(--primary)" />
-        </div>
-
-        {/* 3 LIVE EXERCISE CARDS */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Target size={18} color="var(--primary)" /> Luyện Tập Cùng AI Camera
-            </h2>
-            <button 
-              onClick={() => navigate('/exercise')} 
-              style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Xem tất cả
-            </button>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 2 }}>
+            {pushupEx.todayCount + 120} lần hít đất
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {exercises.map(exercise => {
-              const pct = Math.round((exercise.todayCount / exercise.targetCount) * 100);
-              const isPushup = exercise.type === 'pushup';
-              const isPullup = exercise.type === 'pullup';
-
-              return (
-                <div
-                  key={exercise.type}
-                  onClick={() => {
-                    if (exercise.type === 'walking') {
-                      navigate('/exercise');
-                    } else {
-                      navigate(`/exercise-camera?type=${exercise.type}`);
-                    }
-                  }}
-                  style={{
-                    background: 'linear-gradient(145deg, #14141e, #1a1a28)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 18,
-                    padding: 16,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div
-                        style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 14,
-                          background: `${exercise.color}20`,
-                          border: `1px solid ${exercise.color}40`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 22
-                        }}
-                      >
-                        {isPushup ? <Flame size={22} color={exercise.color} /> : isPullup ? <Dumbbell size={22} color={exercise.color} /> : <Footprints size={22} color={exercise.color} />}
-                      </div>
-                      <div>
-                        <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
-                          {exercise.name}
-                        </h3>
-                        <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
-                          Mục tiêu: {exercise.targetCount} {exercise.unit}/ngày
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 16, fontWeight: 900, color: exercise.color }}>
-                        {exercise.todayCount.toLocaleString()} <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600 }}>/ {exercise.targetCount.toLocaleString()} {exercise.unit}</span>
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--text4)', marginTop: 2 }}>{pct}% hoàn thành</div>
-                    </div>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div style={{ height: 6, background: 'var(--bg4)', borderRadius: 3, overflow: 'hidden', marginBottom: 12 }}>
-                    <div 
-                      style={{ 
-                        height: '100%', 
-                        width: `${Math.min(pct, 100)}%`, 
-                        background: exercise.gradient, 
-                        borderRadius: 3,
-                        transition: 'width 0.6s ease-out'
-                      }} 
-                    />
-                  </div>
-
-                  {/* Action button */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: 'var(--text3)' }}>
-                      🔥 Đốt ~{(exercise.todayCount * exercise.caloriesPerRep).toFixed(0)} kcal
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (exercise.type === 'walking') {
-                          navigate('/exercise');
-                        } else {
-                          navigate(`/exercise-camera?type=${exercise.type}`);
-                        }
-                      }}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: 10,
-                        background: exercise.type === 'walking' ? 'rgba(46,213,115,0.15)' : 'var(--gradient-primary)',
-                        border: exercise.type === 'walking' ? '1px solid rgba(46,213,115,0.3)' : 'none',
-                        color: exercise.type === 'walking' ? '#2ed573' : '#fff',
-                        fontSize: 11,
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                    >
-                      {exercise.type === 'walking' ? <span>Ghi nhận</span> : <><Play size={11} fill="#fff" /> Bật Camera</>}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
+            {pullupEx.todayCount + 45} lần kéo xà
           </div>
         </div>
 
-        {/* Quick Shortcut Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
-          <button 
-            onClick={() => navigate('/challenge')} 
-            style={{ padding: '14px 8px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-          >
-            <span style={{ fontSize: 22 }}>🎯</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>Thử Thách</span>
-          </button>
-          <button 
-            onClick={() => navigate('/shop')} 
-            style={{ padding: '14px 8px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-          >
-            <ShoppingBag size={22} color="#ffd700" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>Cửa Hàng</span>
-          </button>
-          <button 
-            onClick={() => navigate('/ranking')} 
-            style={{ padding: '14px 8px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-          >
-            <Trophy size={22} color="#5352ed" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>Xếp Hạng</span>
-          </button>
-          <button 
-            onClick={() => navigate('/membership')} 
-            style={{ padding: '14px 8px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-          >
-            <Crown size={22} color="#ff6b35" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>Gói VIP</span>
-          </button>
-        </div>
-
-        {/* Ranking Preview */}
-        <div style={{ padding: 18, background: 'linear-gradient(145deg, #1a1a28, #14141e)', border: '1px solid var(--border)', borderRadius: 18 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Trophy size={16} color="#ffd700" /> Bảng Xếp Hạng Mùa #7
-            </h3>
-            <button 
-              onClick={() => navigate('/ranking')} 
-              style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Xem chi tiết →
-            </button>
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: 12,
+            padding: '10px 14px',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center'
+          }}
+        >
+          <Flame size={24} color="#FFFFFF" />
+          <div style={{ fontWeight: 700, fontSize: 18, color: '#FFFFFF', marginTop: 2 }}>
+            {user.streak}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {leaderboard.slice(0, 3).map((entry) => (
-              <div 
-                key={entry.userId} 
-                onClick={() => navigate('/ranking')}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 12, 
-                  padding: '10px 14px', 
-                  background: entry.rank === 1 ? 'rgba(255,215,0,0.08)' : 'var(--bg-card2)', 
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>
+            Streak
+          </div>
+        </div>
+      </div>
+
+      {/* Active Battles */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+          ⚔️ Trận đấu đang diễn ra
+        </span>
+        <button
+          onClick={() => navigate('/battle')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#FF6B35',
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer'
+          }}
+        >
+          Xem tất cả
+        </button>
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          overflowX: 'auto',
+          paddingBottom: 8,
+          marginBottom: 24,
+          scrollbarWidth: 'none'
+        }}
+      >
+        {activeBattles.map((battle) => (
+          <div
+            key={battle.id}
+            onClick={() => navigate('/battle')}
+            style={{
+              minWidth: 280,
+              background: 'linear-gradient(135deg, #FF4757 0%, #FF6B81 100%)',
+              borderRadius: 16,
+              padding: 16,
+              cursor: 'pointer',
+              flexShrink: 0
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: 14 }}>
+                {battle.title}
+              </span>
+              <span
+                style={{
+                  background: 'rgba(255,255,255,0.25)',
+                  padding: '2px 8px',
                   borderRadius: 12,
-                  cursor: 'pointer',
-                  border: entry.rank === 1 ? '1px solid rgba(255,215,0,0.2)' : '1px solid transparent'
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: '#FFFFFF'
                 }}
               >
-                <span style={{ fontSize: 18, width: 26, textAlign: 'center' }}>
-                  {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉'}
-                </span>
-                <Avatar src={entry.avatar} alt={entry.userName} size={36} isVIP={entry.isVIP} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{entry.userName}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)' }}>Cấp {entry.level}</div>
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 800, color: '#ffd700' }}>
-                  {entry.points.toLocaleString()} pts
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+                LIVE
+              </span>
+            </div>
 
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 13 }}>
+                  {battle.players[0]?.userName || 'Người chơi 1'}
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11 }}>
+                  {battle.players[0]?.heartRate || 135} BPM
+                </div>
+              </div>
+
+              <div style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 16, padding: '0 8px' }}>
+                VS
+              </div>
+
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 13 }}>
+                  {battle.players[1]?.userName || 'Người chơi 2'}
+                </div>
+                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11 }}>
+                  {battle.players[1]?.heartRate || 140} BPM
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Daily Challenges */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+          🏆 Thử thách hôm nay
+        </span>
+        <button
+          onClick={() => navigate('/challenge')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#FF6B35',
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer'
+          }}
+        >
+          Xem tất cả
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+        {challenges.slice(0, 3).map((ch) => {
+          const pct = Math.min(100, Math.round((ch.current / ch.target) * 100));
+          return (
+            <div
+              key={ch.id}
+              onClick={() => navigate('/challenge')}
+              style={{
+                background: '#1A1A2E',
+                borderRadius: 16,
+                padding: 16,
+                border: '1px solid #25253D',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                cursor: 'pointer'
+              }}
+            >
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  background: `${ch.color}25`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                {ch.completed ? (
+                  <CheckCircle size={24} color={ch.color} />
+                ) : (
+                  <Flag size={24} color={ch.color} />
+                )}
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14, marginBottom: 6 }}>
+                  {ch.title}
+                </div>
+                <div style={{ height: 6, background: '#25253D', borderRadius: 3, overflow: 'hidden', marginBottom: 6 }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${pct}%`,
+                      background: ch.color,
+                      borderRadius: 3
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 12, color: '#B0B0C3' }}>
+                  {ch.current}/{ch.target} {ch.unit}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Recent Activities */}
+      <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 12 }}>
+        📊 Hoạt động gần đây
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {recentActivities.slice(0, 3).map((act) => (
+          <div
+            key={act.id}
+            style={{
+              background: '#1A1A2E',
+              borderRadius: 16,
+              padding: 16,
+              border: '1px solid #25253D',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12
+            }}
+          >
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: '#25253D',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              <Dumbbell size={22} color="#FF6B35" />
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14 }}>
+                {act.type}
+              </div>
+              <div style={{ fontSize: 13, color: '#B0B0C3', marginTop: 2 }}>
+                {act.duration} phút • {act.calories} cal
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: 600, color: '#FF6B35', fontSize: 14 }}>
+                +{act.xp} XP
+              </div>
+              <div style={{ fontSize: 11, color: '#6B6B80', marginTop: 2 }}>
+                {act.date}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+interface ExerciseQuickCardProps {
+  emoji: string;
+  name: string;
+  current: number;
+  target: number;
+  color: string;
+  onTap: () => void;
+}
+
+const ExerciseQuickCard: React.FC<ExerciseQuickCardProps> = ({
+  emoji,
+  name,
+  current,
+  target,
+  color,
+  onTap
+}) => {
+  const pct = Math.min(1, current / target);
+
+  return (
+    <div
+      onClick={onTap}
+      style={{
+        background: `${color}15`,
+        border: `1px solid ${color}45`,
+        borderRadius: 16,
+        padding: 12,
+        textAlign: 'center',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}
+    >
+      <div style={{ fontSize: 24, marginBottom: 4 }}>{emoji}</div>
+      <div style={{ fontSize: 11, fontWeight: 600, color, marginBottom: 4 }}>
+        {name}
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, color }}>
+        {current}
+      </div>
+      <div style={{ fontSize: 10, color: '#6B6B80', marginBottom: 6 }}>
+        /{target}
+      </div>
+      <div style={{ width: '100%', height: 4, background: '#25253D', borderRadius: 2, overflow: 'hidden' }}>
+        <div
+          style={{
+            height: '100%',
+            width: `${pct * 100}%`,
+            background: color,
+            borderRadius: 2
+          }}
+        />
       </div>
     </div>
   );

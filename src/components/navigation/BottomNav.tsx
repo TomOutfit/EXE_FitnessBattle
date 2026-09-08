@@ -1,12 +1,12 @@
 import React from 'react';
-import { Home, Swords, Trophy, Target, User } from 'lucide-react';
+import { Home, Trophy, Flag, BarChart2, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { path: '/', icon: Home, label: 'Trang chủ' },
-  { path: '/battle', icon: Swords, label: 'Thi đấu' },
-  { path: '/challenge', icon: Target, label: 'Thử thách' },
-  { path: '/ranking', icon: Trophy, label: 'Bảng xếp hạng' },
+  { path: '/home', icon: Home, label: 'Trang chủ' },
+  { path: '/battle', icon: Trophy, label: 'Thi đấu' },
+  { path: '/challenge', icon: Flag, label: 'Thử thách' },
+  { path: '/ranking', icon: BarChart2, label: 'Bảng xếp hạng' },
   { path: '/profile', icon: User, label: 'Cá nhân' },
 ];
 
@@ -17,14 +17,14 @@ export const BottomNav: React.FC = () => {
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-      background: 'rgba(14,14,22,0.95)', backdropFilter: 'blur(16px)',
-      borderTop: '1px solid var(--border)',
-      padding: '8px 0 calc(8px + env(safe-area-inset-bottom))',
+      background: 'var(--bg-card)',
+      boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.3)',
+      padding: '8px 8px calc(8px + env(safe-area-inset-bottom))',
       maxWidth: 480, margin: '0 auto',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
         {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || (item.path === '/home' && location.pathname === '/');
           const Icon = item.icon;
 
           return (
@@ -32,28 +32,21 @@ export const BottomNav: React.FC = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               style={{
-                flex: 1, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: 4, padding: '4px 0',
-                background: 'none', border: 'none', cursor: 'pointer',
-                position: 'relative',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                padding: '8px 12px',
+                borderRadius: 12,
+                background: isActive ? 'rgba(255, 107, 53, 0.15)' : 'transparent',
+                border: 'none', cursor: 'pointer',
+                transition: 'all 0.2s ease',
               }}
             >
-              <div style={{
-                width: 40, height: 40, borderRadius: 14,
-                background: isActive
-                  ? 'var(--gradient-primary)'
-                  : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: isActive ? '0 0 14px rgba(255,107,53,0.4)' : 'none',
-                transition: 'all 0.2s ease',
-              }}>
-                <Icon size={20} color={isActive ? '#fff' : '#5a5a75'} />
-              </div>
-
+              <Icon size={24} color={isActive ? '#FF6B35' : '#6B6B80'} />
               <span style={{
-                fontSize: 10, fontWeight: isActive ? 700 : 500,
-                color: isActive ? '#ff6b35' : '#5a5a75',
-                transition: 'all 0.2s ease',
+                fontSize: 10,
+                fontWeight: isActive ? 600 : 400,
+                color: isActive ? '#FF6B35' : '#6B6B80',
+                marginTop: 4,
                 textAlign: 'center',
                 lineHeight: 1.2,
               }}>
@@ -66,3 +59,4 @@ export const BottomNav: React.FC = () => {
     </nav>
   );
 };
+

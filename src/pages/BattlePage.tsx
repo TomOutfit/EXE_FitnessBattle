@@ -1,454 +1,680 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, Users, Trophy } from 'lucide-react';
-import { battles, premiumArenas } from '../data/mockData';
 import { useUser } from '../context/UserContext';
+import { battles, premiumArenas } from '../data/mockData';
+import { Zap, Swords, ChevronRight, History, Award, Users, Clock, Info } from 'lucide-react';
 
 export const BattlePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, deductStamina, showToast } = useUser();
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState<'battles' | 'arenas' | 'history'>('battles');
-  const [showQuickMatchModal, setShowQuickMatchModal] = useState(false);
-  const [matchType, setMatchType] = useState<'ranked' | 'friendly'>('ranked');
-  const [selectedExercise, setSelectedExercise] = useState('Hít Đất');
+  const [showExerciseSheet, setShowExerciseSheet] = useState(false);
 
-  const handleStartQuickMatch = () => {
-    const ok = deductStamina(15);
-    if (!ok) {
-      showToast('Hết thể lực! Vui lòng chờ hồi phục hoặc nâng cấp VIP', 'warning');
-      return;
+  const getBattleTypeBadge = (type: string) => {
+    switch (type) {
+      case 'ranked':
+        return { label: 'XẾP HẠNG', color: '#FF6B35' };
+      case 'friendly':
+        return { label: 'GIAO HỮU', color: '#5352ED' };
+      case 'challenge':
+        return { label: 'THÁCH ĐẤU', color: '#F7C948' };
+      default:
+        return { label: 'TRẬN ĐẤU', color: '#6B6B80' };
     }
-    setShowQuickMatchModal(false);
-    navigate(`/battle-camera?mode=${matchType}&exercise=${encodeURIComponent(selectedExercise)}`);
+  };
+
+  const getArenaStatusBadge = (status: string) => {
+    switch (status) {
+      case 'open':
+        return { label: 'MỞ', color: '#2ED573' };
+      case 'countdown':
+        return { label: 'SẮP BẮT ĐẦU', color: '#F7C948' };
+      case 'live':
+        return { label: 'ĐANG DIỄN RA', color: '#FF4757' };
+      default:
+        return { label: 'KẾT THÚC', color: '#6B6B80' };
+    }
   };
 
   return (
-    <div style={{ paddingBottom: 90 }}>
-      {/* Top Header */}
-      <div style={{
-        background: 'linear-gradient(180deg, #14141e, var(--bg))',
-        padding: '16px 20px 12px',
-        position: 'sticky', top: 0, zIndex: 50,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 24 }}>⚔️</span>
-            <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)' }}>Đấu Trường</h1>
-          </div>
-
-          <div style={{
-            padding: '6px 14px', borderRadius: 20,
-            background: 'var(--bg-card)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', gap: 6,
-          }}>
-            <Zap size={16} color="var(--primary)" />
-            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>{user.stamina} HP</span>
-          </div>
-        </div>
-
-        {/* Tab Switcher */}
-        <div style={{
-          display: 'flex',
-          background: 'var(--bg-card)',
-          borderRadius: 14,
-          padding: 4,
-          border: '1px solid var(--border)',
-        }}>
-          {[
-            { id: 'battles', label: 'Trận đấu' },
-            { id: 'arenas', label: 'Đấu trường' },
-            { id: 'history', label: 'Lịch sử' },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                style={{
-                  flex: 1, padding: '10px 0', borderRadius: 10,
-                  background: isActive ? 'var(--primary)' : 'transparent',
-                  color: isActive ? '#fff' : 'var(--text3)',
-                  fontWeight: isActive ? 800 : 600, fontSize: 13,
-                  border: 'none', cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+    <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
+          ⚔️ Đấu Trường
+        </h1>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            background: '#1A1A2E',
+            padding: '6px 12px',
+            borderRadius: 20,
+            border: '1px solid #25253D'
+          }}
+        >
+          <Zap size={18} color="#5352ED" />
+          <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14 }}>
+            {user.stamina}
+          </span>
         </div>
       </div>
 
-      <div style={{ padding: '0 20px', marginTop: 16 }}>
-        {/* ─── TAB 1: BATTLES ─── */}
-        {activeTab === 'battles' && (
-          <div>
-            {/* Camera Battle Banner */}
+      {/* Tabs */}
+      <div
+        style={{
+          display: 'flex',
+          background: '#1A1A2E',
+          borderRadius: 12,
+          padding: 4,
+          marginBottom: 16
+        }}
+      >
+        <button
+          onClick={() => setActiveTab('battles')}
+          style={{
+            flex: 1,
+            padding: '10px 0',
+            border: 'none',
+            borderRadius: 10,
+            background: activeTab === 'battles' ? '#FF6B35' : 'transparent',
+            color: activeTab === 'battles' ? '#FFFFFF' : '#6B6B80',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Trận đấu
+        </button>
+        <button
+          onClick={() => setActiveTab('arenas')}
+          style={{
+            flex: 1,
+            padding: '10px 0',
+            border: 'none',
+            borderRadius: 10,
+            background: activeTab === 'arenas' ? '#FF6B35' : 'transparent',
+            color: activeTab === 'arenas' ? '#FFFFFF' : '#6B6B80',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Đấu trường
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          style={{
+            flex: 1,
+            padding: '10px 0',
+            border: 'none',
+            borderRadius: 10,
+            background: activeTab === 'history' ? '#FF6B35' : 'transparent',
+            color: activeTab === 'history' ? '#FFFFFF' : '#6B6B80',
+            fontWeight: 600,
+            fontSize: 13,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Lịch sử
+        </button>
+      </div>
+
+      {/* Tab 1: Trận đấu */}
+      {activeTab === 'battles' && (
+        <div>
+          {/* Start Camera Battle Banner */}
+          <div
+            onClick={() => setShowExerciseSheet(true)}
+            style={{
+              background: 'linear-gradient(135deg, #FF4757 0%, #FF6B81 100%)',
+              borderRadius: 20,
+              padding: '20px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(255, 107, 53, 0.4)',
+              marginBottom: 24
+            }}
+          >
             <div
-              onClick={() => navigate('/battle-camera')}
               style={{
-                padding: '18px 20px',
-                borderRadius: 20,
-                background: 'linear-gradient(135deg, #FF4757, #FF6B35)',
-                boxShadow: '0 8px 25px rgba(255, 71, 87, 0.35)',
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: 16,
+                flexShrink: 0
+              }}
+            >
+              <Swords size={32} color="#FFFFFF" />
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>
+                ⚔️ BẮT ĐẦU ĐẤU CAMERA
+              </div>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
+                Mở camera 2 người chơi
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: 8,
+                background: 'rgba(255,255,255,0.2)',
+                borderRadius: 12,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <ChevronRight size={20} color="#FFFFFF" />
+            </div>
+          </div>
+
+          {/* Quick Battle Section */}
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 12 }}>
+            ⚡ Tạo trận nhanh
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+            <button
+              onClick={() => setShowExerciseSheet(true)}
+              style={{
+                background: 'linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%)',
+                border: 'none',
+                borderRadius: 12,
+                padding: '14px',
+                color: '#FFFFFF',
+                fontWeight: 600,
+                fontSize: 14,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 16,
-                marginBottom: 20,
+                justifyContent: 'center',
+                gap: 8,
+                boxShadow: '0 4px 12px rgba(255, 107, 53, 0.25)'
               }}
             >
-              <div style={{
-                width: 48, height: 48, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 24, flexShrink: 0,
-              }}>
-                ⚔️
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>
-                  BẮT ĐẦU ĐẤU CAMERA
-                </div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
-                  Mở camera đối kháng 2 người chơi thời gian thực
-                </div>
-              </div>
-              <div style={{
-                width: 32, height: 32, borderRadius: 10,
-                background: 'rgba(255,255,255,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontSize: 14,
-              }}>
-                ➔
-              </div>
-            </div>
+              <Award size={18} color="#FFFFFF" />
+              Xếp hạng
+            </button>
 
-            {/* Quick Match Section */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>⚡</span>
-                <span>Tạo trận nhanh</span>
-              </div>
+            <button
+              onClick={() => setShowExerciseSheet(true)}
+              style={{
+                background: 'linear-gradient(135deg, #5352ED 0%, #7070FF 100%)',
+                border: 'none',
+                borderRadius: 12,
+                padding: '14px',
+                color: '#FFFFFF',
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                boxShadow: '0 4px 12px rgba(83, 82, 237, 0.25)'
+              }}
+            >
+              <Users size={18} color="#FFFFFF" />
+              Giao hữu
+            </button>
+          </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <button
-                  onClick={() => { setMatchType('ranked'); setShowQuickMatchModal(true); }}
+          {/* Available Lobby List */}
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 12 }}>
+            🎮 Phòng chờ
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {battles.map((battle) => {
+              const typeBadge = getBattleTypeBadge(battle.type);
+              const isActive = battle.status === 'active';
+
+              return (
+                <div
+                  key={battle.id}
                   style={{
-                    padding: '14px', borderRadius: 16,
-                    background: 'var(--gradient-primary)',
-                    border: 'none', color: '#fff', fontWeight: 800, fontSize: 14,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    cursor: 'pointer', boxShadow: '0 4px 16px rgba(255, 107, 53, 0.3)',
+                    background: '#1A1A2E',
+                    borderRadius: 16,
+                    padding: 16,
+                    border: '1px solid #25253D'
                   }}
                 >
-                  <Trophy size={18} />
-                  <span>Xếp hạng</span>
-                </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: typeBadge.color,
+                        background: `${typeBadge.color}25`,
+                        padding: '4px 8px',
+                        borderRadius: 8
+                      }}
+                    >
+                      {typeBadge.label}
+                    </span>
 
-                <button
-                  onClick={() => { setMatchType('friendly'); setShowQuickMatchModal(true); }}
-                  style={{
-                    padding: '14px', borderRadius: 16,
-                    background: 'linear-gradient(135deg, #5352ED, #7070FF)',
-                    border: 'none', color: '#fff', fontWeight: 800, fontSize: 14,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    cursor: 'pointer', boxShadow: '0 4px 16px rgba(83, 82, 237, 0.3)',
-                  }}
-                >
-                  <Users size={18} />
-                  <span>Giao hữu</span>
-                </button>
-              </div>
-            </div>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: isActive ? '#2ED573' : '#F7C948',
+                        background: isActive ? 'rgba(46, 213, 115, 0.2)' : 'rgba(247, 201, 72, 0.2)',
+                        padding: '4px 8px',
+                        borderRadius: 8
+                      }}
+                    >
+                      {isActive ? 'ĐANG CHƠI' : 'CHỜ'}
+                    </span>
+                  </div>
 
-            {/* Active Lobbies */}
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>🎮</span>
-                <span>Phòng chờ</span>
-              </div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 8 }}>
+                    {battle.title}
+                  </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {battles.map((b) => (
-                  <div
-                    key={b.id}
-                    style={{
-                      padding: 16,
-                      background: 'var(--bg-card)',
-                      borderRadius: 18,
-                      border: '1px solid var(--border)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{
-                          fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 8,
-                          background: b.type === 'ranked' ? 'rgba(255,107,53,0.2)' : 'rgba(83,82,237,0.2)',
-                          color: b.type === 'ranked' ? 'var(--primary)' : '#5352ED',
-                        }}>
-                          {b.type === 'ranked' ? 'XẾP HẠNG' : 'GIAO HỮU'}
-                        </span>
-                        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>{b.title}</span>
-                      </div>
+                  <div style={{ fontSize: 13, color: '#B0B0C3', marginBottom: 12 }}>
+                    🏃 {battle.exerciseType} • ⏱️ {battle.duration} phút
+                  </div>
 
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 8,
-                        background: b.status === 'active' ? 'rgba(46,213,115,0.2)' : 'rgba(255,165,2,0.2)',
-                        color: b.status === 'active' ? '#2ED573' : '#FFA502',
-                      }}>
-                        {b.status === 'active' ? 'ĐANG CHƠI' : 'CHỜ'}
-                      </span>
+                  {/* Players VS */}
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                    <img
+                      src={battle.players[0]?.avatar}
+                      alt={battle.players[0]?.userName}
+                      style={{ width: 32, height: 32, borderRadius: '50%', background: '#25253D' }}
+                    />
+                    <span style={{ fontSize: 13, color: '#FFFFFF', marginLeft: 8, fontWeight: 500 }}>
+                      {battle.players[0]?.userName}
+                    </span>
+
+                    <span style={{ margin: '0 12px', fontWeight: 700, color: '#6B6B80', fontSize: 12 }}>
+                      VS
+                    </span>
+
+                    <img
+                      src={battle.players[1]?.avatar}
+                      alt={battle.players[1]?.userName}
+                      style={{ width: 32, height: 32, borderRadius: '50%', background: '#25253D' }}
+                    />
+                    <span style={{ fontSize: 13, color: '#FFFFFF', marginLeft: 8, fontWeight: 500 }}>
+                      {battle.players[1]?.userName}
+                    </span>
+                  </div>
+
+                  {/* Reward & Join button */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: 12, color: '#FF6B35', fontWeight: 500 }}>
+                      +{battle.reward.xp} XP • +{battle.reward.coins} Coins
                     </div>
 
-                    <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span>🏃 {b.exerciseType}</span>
-                      <span>⏱️ {b.duration} phút</span>
-                    </div>
-
-                    {/* Players Row */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <img
-                          src={b.players[0].avatar}
-                          alt={b.players[0].userName}
-                          style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card2)' }}
-                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                        />
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
-                          {b.players[0].userName}
-                        </span>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)' }}>VS</span>
-                        <img
-                          src={b.players[1].avatar}
-                          alt={b.players[1].userName}
-                          style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card2)' }}
-                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                        />
-                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
-                          {b.players[1].userName}
-                        </span>
-                      </div>
-
+                    {!isActive && (
                       <button
-                        onClick={() => navigate('/battle-camera')}
+                        onClick={() => navigate('/battle-camera?type=pushup')}
                         style={{
-                          padding: '8px 16px', borderRadius: 12,
-                          background: 'var(--gradient-primary)',
-                          border: 'none', color: '#fff', fontSize: 12, fontWeight: 800,
-                          cursor: 'pointer',
+                          background: 'linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%)',
+                          border: 'none',
+                          borderRadius: 8,
+                          padding: '6px 14px',
+                          color: '#FFFFFF',
+                          fontWeight: 600,
+                          fontSize: 12,
+                          cursor: 'pointer'
                         }}
                       >
-                        {b.status === 'active' ? 'Xem' : 'Tham gia'}
+                        Tham gia
                       </button>
-                    </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ─── TAB 2: ARENAS ─── */}
-        {activeTab === 'arenas' && (
-          <div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {premiumArenas.map((a) => (
+      {/* Tab 2: Đấu trường Premium */}
+      {activeTab === 'arenas' && (
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 12 }}>
+            💎 Đấu trường Premium
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {premiumArenas.map((arena) => {
+              const statusBadge = getArenaStatusBadge(arena.status);
+              const isLive = arena.status === 'live';
+
+              return (
                 <div
-                  key={a.id}
+                  key={arena.id}
                   style={{
-                    padding: 20, borderRadius: 20,
-                    background: 'linear-gradient(145deg, #1a1a2b, #13131f)',
-                    border: '1px solid rgba(83,82,237,0.4)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                    background: isLive
+                      ? 'linear-gradient(135deg, #FF4757 0%, #FF6B81 100%)'
+                      : '#1A1A2E',
+                    borderRadius: 16,
+                    padding: 16,
+                    border: isLive ? 'none' : '1px solid #25253D'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                    <div>
-                      <span style={{
-                        fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 8,
-                        background: 'rgba(255,215,0,0.2)', color: '#FFD700',
-                      }}>
-                        TITAN ARENA
-                      </span>
-                      <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 6 }}>
-                        {a.name}
-                      </h3>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 11, color: 'var(--text3)' }}>Tổng giải thưởng</div>
-                      <div style={{ fontSize: 16, fontWeight: 900, color: '#5352ED' }}>💎 {a.prizePool} Ruby</div>
-                    </div>
-                  </div>
-
-                  <p style={{ fontSize: 12, color: 'var(--text3)', lineHeight: 1.5, marginBottom: 16 }}>
-                    {a.description}
-                  </p>
-
-                  {/* Breakdown Table */}
-                  <div style={{ background: 'var(--bg-card)', padding: 12, borderRadius: 14, marginBottom: 16 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-                      Cơ cấu phần thưởng:
-                    </div>
-                    {a.prizePoolBreakdown.map((r, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text3)', padding: '3px 0' }}>
-                        <span style={{ color: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : '#CD7F32', fontWeight: 700 }}>
-                          {r.position}
-                        </span>
-                        <span>{r.reward}</span>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 16 }}>
+                    <div style={{ fontSize: 24, marginRight: 12 }}>🏆</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>
+                        {arena.name}
                       </div>
-                    ))}
+                      <div style={{ fontSize: 12, color: isLive ? 'rgba(255,255,255,0.85)' : '#B0B0C3' }}>
+                        {arena.description}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: statusBadge.color,
+                        background: `${statusBadge.color}25`,
+                        padding: '4px 10px',
+                        borderRadius: 12
+                      }}
+                    >
+                      {statusBadge.label}
+                    </span>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      if (user.ruby < a.entryRuby) {
-                        showToast(`Cần ${a.entryRuby} Ruby để tham gia!`, 'warning');
-                        return;
-                      }
-                      showToast('Đăng ký tham gia đấu trường thành công!', 'success');
-                      navigate('/battle-camera');
-                    }}
-                    style={{
-                      width: '100%', padding: '14px', borderRadius: 14,
-                      background: 'linear-gradient(135deg, #5352ED, #7070FF)',
-                      border: 'none', color: '#fff', fontWeight: 800, fontSize: 14,
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    }}
-                  >
-                    <span>Tham gia ngay (Phí: {a.entryRuby} Ruby)</span>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: isLive ? 'rgba(255,255,255,0.7)' : '#6B6B80' }}>
+                        Phần thưởng
+                      </div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#F7C948' }}>
+                        {arena.prizePool} Ruby
+                      </div>
+                    </div>
 
-        {/* ─── TAB 3: HISTORY ─── */}
-        {activeTab === 'history' && (
-          <div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {[
-                { id: 'h1', date: 'Hôm nay, 16:20', opp: 'Minh Đạt', oppAvatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=MinhDat', myScore: 35, oppScore: 32, result: 'WIN', exercise: 'Hít Đất', xp: 200, coins: 80 },
-                { id: 'h2', date: 'Hôm qua, 20:15', opp: 'Thu Hà', oppAvatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=ThuHa', myScore: 18, oppScore: 20, result: 'LOSE', exercise: 'Kéo Xà', xp: 50, coins: 20 },
-                { id: 'h3', date: '3 ngày trước', opp: 'Hoàng Nam', oppAvatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=HoangNam', myScore: 42, oppScore: 38, result: 'WIN', exercise: 'Hít Đất', xp: 200, coins: 80 },
-              ].map((h) => (
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 11, color: isLive ? 'rgba(255,255,255,0.7)' : '#6B6B80' }}>
+                        Phí vào cửa
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                        <span style={{ fontSize: 14 }}>💎</span>
+                        <span style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF' }}>
+                          {arena.entryRuby}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: isLive ? 'rgba(255,255,255,0.85)' : '#B0B0C3' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Users size={14} color={isLive ? '#FFFFFF' : '#6B6B80'} />
+                      <span>{arena.participants}/{arena.maxParticipants}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Clock size={14} color={isLive ? '#FFFFFF' : '#6B6B80'} />
+                      <span>{arena.duration} phút</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: Lịch sử */}
+      {activeTab === 'history' && (
+        <div
+          style={{
+            background: '#1A1A2E',
+            borderRadius: 16,
+            padding: '32px 16px',
+            border: '1px solid #25253D',
+            textAlign: 'center'
+          }}
+        >
+          <History size={48} color="#6B6B80" style={{ margin: '0 auto 12px' }} />
+          <div style={{ fontSize: 16, fontWeight: 600, color: '#FFFFFF', marginBottom: 4 }}>
+            Chưa có trận đấu nào
+          </div>
+          <div style={{ fontSize: 13, color: '#B0B0C3' }}>
+            Tham gia trận đấu để xem lịch sử tại đây
+          </div>
+        </div>
+      )}
+
+      {/* Exercise Selection Bottom Sheet Modal */}
+      {showExerciseSheet && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center'
+          }}
+          onClick={() => setShowExerciseSheet(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 640,
+              background: '#0F0F23',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              padding: '16px 20px 32px',
+              borderTop: '1px solid #25253D',
+              boxShadow: '0 -8px 24px rgba(0,0,0,0.5)'
+            }}
+          >
+            {/* Handle bar */}
+            <div
+              style={{
+                width: 40,
+                height: 4,
+                background: '#6B6B80',
+                borderRadius: 2,
+                margin: '0 auto 16px'
+              }}
+            />
+
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>
+                ⚔️ CHỌN BÀI TẬP ĐẤU
+              </div>
+              <div style={{ fontSize: 14, color: '#B0B0C3' }}>
+                Chọn bài tập để bắt đầu trận đấu camera
+              </div>
+            </div>
+
+            {/* Exercise Options */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+              {/* Push-up */}
+              <div
+                onClick={() => {
+                  setShowExerciseSheet(false);
+                  navigate('/battle-camera?type=pushup');
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%)',
+                  borderRadius: 16,
+                  padding: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)'
+                }}
+              >
                 <div
-                  key={h.id}
                   style={{
-                    padding: 16,
-                    background: 'var(--bg-card)',
-                    borderRadius: 16,
-                    border: '1px solid var(--border)',
+                    width: 52,
+                    height: 52,
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.2)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
+                    justifyContent: 'center',
+                    fontSize: 28,
+                    marginRight: 16
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{
-                      padding: '4px 8px', borderRadius: 8,
-                      background: h.result === 'WIN' ? 'rgba(46,213,115,0.2)' : 'rgba(255,71,87,0.2)',
-                      color: h.result === 'WIN' ? '#2ED573' : '#FF4757',
-                      fontWeight: 900, fontSize: 11,
-                    }}>
-                      {h.result}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                        VS {h.opp} ({h.exercise})
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--text3)' }}>{h.date}</div>
-                    </div>
+                  💪
+                </div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+                    Hít Đất (Push-up)
                   </div>
-
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>
-                      {h.myScore} - {h.oppScore}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#FFD700', fontWeight: 700 }}>
-                      +{h.xp} XP • +{h.coins} Xu
-                    </div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
+                    Hít đất • Đối thủ bên phải
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+              </div>
 
-      {/* Quick Match Modal */}
-      {showQuickMatchModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(12px)',
-          zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 20,
-        }}>
-          <div style={{
-            width: '100%', maxWidth: 400,
-            background: 'var(--bg-card)', border: '1px solid var(--border)',
-            borderRadius: 24, padding: 24,
-          }}>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 16 }}>
-              Tạo Trận {matchType === 'ranked' ? 'Xếp Hạng' : 'Giao Hữu'}
-            </h3>
+              {/* Pull-up */}
+              <div
+                onClick={() => {
+                  setShowExerciseSheet(false);
+                  navigate('/battle-camera?type=pullup');
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #5352ED 0%, #7070FF 100%)',
+                  borderRadius: 16,
+                  padding: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(83, 82, 237, 0.3)'
+                }}
+              >
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 28,
+                    marginRight: 16
+                  }}
+                >
+                  🏋️
+                </div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+                    Kéo Xà (Pull-up)
+                  </div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
+                    Kéo xà • Đối thủ bên phải
+                  </div>
+                </div>
+              </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, color: 'var(--text3)', display: 'block', marginBottom: 8 }}>
-                Chọn Môn Thi Đấu:
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                {['Hít Đất', 'Kéo Xà', 'Chạy Bộ'].map((ex) => (
-                  <button
-                    key={ex}
-                    onClick={() => setSelectedExercise(ex)}
-                    style={{
-                      padding: '10px 6px', borderRadius: 12,
-                      background: selectedExercise === ex ? 'var(--primary)' : 'var(--bg-card2)',
-                      border: '1px solid var(--border)',
-                      color: selectedExercise === ex ? '#fff' : 'var(--text)',
-                      fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                    }}
-                  >
-                    {ex}
-                  </button>
-                ))}
+              {/* Squat */}
+              <div
+                onClick={() => {
+                  setShowExerciseSheet(false);
+                  navigate('/battle-camera?type=squat');
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #FFA502 0%, #FFBE3D 100%)',
+                  borderRadius: 16,
+                  padding: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(255, 165, 2, 0.3)'
+                }}
+              >
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 28,
+                    marginRight: 16
+                  }}
+                >
+                  🦵
+                </div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+                    Squat
+                  </div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
+                    Squat • Đối thủ bên phải
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div style={{
-              padding: 12, borderRadius: 12, background: 'rgba(255,107,53,0.1)',
-              border: '1px solid rgba(255,107,53,0.3)', marginBottom: 20,
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            }}>
-              <span style={{ fontSize: 12, color: 'var(--text)' }}>Thể lực tiêu hao:</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--primary)' }}>⚡ 15 HP</span>
+            {/* Info notice */}
+            <div
+              style={{
+                background: '#1A1A2E',
+                borderRadius: 12,
+                padding: 14,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                marginBottom: 16
+              }}
+            >
+              <div
+                style={{
+                  padding: 6,
+                  borderRadius: 8,
+                  background: 'rgba(255, 107, 53, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Info size={18} color="#FF6B35" />
+              </div>
+              <div style={{ fontSize: 12, color: '#B0B0C3', lineHeight: 1.4 }}>
+                Camera bên trái là bạn, bên phải là đối thủ.<br />
+                Kết nối 2 thiết bị để chơi cùng nhau!
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => setShowQuickMatchModal(false)}
-                style={{
-                  flex: 1, padding: '14px', borderRadius: 14,
-                  background: 'var(--bg-card2)', border: '1px solid var(--border)',
-                  color: 'var(--text)', fontWeight: 700, cursor: 'pointer',
-                }}
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleStartQuickMatch}
-                style={{
-                  flex: 1.5, padding: '14px', borderRadius: 14,
-                  background: 'var(--gradient-primary)', border: 'none',
-                  color: '#fff', fontWeight: 800, cursor: 'pointer',
-                }}
-              >
-                Tìm Đối Thủ
-              </button>
-            </div>
+            {/* Cancel */}
+            <button
+              onClick={() => setShowExerciseSheet(false)}
+              style={{
+                width: '100%',
+                background: 'none',
+                border: 'none',
+                color: '#6B6B80',
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '8px 0'
+              }}
+            >
+              Hủy
+            </button>
           </div>
         </div>
       )}
