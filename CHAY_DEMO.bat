@@ -40,14 +40,14 @@ if not exist "node_modules" (
     echo.
 )
 
-:: Start dev server
-echo  [OK] Khoi dong server...
+:: Start dev server with Mobile Host access
+echo  [OK] Khoi dong server (Ho tro ca May Tinh & Dien Thoai Mobile)...
 echo.
-echo  Neu trinh duyet khong tu dong mo, hay mo Chrome/Edge
-echo  va truy cap: http://localhost:5173/
+echo  - Tren May tinh: Truy cap http://localhost:5173/
+echo  - Tren Dien thoai (cung mang Wi-Fi): Truy cap dia chi IP Network duoc hien thi ben duoi
 echo.
 echo  Dong server: Nhan Ctrl+C trong cua so nay de tat
 echo.
-npm run dev
+npm run dev -- --host
 
 pause

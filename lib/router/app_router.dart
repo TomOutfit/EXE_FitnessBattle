@@ -6,6 +6,8 @@ import '../features/challenge/presentation/pages/challenge_page.dart';
 import '../features/leaderboard/presentation/pages/ranking_page.dart';
 import '../features/profile/presentation/pages/profile_page.dart';
 import '../features/exercise/presentation/pages/exercise_track_page.dart';
+import '../features/exercise/presentation/pages/exercise_camera_page.dart';
+import '../features/exercise/presentation/pages/gps_walking_page.dart';
 import '../features/exercise/presentation/pages/battle_camera_page.dart';
 import '../features/exercise_leaderboard/presentation/pages/exercise_leaderboard_page.dart';
 import '../features/shop/presentation/pages/shop_page.dart';
@@ -21,6 +23,23 @@ final router = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/home',
   routes: [
+    // GPS Walking Live Page
+    GoRoute(
+      path: '/gps-walking',
+      builder: (context, state) => const GPSWalkingPage(),
+    ),
+    // Exercise Camera Page
+    GoRoute(
+      path: '/exercise-camera',
+      builder: (context, state) {
+        final exerciseTypeStr = state.uri.queryParameters['type'] ?? 'pushup';
+        final exerciseType = ExerciseTypeEnum.values.firstWhere(
+          (e) => e.id == exerciseTypeStr,
+          orElse: () => ExerciseTypeEnum.pushup,
+        );
+        return ExerciseCameraPage(exerciseType: exerciseType);
+      },
+    ),
     // Battle Camera Page - Full screen route (outside shell for camera access)
     GoRoute(
       path: '/battle-camera',

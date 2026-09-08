@@ -701,6 +701,124 @@ class _WalkingTab extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
 
+        // Primary GPS Live Tracking Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2ED573),
+              foregroundColor: const Color(0xFF0F0F23),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              elevation: 4,
+              shadowColor: const Color(0xFF2ED573).withValues(alpha: 0.5),
+            ),
+            icon: const Icon(Icons.directions_walk, size: 26),
+            label: const Text(
+              'BẮT ĐẦU ĐI BỘ (GPS & BƯỚC CHÂN REALTIME)',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+            ),
+            onPressed: () {
+              context.push('/gps-walking');
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Quick GPS & Sensor Mode Cards
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => context.push('/gps-walking'),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.surfaceLight),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2ED573).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.navigation, color: Color(0xFF2ED573), size: 18),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2ED573).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('Vệ tinh', style: TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text('GPS Ngoài trời', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
+                      const SizedBox(height: 2),
+                      const Text('Đo quãng đường, pace & bản đồ live', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => context.push('/gps-walking'),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.surfaceLight),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.smartphone, color: AppColors.primary, size: 18),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('Sensor', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Text('Pedometer Mobile', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
+                      const SizedBox(height: 2),
+                      const Text('Cảm biến gia tốc đếm bước khi cầm máy', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
         // Manual Step Entry
         AppCard(
           child: Column(
@@ -834,9 +952,7 @@ class _WalkingTab extends ConsumerWidget {
               subtitle: const Text('Sử dụng cảm biến điện thoại'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Bật theo dõi bước chân...')),
-                );
+                context.push('/gps-walking');
               },
             ),
             ListTile(
@@ -845,9 +961,7 @@ class _WalkingTab extends ConsumerWidget {
               subtitle: const Text('Theo dõi qua GPS'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Bật GPS...')),
-                );
+                context.push('/gps-walking');
               },
             ),
           ],
