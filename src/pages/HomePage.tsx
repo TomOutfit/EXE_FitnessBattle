@@ -1,12 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { battles, challenges, recentActivities, exercises } from '../data/mockData';
 import { Flame, Coins, Zap, Trophy, CheckCircle, Flag, Dumbbell } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, exercises, challenges, recentActivities, battles } = useUser();
 
   const pushupEx = exercises.find(e => e.type === 'pushup') || exercises[0];
   const pullupEx = exercises.find(e => e.type === 'pullup') || exercises[1];
@@ -16,7 +15,45 @@ export const HomePage: React.FC = () => {
 
   return (
     <div style={{ padding: '16px', maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
-      {/* Header */}
+      {/* Top Brand Bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img 
+            src="/Logo.png" 
+            alt="Fitness Battle" 
+            style={{ 
+              width: 32, 
+              height: 32, 
+              borderRadius: 8,
+              filter: 'drop-shadow(0 0 6px rgba(255, 107, 53, 0.4))'
+            }} 
+          />
+          <span style={{ fontSize: 16, fontWeight: 900, background: 'linear-gradient(135deg, #FF6B35, #FFD700)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: 0.5 }}>
+            FITNESS BATTLE
+          </span>
+        </div>
+        {/* Ruby Counter */}
+        <div
+          onClick={() => navigate('/shop')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: '#1A1A2E',
+            padding: '6px 14px',
+            borderRadius: 20,
+            cursor: 'pointer',
+            border: '1px solid #25253D'
+          }}
+        >
+          <span style={{ fontSize: 15 }}>💎</span>
+          <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: 13 }}>
+            {user.ruby}
+          </span>
+        </div>
+      </div>
+
+      {/* User Header */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
         {/* Avatar */}
         <div 
@@ -64,26 +101,6 @@ export const HomePage: React.FC = () => {
               {user.streak} ngày liên tiếp
             </span>
           </div>
-        </div>
-
-        {/* Ruby Counter */}
-        <div
-          onClick={() => navigate('/shop')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            background: '#1A1A2E',
-            padding: '8px 14px',
-            borderRadius: 20,
-            cursor: 'pointer',
-            border: '1px solid #25253D'
-          }}
-        >
-          <span style={{ fontSize: 16 }}>💎</span>
-          <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14 }}>
-            {user.ruby}
-          </span>
         </div>
       </div>
 
@@ -226,8 +243,8 @@ export const HomePage: React.FC = () => {
         <ExerciseQuickCard
           emoji="💪"
           name="Hít Đất"
-          current={pushupEx.todayCount}
-          target={pushupEx.targetCount}
+          current={pushupEx?.todayCount || 0}
+          target={pushupEx?.targetCount || 50}
           color="#FF6B35"
           onTap={() => navigate('/exercise')}
         />
@@ -235,8 +252,8 @@ export const HomePage: React.FC = () => {
         <ExerciseQuickCard
           emoji="🏋️"
           name="Kéo Xà"
-          current={pullupEx.todayCount}
-          target={pullupEx.targetCount}
+          current={pullupEx?.todayCount || 0}
+          target={pullupEx?.targetCount || 20}
           color="#5352ED"
           onTap={() => navigate('/exercise')}
         />
@@ -244,8 +261,8 @@ export const HomePage: React.FC = () => {
         <ExerciseQuickCard
           emoji="🚶"
           name="Đi Bộ"
-          current={walkingEx.todayCount}
-          target={walkingEx.targetCount}
+          current={walkingEx?.todayCount || 0}
+          target={walkingEx?.targetCount || 10000}
           color="#2ED573"
           onTap={() => navigate('/exercise')}
         />
@@ -269,10 +286,10 @@ export const HomePage: React.FC = () => {
             📊 Thống kê tuần này
           </div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 2 }}>
-            {pushupEx.todayCount + 120} lần hít đất
+            {(pushupEx?.todayCount || 0) + 120} lần hít đất
           </div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
-            {pullupEx.todayCount + 45} lần kéo xà
+            {(pullupEx?.todayCount || 0) + 45} lần kéo xà
           </div>
         </div>
 
@@ -354,7 +371,7 @@ export const HomePage: React.FC = () => {
                   color: '#FFFFFF'
                 }}
               >
-                LIVE
+                {battle.status === 'active' ? 'LIVE' : 'CHỜ'}
               </span>
             </div>
 

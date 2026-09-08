@@ -99,11 +99,24 @@ export const WelcomePage: React.FC = () => {
 
           <div style={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,107,53,0.2), transparent)', pointerEvents: 'none' }} />
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 80, gap: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 60, gap: 0 }}>
             <div 
-              style={{ width: 80, height: 80, borderRadius: 24, background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, boxShadow: '0 0 40px rgba(255,107,53,0.4), 0 0 80px rgba(255,107,53,0.2)', marginBottom: 16 }}
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: 28,
+                background: 'rgba(255, 107, 53, 0.12)',
+                border: '2px solid rgba(255, 107, 53, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 40px rgba(255,107,53,0.35), 0 0 80px rgba(255,107,53,0.15)',
+                marginBottom: 16,
+                overflow: 'hidden',
+                padding: 6
+              }}
             >
-              ⚔️
+              <img src="/Logo.png" alt="Fitness Battle Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
             <h1 style={{ fontSize: 32, fontWeight: 900, background: 'linear-gradient(135deg, #ff6b35, #ff4757, #ffd700)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 4 }}>
               Fitness Battle
