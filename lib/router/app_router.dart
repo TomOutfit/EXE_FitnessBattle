@@ -12,6 +12,7 @@ import '../features/exercise/presentation/pages/battle_camera_page.dart';
 import '../features/exercise_leaderboard/presentation/pages/exercise_leaderboard_page.dart';
 import '../features/shop/presentation/pages/shop_page.dart';
 import '../features/membership/presentation/pages/membership_page.dart';
+import '../features/auth/presentation/pages/auth_page.dart';
 import '../core/widgets/bottom_nav_bar.dart';
 import '../core/theme/app_theme.dart';
 import '../core/models_exercise.dart';
@@ -23,6 +24,11 @@ final router = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/home',
   routes: [
+    // Authentication Page (Login / Register)
+    GoRoute(
+      path: '/auth',
+      builder: (context, state) => const AuthPage(),
+    ),
     // GPS Walking Live Page
     GoRoute(
       path: '/gps-walking',
