@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { Trophy } from 'lucide-react';
+import { AppCard, AvatarWidget } from '../components/ui';
 
 export const RankingPage: React.FC = () => {
   const { user, leaderboard } = useUser();
-  const [activeTab, setActiveTab] = useState<'season' | 'weekly'>('season');
+  const [activeTab, setActiveTab] = useState<'all' | 'weekly'>('all');
 
   const top1 = leaderboard[0];
   const top2 = leaderboard[1];
   const top3 = leaderboard[2];
-  const restList = leaderboard.slice(3);
+  const rest = leaderboard.slice(3);
 
   return (
     <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
@@ -22,7 +23,7 @@ export const RankingPage: React.FC = () => {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 4,
             background: '#1A1A2E',
             padding: '6px 12px',
             borderRadius: 20,
@@ -43,18 +44,18 @@ export const RankingPage: React.FC = () => {
           background: '#1A1A2E',
           borderRadius: 12,
           padding: 4,
-          marginBottom: 20
+          marginBottom: 16
         }}
       >
         <button
-          onClick={() => setActiveTab('season')}
+          onClick={() => setActiveTab('all')}
           style={{
             flex: 1,
             padding: '10px 0',
             border: 'none',
             borderRadius: 10,
-            background: activeTab === 'season' ? '#FF6B35' : 'transparent',
-            color: activeTab === 'season' ? '#FFFFFF' : '#6B6B80',
+            background: activeTab === 'all' ? '#FF6B35' : 'transparent',
+            color: activeTab === 'all' ? '#FFFFFF' : '#6B6B80',
             fontWeight: 600,
             fontSize: 13,
             cursor: 'pointer',
@@ -88,203 +89,219 @@ export const RankingPage: React.FC = () => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'flex-end',
-          gap: 12,
-          height: 230,
-          marginBottom: 24,
-          padding: '0 8px'
+          gap: 10,
+          padding: '24px 0 12px',
+          marginBottom: 20
         }}
       >
         {/* 2nd Place */}
         {top2 && (
-          <TopThreePedestal
-            entry={top2}
-            rank={2}
-            height={70}
-            color="#C0C0C0"
-            emoji="🥈"
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 95 }}>
+            <AvatarWidget
+              avatarUrl={top2.avatar}
+              size={54}
+              showBorder
+              borderColor="#C0C0C0"
+              isVIP={top2.isVIP}
+            />
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', marginTop: 6, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 90 }}>
+              {top2.userName}
+            </div>
+            <div style={{ fontSize: 11, color: '#C0C0C0', fontWeight: 600 }}>
+              {top2.points.toLocaleString()} pts
+            </div>
+            <div
+              style={{
+                width: '100%',
+                height: 70,
+                background: 'linear-gradient(180deg, #C0C0C0 0%, rgba(192, 192, 192, 0.2) 100%)',
+                borderRadius: '12px 12px 0 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 8,
+                fontSize: 22,
+                fontWeight: 900,
+                color: '#0D0E15'
+              }}
+            >
+              2
+            </div>
+          </div>
         )}
 
         {/* 1st Place */}
         {top1 && (
-          <TopThreePedestal
-            entry={top1}
-            rank={1}
-            height={95}
-            color="#FFD700"
-            emoji="🥇"
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 110 }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', top: -16, left: '50%', transform: 'translateX(-50%)', fontSize: 18 }}>👑</span>
+              <AvatarWidget
+                avatarUrl={top1.avatar}
+                size={66}
+                showBorder
+                borderColor="#FFD700"
+                isVIP={top1.isVIP}
+              />
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginTop: 6, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 105 }}>
+              {top1.userName}
+            </div>
+            <div style={{ fontSize: 12, color: '#FFD700', fontWeight: 700 }}>
+              {top1.points.toLocaleString()} pts
+            </div>
+            <div
+              style={{
+                width: '100%',
+                height: 95,
+                background: 'linear-gradient(180deg, #FFD700 0%, rgba(255, 215, 0, 0.2) 100%)',
+                borderRadius: '12px 12px 0 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 8,
+                fontSize: 26,
+                fontWeight: 900,
+                color: '#0D0E15'
+              }}
+            >
+              1
+            </div>
+          </div>
         )}
 
         {/* 3rd Place */}
         {top3 && (
-          <TopThreePedestal
-            entry={top3}
-            rank={3}
-            height={50}
-            color="#CD7F32"
-            emoji="🥉"
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 95 }}>
+            <AvatarWidget
+              avatarUrl={top3.avatar}
+              size={54}
+              showBorder
+              borderColor="#CD7F32"
+              isVIP={top3.isVIP}
+            />
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', marginTop: 6, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 90 }}>
+              {top3.userName}
+            </div>
+            <div style={{ fontSize: 11, color: '#CD7F32', fontWeight: 600 }}>
+              {top3.points.toLocaleString()} pts
+            </div>
+            <div
+              style={{
+                width: '100%',
+                height: 50,
+                background: 'linear-gradient(180deg, #CD7F32 0%, rgba(205, 127, 50, 0.2) 100%)',
+                borderRadius: '12px 12px 0 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 8,
+                fontSize: 20,
+                fontWeight: 900,
+                color: '#0D0E15'
+              }}
+            >
+              3
+            </div>
+          </div>
         )}
       </div>
 
       {/* Rest of Leaderboard */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {restList.map((entry) => {
-          const isMe = entry.isCurrentUser || entry.userId === user.id;
+        {rest.map((entry) => {
+          const isUser = entry.isCurrentUser;
 
           return (
-            <div
+            <AppCard
               key={entry.userId}
+              color={isUser ? 'rgba(255, 107, 53, 0.15)' : '#1A1A2E'}
               style={{
-                background: isMe ? 'rgba(255, 107, 53, 0.15)' : '#1A1A2E',
-                borderRadius: 16,
-                padding: '12px 16px',
-                border: isMe ? '1px solid #FF6B35' : '1px solid #25253D',
-                display: 'flex',
-                alignItems: 'center'
+                border: isUser ? '1.5px solid #FF6B35' : '1px solid #25253D',
+                padding: '12px 16px'
               }}
             >
-              {/* Rank Badge */}
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  background: isMe ? '#FF6B35' : '#25253D',
-                  color: isMe ? '#FFFFFF' : '#B0B0C3',
-                  fontWeight: 700,
-                  fontSize: 13,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                {entry.rank}
-              </div>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {/* Rank Badge */}
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: isUser ? '#FF6B35' : '#25253D',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    color: isUser ? '#FFFFFF' : '#B0B0C3',
+                    marginRight: 12
+                  }}
+                >
+                  {entry.rank}
+                </div>
 
-              {/* Avatar */}
-              <img
-                src={entry.avatar}
-                alt={entry.userName}
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '50%',
-                  marginLeft: 12,
-                  border: entry.isVIP ? '2px solid #F7C948' : '2px solid transparent',
-                  background: '#25253D',
-                  flexShrink: 0
-                }}
-              />
+                {/* Avatar */}
+                <AvatarWidget
+                  avatarUrl={entry.avatar}
+                  size={44}
+                  isVIP={entry.isVIP}
+                  showBorder={entry.isVIP}
+                  borderColor="#F7C948"
+                />
 
-              {/* Name & Level */}
-              <div style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: isMe ? '#FF6B35' : '#FFFFFF',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}
-                  >
-                    {entry.userName}
-                  </span>
-                  {entry.isVIP && <span style={{ fontSize: 13 }}>💎</span>}
+                {/* Info */}
+                <div style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: isUser ? '#FF6B35' : '#FFFFFF' }}>
+                      {entry.userName}
+                    </span>
+                    {entry.isVIP && (
+                      <span
+                        style={{
+                          background: 'linear-gradient(135deg, #FF6B35, #FFD700)',
+                          color: '#000',
+                          fontSize: 9,
+                          fontWeight: 900,
+                          padding: '1px 5px',
+                          borderRadius: 6
+                        }}
+                      >
+                        VIP
+                      </span>
+                    )}
+                    {isUser && (
+                      <span
+                        style={{
+                          background: '#FF6B35',
+                          color: '#FFFFFF',
+                          fontSize: 9,
+                          fontWeight: 800,
+                          padding: '1px 5px',
+                          borderRadius: 6
+                        }}
+                      >
+                        BẠN
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
+                    Cấp {entry.level || 1}
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
-                  Level {entry.level}
+
+                {/* Points */}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF' }}>
+                    {entry.points.toLocaleString()}
+                  </div>
+                  <div style={{ fontSize: 11, color: '#6B6B80' }}>
+                    điểm
+                  </div>
                 </div>
               </div>
-
-              {/* Points */}
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF' }}>
-                  {entry.points.toLocaleString()}
-                </div>
-                <div style={{ fontSize: 11, color: '#6B6B80' }}>
-                  điểm
-                </div>
-              </div>
-            </div>
+            </AppCard>
           );
         })}
-      </div>
-    </div>
-  );
-};
-
-interface TopThreePedestalProps {
-  entry: any;
-  rank: number;
-  height: number;
-  color: string;
-  emoji: string;
-}
-
-const TopThreePedestal: React.FC<TopThreePedestalProps> = ({
-  entry,
-  rank,
-  height,
-  color,
-  emoji
-}) => {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 90 }}>
-      {/* Avatar */}
-      <img
-        src={entry.avatar}
-        alt={entry.userName}
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: '50%',
-          border: `2px solid ${color}`,
-          background: '#25253D',
-          marginBottom: 4
-        }}
-      />
-      {/* Name */}
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: '#FFFFFF',
-          textAlign: 'center',
-          maxWidth: 80,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}
-      >
-        {entry.userName}
-      </div>
-      {/* Points */}
-      <div style={{ fontSize: 11, color: '#B0B0C3', marginBottom: 6 }}>
-        {entry.points} điểm
-      </div>
-      {/* Pedestal */}
-      <div
-        style={{
-          width: 80,
-          height,
-          background: `linear-gradient(180deg, ${color}CC 0%, ${color}66 100%)`,
-          borderTopLeftRadius: 12,
-          borderTopRightRadius: 12,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <div style={{ fontSize: 20 }}>{emoji}</div>
-        <div style={{ fontSize: 13, fontWeight: 800, color: '#000000' }}>
-          #{rank}
-        </div>
       </div>
     </div>
   );

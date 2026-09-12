@@ -9,22 +9,30 @@ import {
   Clock,
   Heart,
   Calendar,
-  ChevronRight,
   Shield,
   Users,
   Award,
   Crown,
   Gift,
   ShoppingBag,
-  Settings,
-  X
+  X,
+  Mail,
+  Database,
+  UserCheck,
+  LogOut
 } from 'lucide-react';
+import { AppCard, AvatarWidget, XpProgressBar, StatRow, MenuItem } from '../components/ui';
+import { SwitchAccountModal } from '../components/modals/SwitchAccountModal';
+import { DatabaseManagerModal } from '../components/modals/DatabaseManagerModal';
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, buyRuby, resetOnboarding } = useUser();
+  const { user, buyRuby, resetOnboarding, showToast } = useUser();
+
   const [showBuyRubyModal, setShowBuyRubyModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showSwitchAccountModal, setShowSwitchAccountModal] = useState(false);
+  const [showDatabaseManagerModal, setShowDatabaseManagerModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const getBadgeIcon = (icon: string, color: string) => {
     switch (icon) {
@@ -45,6 +53,13 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    resetOnboarding();
+    setShowLogoutConfirm(false);
+    showToast('Đã đăng xuất thành công', 'info');
+    navigate('/auth');
+  };
+
   return (
     <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
       {/* Profile Header Card */}
@@ -55,61 +70,37 @@ export const ProfilePage: React.FC = () => {
           padding: 20,
           color: '#FFFFFF',
           marginBottom: 16,
-          boxShadow: '0 8px 24px rgba(255, 107, 53, 0.3)'
+          boxShadow: '0 8px 24px rgba(255, 107, 53, 0.35)'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
           {/* Avatar with Level Badge */}
-          <div style={{ position: 'relative', width: 80, height: 80, flexShrink: 0 }}>
-            <img
-              src={user.avatar}
-              alt={user.name}
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: '50%',
-                objectFit: 'cover',
-                background: '#25253D',
-                border: '3px solid rgba(255,255,255,0.4)'
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                background: '#FF6B35',
-                color: '#FFFFFF',
-                borderRadius: '50%',
-                width: 26,
-                height: 26,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 800,
-                border: '2px solid #FFFFFF'
-              }}
-            >
-              {user.level}
-            </div>
-          </div>
+          <AvatarWidget
+            avatarUrl={user.avatar}
+            size={80}
+            level={user.level}
+            isVIP={user.isVIP}
+            showBorder
+            borderColor="#FFFFFF"
+          />
 
           {/* User Info */}
-          <div style={{ marginLeft: 16, flex: 1 }}>
+          <div style={{ marginLeft: 16, flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 22, fontWeight: 700 }}>{user.name}</span>
+              <span style={{ fontSize: 22, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.name}
+              </span>
               {user.isVIP && (
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 4,
-                    background: 'rgba(255,255,255,0.2)',
+                    gap: 3,
+                    background: 'rgba(255, 255, 255, 0.25)',
                     padding: '2px 8px',
                     borderRadius: 12,
                     fontSize: 10,
-                    fontWeight: 800
+                    fontWeight: 900
                   }}
                 >
                   <span>💎</span> VIP
@@ -118,237 +109,118 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {user.equippedTitle && (
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
+              <div style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.9)', marginTop: 2 }}>
                 {user.equippedTitle}
               </div>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>
-              <Calendar size={14} />
-              <span>Tham gia: {user.joinDate}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 11, color: 'rgba(255, 255, 255, 0.8)' }}>
+              <Mail size={12} />
+              <span>{user.email || 'demo@fitnessbattle.vn'}</span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, fontSize: 11, color: 'rgba(255, 255, 255, 0.8)' }}>
+              <Calendar size={12} />
+              <span>Tham gia: {user.joinDate || '2026-01-15'}</span>
             </div>
           </div>
         </div>
 
         {/* XP Progress Bar */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'rgba(255,255,255,0.9)', marginBottom: 6 }}>
-            <span>Cấp {user.level}</span>
-            <span>{user.xp} / {user.xpToNextLevel} XP</span>
-          </div>
-          <div style={{ height: 8, background: 'rgba(0,0,0,0.2)', borderRadius: 4, overflow: 'hidden' }}>
-            <div
-              style={{
-                height: '100%',
-                width: `${Math.min(100, Math.round((user.xp / user.xpToNextLevel) * 100))}%`,
-                background: '#FFFFFF',
-                borderRadius: 4,
-                transition: 'width 0.4s ease'
-              }}
-            />
-          </div>
-        </div>
+        <XpProgressBar
+          currentXp={user.xp}
+          xpToNextLevel={user.xpToNextLevel}
+          level={user.level}
+        />
       </div>
 
       {/* Stats Grid (3 columns) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
         {/* Total Points */}
-        <div
-          style={{
-            background: '#1A1A2E',
-            borderRadius: 16,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid #25253D'
-          }}
-        >
-          <Trophy size={28} color="#F7C948" style={{ margin: '0 auto 8px' }} />
+        <AppCard style={{ textAlign: 'center', padding: 16 }}>
+          <Trophy size={28} color="#F7C948" style={{ margin: '0 auto 8px', display: 'block' }} />
           <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
-            {user.totalPoints}
+            {user.totalPoints.toLocaleString()}
           </div>
           <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
             Tổng điểm
           </div>
-        </div>
+        </AppCard>
 
         {/* Matches */}
-        <div
-          style={{
-            background: '#1A1A2E',
-            borderRadius: 16,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid #25253D'
-          }}
-        >
-          <Swords size={28} color="#FF6B35" style={{ margin: '0 auto 8px' }} />
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+        <AppCard style={{ textAlign: 'center', padding: 16 }}>
+          <Swords size={28} color="#FF6B35" style={{ margin: '0 auto 8px', display: 'block' }} />
+          <div style={{ fontSize: 17, fontWeight: 700, color: '#FFFFFF' }}>
             {user.winCount}W - {user.loseCount}L
           </div>
           <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
             Trận đấu
           </div>
-        </div>
+        </AppCard>
 
         {/* Streak */}
-        <div
-          style={{
-            background: '#1A1A2E',
-            borderRadius: 16,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid #25253D'
-          }}
-        >
-          <Flame size={28} color="#FF4757" style={{ margin: '0 auto 8px' }} />
+        <AppCard style={{ textAlign: 'center', padding: 16 }}>
+          <Flame size={28} color="#FF4757" style={{ margin: '0 auto 8px', display: 'block' }} />
           <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
             {user.streak}
           </div>
           <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
             Streak
           </div>
-        </div>
+        </AppCard>
       </div>
 
       {/* Overview Stats Card */}
-      <div
-        style={{
-          background: '#1A1A2E',
-          borderRadius: 16,
-          padding: 16,
-          border: '1px solid #25253D',
-          marginBottom: 16
-        }}
-      >
+      <AppCard style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 16 }}>
           📈 Thống kê tổng quan
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {/* Workouts */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: 'rgba(255, 107, 53, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12
-              }}
-            >
-              <Dumbbell size={20} color="#FF6B35" />
-            </div>
-            <span style={{ fontSize: 14, color: '#B0B0C3', flex: 1 }}>
-              Tổng bài tập
-            </span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
-              {user.stats?.totalWorkouts || 89}
-            </span>
-          </div>
-
-          {/* Time */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: 'rgba(83, 82, 237, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12
-              }}
-            >
-              <Clock size={20} color="#5352ED" />
-            </div>
-            <span style={{ fontSize: 14, color: '#B0B0C3', flex: 1 }}>
-              Tổng thời gian
-            </span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
-              {user.stats?.totalMinutes || 2840} phút
-            </span>
-          </div>
-
-          {/* Calories */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: 'rgba(255, 71, 87, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12
-              }}
-            >
-              <Flame size={20} color="#FF4757" />
-            </div>
-            <span style={{ fontSize: 14, color: '#B0B0C3', flex: 1 }}>
-              Calories đốt
-            </span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
-              {user.stats?.totalCalories?.toLocaleString() || '42,500'}
-            </span>
-          </div>
-
-          {/* Heart Rate */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: 'rgba(46, 213, 115, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12
-              }}
-            >
-              <Heart size={20} color="#2ED573" />
-            </div>
-            <span style={{ fontSize: 14, color: '#B0B0C3', flex: 1 }}>
-              Nhịp tim TB
-            </span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
-              {user.stats?.avgHeartRate || 135} BPM
-            </span>
-          </div>
+          <StatRow
+            icon={<Dumbbell size={20} color="#FF6B35" />}
+            label="Tổng bài tập"
+            value={user.stats?.totalWorkouts || 89}
+            color="#FF6B35"
+          />
+          <StatRow
+            icon={<Clock size={20} color="#5352ED" />}
+            label="Tổng thời gian"
+            value={`${user.stats?.totalMinutes || 2840} phút`}
+            color="#5352ED"
+          />
+          <StatRow
+            icon={<Flame size={20} color="#FF4757" />}
+            label="Calories đốt"
+            value={user.stats?.totalCalories?.toLocaleString() || '42,500'}
+            color="#FF4757"
+          />
+          <StatRow
+            icon={<Heart size={20} color="#2ED573" />}
+            label="Nhịp tim TB"
+            value={`${user.stats?.avgHeartRate || 135} BPM`}
+            color="#2ED573"
+          />
         </div>
-      </div>
+      </AppCard>
 
       {/* Badges Card */}
-      <div
-        style={{
-          background: '#1A1A2E',
-          borderRadius: 16,
-          padding: 16,
-          border: '1px solid #25253D',
-          marginBottom: 16
-        }}
-      >
+      <AppCard style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF', marginBottom: 16 }}>
           🏅 Huy hiệu
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
           {user.badges?.map((badge) => {
             const color = badge.color || '#FF6B35';
             return (
               <div
                 key={badge.id}
                 style={{
-                  width: 82,
                   padding: 12,
                   borderRadius: 12,
-                  background: badge.earned ? `${color}25` : '#25253D',
-                  border: `1px solid ${badge.earned ? color : '#6B6B80'}`,
+                  background: badge.earned ? `${color}20` : '#25253D',
+                  border: `1px solid ${badge.earned ? color : '#25253D'}`,
                   textAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
@@ -358,14 +230,14 @@ export const ProfilePage: React.FC = () => {
                 {getBadgeIcon(badge.icon, badge.earned ? color : '#6B6B80')}
                 <div
                   style={{
-                    fontSize: 10,
-                    fontWeight: 500,
+                    fontSize: 11,
+                    fontWeight: 600,
                     color: badge.earned ? '#FFFFFF' : '#6B6B80',
                     marginTop: 6,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    maxWidth: 70
+                    maxWidth: 80
                   }}
                 >
                   {badge.name}
@@ -374,7 +246,7 @@ export const ProfilePage: React.FC = () => {
             );
           })}
         </div>
-      </div>
+      </AppCard>
 
       {/* Menu List */}
       <div
@@ -386,66 +258,70 @@ export const ProfilePage: React.FC = () => {
           marginBottom: 16
         }}
       >
-        {/* Battle Pass */}
         <MenuItem
           icon={<Award size={22} color="#FF6B35" />}
           title="Battle Pass"
           subtitle="Mùa #7 — Cyber Sprint"
-          onTap={() => navigate('/battlepass')}
+          onTap={() => navigate('/battle-pass')}
         />
         <div style={{ height: 1, background: '#25253D' }} />
 
-        {/* Vouchers */}
         <MenuItem
-          icon={<Gift size={22} color="#FF6B35" />}
+          icon={<Gift size={22} color="#F7C948" />}
           title="Voucher của tôi"
           subtitle="3 voucher đang có"
           onTap={() => navigate('/shop')}
         />
         <div style={{ height: 1, background: '#25253D' }} />
 
-        {/* Shop */}
         <MenuItem
-          icon={<ShoppingBag size={22} color="#FF6B35" />}
+          icon={<ShoppingBag size={22} color="#3498DB" />}
           title="Cửa hàng"
           subtitle="Skin & Items"
           onTap={() => navigate('/shop')}
         />
         <div style={{ height: 1, background: '#25253D' }} />
 
-        {/* Membership */}
         <MenuItem
-          icon={<Crown size={22} color="#FF6B35" />}
+          icon={<Crown size={22} color="#FFD700" />}
           title="Membership"
           subtitle="Nâng cấp tài khoản"
           onTap={() => navigate('/membership')}
         />
         <div style={{ height: 1, background: '#25253D' }} />
 
-        {/* Settings */}
+        {/* Database Manager */}
         <MenuItem
-          icon={<Settings size={22} color="#FF6B35" />}
-          title="Cài đặt"
-          subtitle="Tài khoản & Thông báo"
-          onTap={() => setShowSettingsModal(true)}
+          icon={<Database size={22} color="#2ED573" />}
+          title="Quản lý Cơ Sở Dữ Liệu"
+          subtitle="Xem bảng, chỉnh sửa & Đặt lại CSDL"
+          onTap={() => setShowDatabaseManagerModal(true)}
+        />
+        <div style={{ height: 1, background: '#25253D' }} />
+
+        {/* Switch Account */}
+        <MenuItem
+          icon={<UserCheck size={22} color="#5352ED" />}
+          title="Chuyển Đổi Tài Khoản"
+          subtitle="Chuyển nhanh giữa Demo & VIP Pro"
+          onTap={() => setShowSwitchAccountModal(true)}
+        />
+        <div style={{ height: 1, background: '#25253D' }} />
+
+        {/* Logout */}
+        <MenuItem
+          icon={<LogOut size={22} color="#FF4757" />}
+          title="Đăng Xuất"
+          subtitle="Thoát khỏi phiên đăng nhập hiện tại"
+          textColor="#FF4757"
+          onTap={() => setShowLogoutConfirm(true)}
         />
       </div>
 
-      {/* Ruby Section */}
-      <div
-        style={{
-          background: '#1A1A2E',
-          borderRadius: 16,
-          padding: 16,
-          border: '1px solid #25253D',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 20
-        }}
-      >
+      {/* Ruby Currency Section */}
+      <AppCard style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 24 }}>💎</span>
+          <span style={{ fontSize: 26 }}>💎</span>
           <div>
             <div style={{ fontSize: 12, color: '#B0B0C3' }}>Ruby</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
@@ -462,27 +338,25 @@ export const ProfilePage: React.FC = () => {
             borderRadius: 10,
             padding: '8px 20px',
             color: '#FFFFFF',
-            fontWeight: 600,
+            fontWeight: 700,
             fontSize: 13,
             cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(255, 71, 87, 0.3)'
+            boxShadow: '0 4px 12px rgba(255, 71, 87, 0.35)'
           }}
         >
           Mua
         </button>
-      </div>
+      </AppCard>
 
       {/* Buy Ruby Modal */}
       {showBuyRubyModal && (
         <div
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
-            zIndex: 100,
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -493,11 +367,11 @@ export const ProfilePage: React.FC = () => {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
+              width: '100%',
+              maxWidth: 380,
               background: '#1A1A2E',
               borderRadius: 20,
               padding: 24,
-              width: '100%',
-              maxWidth: 380,
               border: '1px solid #25253D'
             }}
           >
@@ -523,6 +397,7 @@ export const ProfilePage: React.FC = () => {
                   onClick={() => {
                     buyRuby(pack.amount);
                     setShowBuyRubyModal(false);
+                    showToast(`Đã nạp thành công +${pack.amount} Ruby!`, 'success');
                   }}
                   style={{
                     display: 'flex',
@@ -546,112 +421,91 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
 
-      {/* Settings Modal */}
-      {showSettingsModal && (
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
         <div
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
-            zIndex: 100,
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             padding: 16
           }}
-          onClick={() => setShowSettingsModal(false)}
+          onClick={() => setShowLogoutConfirm(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
+              width: '100%',
+              maxWidth: 360,
               background: '#1A1A2E',
               borderRadius: 20,
               padding: 24,
-              width: '100%',
-              maxWidth: 380,
-              border: '1px solid #25253D'
+              border: '1px solid #25253D',
+              textAlign: 'center'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>⚙️ Cài Đặt</span>
-              <button
-                onClick={() => setShowSettingsModal(false)}
-                style={{ background: 'none', border: 'none', color: '#6B6B80', cursor: 'pointer' }}
-              >
-                <X size={20} />
-              </button>
+            <LogOut size={40} color="#FF4757" style={{ margin: '0 auto 12px' }} />
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>
+              Đăng Xuất?
+            </div>
+            <div style={{ fontSize: 13, color: '#B0B0C3', marginBottom: 20 }}>
+              Bạn có chắc chắn muốn thoát khỏi phiên đăng nhập hiện tại?
             </div>
 
-            <button
-              onClick={() => {
-                resetOnboarding();
-                setShowSettingsModal(false);
-                navigate('/onboarding');
-              }}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: 'rgba(255, 71, 87, 0.15)',
-                border: '1px solid rgba(255, 71, 87, 0.4)',
-                borderRadius: 12,
-                color: '#FF4757',
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: 'pointer'
-              }}
-            >
-              Đăng xuất / Reset tài khoản
-            </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={handleLogout}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: '#FF4757',
+                  border: 'none',
+                  borderRadius: 12,
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer'
+                }}
+              >
+                Đăng Xuất
+              </button>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: '#25253D',
+                  border: 'none',
+                  borderRadius: 12,
+                  color: '#FFFFFF',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: 'pointer'
+                }}
+              >
+                Hủy
+              </button>
+            </div>
           </div>
         </div>
       )}
-    </div>
-  );
-};
 
-interface MenuItemProps {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  onTap: () => void;
-}
+      {/* Switch Account Modal */}
+      <SwitchAccountModal
+        isOpen={showSwitchAccountModal}
+        onClose={() => setShowSwitchAccountModal(false)}
+      />
 
-const MenuItem: React.FC<MenuItemProps> = ({ icon, title, subtitle, onTap }) => {
-  return (
-    <div
-      onClick={onTap}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: 16,
-        cursor: 'pointer'
-      }}
-    >
-      <div
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 12,
-          background: '#25253D',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginRight: 12,
-          flexShrink: 0
-        }}
-      >
-        {icon}
-      </div>
-
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#FFFFFF' }}>{title}</div>
-        <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>{subtitle}</div>
-      </div>
-
-      <ChevronRight size={18} color="#6B6B80" />
+      {/* Database Manager Modal */}
+      <DatabaseManagerModal
+        isOpen={showDatabaseManagerModal}
+        onClose={() => setShowDatabaseManagerModal(false)}
+      />
     </div>
   );
 };

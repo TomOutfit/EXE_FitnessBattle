@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/models.dart';
 import '../../../../core/providers.dart';
+import '../../../../core/services/app_database.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/database_manager_dialog.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -101,15 +104,29 @@ class ProfilePage extends ConsumerWidget {
                                 ),
                               ),
                             ],
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 6),
                             Row(
                               children: [
-                                const Icon(Icons.calendar_today, size: 14, color: Colors.white70),
+                                const Icon(Icons.email_outlined, size: 13, color: Colors.white70),
+                                const SizedBox(width: 4),
+                                Text(
+                                  user.email ?? 'demo@fitnessbattle.vn',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.calendar_today, size: 13, color: Colors.white70),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Tham gia: ${user.joinDate}',
                                   style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11,
                                     color: Colors.white70,
                                   ),
                                 ),
@@ -347,10 +364,31 @@ class ProfilePage extends ConsumerWidget {
                   ),
                   const Divider(color: AppColors.surfaceLight, height: 1),
                   _MenuItem(
-                    icon: Icons.settings,
-                    title: 'Cài đặt',
-                    subtitle: 'Tài khoản & Thông báo',
-                    onTap: () {},
+                    icon: Icons.storage,
+                    title: 'Quản lý Cơ Sở Dữ Liệu',
+                    subtitle: 'Xem bảng, chỉnh sửa & Đặt lại CSDL',
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => const DatabaseManagerDialog(),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, color: AppColors.border),
+                  _MenuItem(
+                    icon: Icons.switch_account_outlined,
+                    title: 'Chuyển Đổi Tài Khoản',
+                    subtitle: 'Chuyển nhanh giữa Demo & VIP Pro',
+                    onTap: () => _showSwitchAccountDialog(context, ref),
+                  ),
+                  const Divider(height: 1, color: AppColors.border),
+                  _MenuItem(
+                    icon: Icons.logout,
+                    title: 'Đăng Xuất',
+                    subtitle: 'Thoát khỏi phiên đăng nhập hiện tại',
+                    iconColor: AppColors.error,
+                    textColor: AppColors.error,
+                    onTap: () => _handleLogout(context, ref),
                   ),
                 ],
               ),
@@ -398,6 +436,227 @@ class ProfilePage extends ConsumerWidget {
             const SizedBox(height: 80),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSwitchAccountDialog(BuildContext context, WidgetRef ref) {
+    final accounts = AppDatabase.instance.getAllAccounts();
+    final currentUser = ref.read(userProvider);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.switch_account, color: AppColors.primary, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Chuyển Đổi Tài Khoản',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Chọn tài khoản đã lưu trong CSDL',
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: accounts.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final acc = accounts[index];
+                    final isCurrent = acc.id == currentUser.id;
+
+                    return InkWell(
+                      onTap: isCurrent
+                          ? null
+                          : () async {
+                              final updatedUser = await AppDatabase.instance.switchAccount(acc.id);
+                              ref.read(userProvider.notifier).updateUser(updatedUser);
+                              if (context.mounted) {
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const Icon(Icons.check_circle, color: AppColors.success),
+                                        const SizedBox(width: 10),
+                                        Text('Đã chuyển sang: ${acc.name}'),
+                                      ],
+                                    ),
+                                    backgroundColor: AppColors.surface,
+                                  ),
+                                );
+                              }
+                            },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isCurrent
+                              ? AppColors.primary.withValues(alpha: 0.12)
+                              : AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isCurrent ? AppColors.primary : AppColors.border,
+                            width: isCurrent ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            AvatarWidget(
+                              avatarUrl: acc.isVIP
+                                  ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'
+                                  : currentUser.avatar,
+                              size: 46,
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        acc.name,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      if (acc.isVIP) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.accent.withValues(alpha: 0.2),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: const Text(
+                                            'VIP',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.accent,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '${acc.email} • ${acc.isVIP ? "VIP Pro (Lv.25)" : "Standard (Lv.15)"}',
+                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isCurrent)
+                              const Icon(Icons.check_circle, color: AppColors.primary, size: 22)
+                            else
+                              const Icon(Icons.login, color: AppColors.textMuted, size: 20),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.push('/auth');
+                  },
+                  icon: const Icon(Icons.person_add_outlined, size: 18),
+                  label: const Text('Thêm tài khoản / Đăng nhập khác'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _handleLogout(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.logout, color: AppColors.error),
+            SizedBox(width: 10),
+            Text('Đăng Xuất', style: TextStyle(color: AppColors.textPrimary)),
+          ],
+        ),
+        content: const Text(
+          'Bạn có chắc chắn muốn đăng xuất khỏi tài khoản hiện tại?',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              AppDatabase.instance.logout();
+              context.go('/auth');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Đăng Xuất'),
+          ),
+        ],
       ),
     );
   }
@@ -476,56 +735,67 @@ class _MenuItem extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Color? iconColor;
+  final Color? textColor;
 
   const _MenuItem({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.iconColor,
+    this.textColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(12),
+    final effectiveIconColor = iconColor ?? AppColors.primary;
+    final effectiveTextColor = textColor ?? AppColors.textPrimary;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: effectiveIconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: effectiveIconColor),
               ),
-              child: Icon(icon, color: AppColors.primary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: effectiveTextColor,
+                      ),
                     ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right, color: AppColors.textMuted),
-          ],
+              const Icon(Icons.chevron_right, color: AppColors.textMuted),
+            ],
+          ),
         ),
       ),
     );

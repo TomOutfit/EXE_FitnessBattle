@@ -1,22 +1,25 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { Check } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import type { SkinItem } from '../types';
+import { AppCard } from '../components/ui';
 
 type ShopCategory = 'all' | 'frames' | 'titles' | 'effects' | 'badges' | 'consumables' | 'bundles';
 
 export const ShopPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, skinItems, buyShopItem } = useUser();
   const [selectedCategory, setSelectedCategory] = useState<ShopCategory>('all');
   const [selectedItem, setSelectedItem] = useState<SkinItem | null>(null);
 
   const getRankTier = (points: number) => {
-    if (points >= 10000) return { name: 'Thần Thoại', emoji: '👑', minPoints: 10000 };
-    if (points >= 5000) return { name: 'Kim Cương', emoji: '💎', minPoints: 5000 };
-    if (points >= 2500) return { name: 'Bạch Kim', emoji: '🏆', minPoints: 2500 };
-    if (points >= 1000) return { name: 'Vàng', emoji: '🥇', minPoints: 1000 };
-    if (points >= 500) return { name: 'Bạc', emoji: '🥈', minPoints: 500 };
-    return { name: 'Đồng', emoji: '🥉', minPoints: 0 };
+    if (points >= 10000) return { name: 'Thần Thoại', emoji: '👑', minPoints: 10000, nextPoints: 20000 };
+    if (points >= 5000) return { name: 'Kim Cương', emoji: '💎', minPoints: 5000, nextPoints: 10000 };
+    if (points >= 2500) return { name: 'Bạch Kim', emoji: '🏆', minPoints: 2500, nextPoints: 5000 };
+    if (points >= 1000) return { name: 'Vàng', emoji: '🥇', minPoints: 1000, nextPoints: 2500 };
+    if (points >= 500) return { name: 'Bạc', emoji: '🥈', minPoints: 500, nextPoints: 1000 };
+    return { name: 'Đồng', emoji: '🥉', minPoints: 0, nextPoints: 500 };
   };
 
   const userRank = getRankTier(user.totalPoints);
@@ -44,7 +47,7 @@ export const ShopPage: React.FC = () => {
     }
   };
 
-  const filteredItems = skinItems.filter(item => {
+  const filteredItems = skinItems.filter((item) => {
     if (selectedCategory === 'all') return true;
     if (selectedCategory === 'frames') return item.type === 'avatar_frame';
     if (selectedCategory === 'titles') return item.type === 'title';
@@ -64,22 +67,43 @@ export const ShopPage: React.FC = () => {
     <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
-          🛒 Cửa Hàng
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: '#1A1A2E',
+              border: '1px solid #25253D',
+              borderRadius: 10,
+              width: 36,
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              marginRight: 12,
+            }}
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
+            🛒 Cửa Hàng
+          </h1>
+        </div>
+
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 4,
             background: '#1A1A2E',
             padding: '6px 12px',
             borderRadius: 20,
-            border: '1px solid #25253D'
+            border: '1px solid #25253D',
           }}
         >
-          <span style={{ fontSize: 16 }}>💎</span>
-          <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14 }}>
+          <span style={{ fontSize: 14 }}>💎</span>
+          <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 13 }}>
             {user.ruby}
           </span>
         </div>
@@ -94,7 +118,7 @@ export const ShopPage: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           marginBottom: 16,
-          color: '#FFFFFF'
+          color: '#FFFFFF',
         }}
       >
         <div style={{ fontSize: 40, marginRight: 16 }}>
@@ -105,23 +129,23 @@ export const ShopPage: React.FC = () => {
             Hạng: {userRank.name}
           </div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
-            {user.totalPoints} điểm • Cần thêm để lên hạng tiếp
+            {user.totalPoints.toLocaleString()} điểm • {Math.max(0, userRank.nextPoints - user.totalPoints)} đến hạng tiếp
           </div>
         </div>
         <div
           style={{
             background: 'rgba(255,255,255,0.2)',
-            padding: '6px 12px',
             borderRadius: 20,
+            padding: '6px 12px',
             fontSize: 12,
-            fontWeight: 700
+            fontWeight: 700,
           }}
         >
           Cấp {Math.floor(userRank.minPoints / 1000)}+
         </div>
       </div>
 
-      {/* Category Chips Scroll */}
+      {/* Category Filter Horizontal Scroll */}
       <div
         style={{
           display: 'flex',
@@ -129,275 +153,252 @@ export const ShopPage: React.FC = () => {
           overflowX: 'auto',
           paddingBottom: 8,
           marginBottom: 16,
-          scrollbarWidth: 'none'
+          scrollbarWidth: 'none',
         }}
       >
         {categories.map((cat) => {
           const isSelected = selectedCategory === cat.id;
           return (
-            <div
+            <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 16px',
+                flex: '0 0 auto',
+                padding: '8px 14px',
                 borderRadius: 20,
                 background: isSelected ? '#FF6B35' : '#1A1A2E',
                 color: isSelected ? '#FFFFFF' : '#B0B0C3',
-                fontWeight: isSelected ? 600 : 400,
+                border: isSelected ? '1px solid #FF6B35' : '1px solid #25253D',
                 fontSize: 13,
+                fontWeight: 600,
                 cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                border: isSelected ? 'none' : '1px solid #25253D',
-                transition: 'all 0.2s'
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.15s ease',
               }}
             >
-              <span style={{ fontSize: 16 }}>{cat.emoji}</span>
+              <span>{cat.emoji}</span>
               <span>{cat.label}</span>
-            </div>
+            </button>
           );
         })}
       </div>
 
-      {/* Shop Items 2-Column Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 12
-        }}
-      >
+      {/* Shop Items Grid (2 columns) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
         {filteredItems.map((item) => {
           const rarity = getRarityConfig(item.rarity);
 
           return (
-            <div
+            <AppCard
               key={item.id}
-              onClick={() => setSelectedItem(item)}
+              onTap={() => setSelectedItem(item)}
               style={{
-                background: '#1A1A2E',
-                borderRadius: 16,
-                border: `2px solid ${rarity.color}45`,
                 display: 'flex',
                 flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: 14,
                 cursor: 'pointer',
-                overflow: 'hidden'
+                position: 'relative',
               }}
             >
-              {/* Header Rarity Banner */}
-              <div
-                style={{
-                  background: `${rarity.color}20`,
-                  padding: '4px 8px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}
-              >
-                <span style={{ fontSize: 10, fontWeight: 600, color: rarity.color }}>
-                  {rarity.name}
-                </span>
-                {item.limited && (
+              <div>
+                {/* Rarity Tag */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <span
                     style={{
-                      background: 'rgba(255, 71, 87, 0.2)',
-                      color: '#FF4757',
-                      fontSize: 8,
-                      fontWeight: 800,
-                      padding: '2px 4px',
-                      borderRadius: 4
+                      background: `${rarity.color}25`,
+                      color: rarity.color,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 6,
                     }}
                   >
-                    LIMITED
+                    {rarity.name}
                   </span>
-                )}
-              </div>
-
-              {/* Preview Emoji */}
-              <div
-                style={{
-                  height: 100,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative'
-                }}
-              >
-                <span style={{ fontSize: 48 }}>{item.preview}</span>
-                {item.owned && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      width: 32,
-                      height: 32,
-                      borderRadius: '50%',
-                      background: 'rgba(46, 213, 115, 0.9)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <Check size={18} color="#FFFFFF" />
-                  </div>
-                )}
-              </div>
-
-              {/* Info Footer */}
-              <div
-                style={{
-                  background: 'rgba(37, 37, 61, 0.5)',
-                  padding: 12,
-                  textAlign: 'center'
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: '#FFFFFF',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    marginBottom: 4
-                  }}
-                >
-                  {item.name}
+                  {item.owned && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#2ED573' }}>
+                      ✓ ĐÃ CÓ
+                    </span>
+                  )}
                 </div>
 
+                {/* Item Icon / Preview */}
+                <div
+                  style={{
+                    height: 80,
+                    borderRadius: 12,
+                    background: '#25253D',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 36,
+                    marginBottom: 10,
+                    border: `1px dashed ${rarity.color}60`,
+                  }}
+                >
+                  {item.preview || (item.type === 'avatar_frame' ? '🖼️' : item.type === 'title' ? '🏷️' : '✨')}
+                </div>
+
+                {/* Title & Desc */}
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>
+                  {item.name}
+                </div>
+                <div style={{ fontSize: 11, color: '#B0B0C3', lineHeight: 1.4, minHeight: 32 }}>
+                  {item.rarity.toUpperCase()} • {item.type.replace('_', ' ')}
+                </div>
+              </div>
+
+              {/* Price / Action */}
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid #25253D', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#FF4757', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>💎</span> {item.price}
+                </span>
+
                 {item.owned ? (
-                  <div
+                  <span
                     style={{
-                      display: 'inline-block',
-                      background: 'rgba(46, 213, 115, 0.2)',
-                      color: '#2ED573',
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: 600,
-                      padding: '2px 8px',
-                      borderRadius: 8
+                      color: '#2ED573',
                     }}
                   >
                     Đã sở hữu
-                  </div>
+                  </span>
                 ) : (
-                  <div
+                  <span
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 4
+                      background: 'rgba(255, 107, 53, 0.2)',
+                      color: '#FF6B35',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '4px 8px',
+                      borderRadius: 8,
                     }}
                   >
-                    <span style={{ fontSize: 13 }}>💎</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>
-                      {item.price}
-                    </span>
-                  </div>
+                    Mua ngay
+                  </span>
                 )}
               </div>
-            </div>
+            </AppCard>
           );
         })}
       </div>
 
-      {/* Purchase Modal */}
+      {/* Item Details / Purchase Modal */}
       {selectedItem && (
         <div
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
-            zIndex: 100,
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 16
+            padding: 16,
           }}
           onClick={() => setSelectedItem(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
+              width: '100%',
+              maxWidth: 380,
               background: '#1A1A2E',
               borderRadius: 20,
               padding: 24,
-              width: '100%',
-              maxWidth: 360,
               border: '1px solid #25253D',
-              textAlign: 'center'
+              textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 16 }}>
-              Mua {selectedItem.name}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+              <button
+                onClick={() => setSelectedItem(null)}
+                style={{ background: 'none', border: 'none', color: '#6B6B80', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            <div style={{ fontSize: 64, marginBottom: 16 }}>
-              {selectedItem.preview}
+            <div
+              style={{
+                width: 90,
+                height: 90,
+                borderRadius: 20,
+                background: '#25253D',
+                margin: '0 auto 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 44,
+                border: `2px solid ${getRarityConfig(selectedItem.rarity).color}`,
+              }}
+            >
+              {selectedItem.preview || '🎁'}
+            </div>
+
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>
+              {selectedItem.name}
             </div>
 
             <div style={{ fontSize: 13, color: '#B0B0C3', marginBottom: 16 }}>
-              {selectedItem.owned ? 'Bạn đã sở hữu vật phẩm này!' : 'Vật phẩm trang trí cao cấp trong hệ thống Fitness Battle'}
+              Vật phẩm trang bị phong cách {getRarityConfig(selectedItem.rarity).name} dành riêng cho bạn.
             </div>
 
-            {/* Price badge */}
             <div
               style={{
-                background: '#25253D',
-                borderRadius: 12,
-                padding: '12px 16px',
-                display: 'inline-flex',
+                display: 'flex',
+                justifyContent: 'center',
                 alignItems: 'center',
-                gap: 8,
-                marginBottom: 20
+                gap: 6,
+                fontSize: 20,
+                fontWeight: 800,
+                color: '#FF4757',
+                marginBottom: 20,
               }}
             >
-              <span style={{ fontSize: 20 }}>💎</span>
-              <span style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
-                {selectedItem.price} Ruby
-              </span>
+              <span>💎</span> {selectedItem.price} Ruby
             </div>
 
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: 12 }}>
+            {selectedItem.owned ? (
               <button
-                onClick={() => setSelectedItem(null)}
+                disabled
                 style={{
-                  flex: 1,
-                  padding: 12,
-                  background: 'transparent',
-                  border: '1px solid #25253D',
+                  width: '100%',
+                  padding: '14px',
+                  background: '#25253D',
+                  border: 'none',
                   borderRadius: 12,
-                  color: '#B0B0C3',
-                  fontWeight: 600,
-                  cursor: 'pointer'
+                  color: '#2ED573',
+                  fontWeight: 700,
+                  fontSize: 14,
                 }}
               >
-                Đóng
+                ✓ BẠN ĐÃ SỞ HỮU VẬT PHẨM NÀY
               </button>
-
-              {!selectedItem.owned && (
-                <button
-                  onClick={() => handleBuy(selectedItem)}
-                  style={{
-                    flex: 1,
-                    padding: 12,
-                    background: 'linear-gradient(135deg, #FF4757 0%, #FF6B81 100%)',
-                    border: 'none',
-                    borderRadius: 12,
-                    color: '#FFFFFF',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Mua ngay
-                </button>
-              )}
-            </div>
+            ) : (
+              <button
+                onClick={() => handleBuy(selectedItem)}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: 'linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%)',
+                  border: 'none',
+                  borderRadius: 12,
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(255, 107, 53, 0.4)',
+                }}
+              >
+                XÁC NHẬN MUA
+              </button>
+            )}
           </div>
         </div>
       )}

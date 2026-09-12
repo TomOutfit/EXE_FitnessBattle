@@ -1,200 +1,196 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { Check, CheckCircle, X, Sparkles, Percent, RefreshCw } from 'lucide-react';
-
-interface PlanDetail {
-  id: 'basic' | 'premium' | 'vip';
-  name: string;
-  emoji: string;
-  durationDays: number;
-  price: number;
-  priceFormatted: string;
-  color: string;
-  isPopular?: boolean;
-  features: string[];
-  notIncluded: string[];
-}
+import { ArrowLeft, Check } from 'lucide-react';
+import { AppCard } from '../components/ui';
 
 export const MembershipPage: React.FC = () => {
+  const navigate = useNavigate();
   const { membership, upgradeMembership } = useUser();
-  const [selectedPlan, setSelectedPlan] = useState<PlanDetail | null>(null);
 
-  const plans: PlanDetail[] = [
+  const getTierColor = (tier: string) => {
+    switch (tier) {
+      case 'vip':
+        return '#FFD700';
+      case 'premium':
+        return '#9B59B6';
+      case 'basic':
+        return '#3498DB';
+      default:
+        return '#6B6B80';
+    }
+  };
+
+  const getTierEmoji = (tier: string) => {
+    switch (tier) {
+      case 'vip':
+        return '👑';
+      case 'premium':
+        return '💎';
+      case 'basic':
+        return '⚡';
+      default:
+        return '🌱';
+    }
+  };
+
+  const getTierName = (tier: string) => {
+    switch (tier) {
+      case 'vip':
+        return 'VIP Pro';
+      case 'premium':
+        return 'Premium';
+      case 'basic':
+        return 'Cơ Bản';
+      default:
+        return 'Miễn Phí';
+    }
+  };
+
+  const plans = [
+    {
+      id: 'free',
+      tier: 'free' as const,
+      name: 'Gói Miễn Phí',
+      badge: 'Standard',
+      price: '0đ',
+      period: '/mãi mãi',
+      color: '#6B6B80',
+      bonus: 0,
+      reduction: 0,
+      perks: [
+        'Nhận diện AI tối đa 3 bài/ngày',
+        'Tham gia trận đấu thường',
+        'Lưu lịch sử tập 7 ngày'
+      ]
+    },
     {
       id: 'basic',
-      name: 'Basic',
-      emoji: '🥉',
-      durationDays: 30,
-      price: 49000,
-      priceFormatted: '49.000',
+      tier: 'basic' as const,
+      name: 'Gói Cơ Bản',
+      badge: 'Phổ biến',
+      price: '49.000đ',
+      period: '/tháng',
       color: '#3498DB',
-      features: [
-        '+10% điểm thưởng mỗi ngày',
-        'Giảm 10% phí tham gia đấu trường',
-        'Mở khóa phòng chờ riêng',
-        'Lưu lịch sử tập 30 ngày'
-      ],
-      notIncluded: [
-        'Không giới hạn đồng bộ thiết bị',
-        'Phân tích góc khớp AI chuyên sâu'
+      bonus: 10,
+      reduction: 10,
+      perks: [
+        '+10% điểm thưởng toàn hệ thống',
+        'Giảm 10% phí đấu trường',
+        'Nhận diện AI không giới hạn',
+        'Lưu lịch sử tập 30 ngày',
+        '+20 Ruby tặng kèm'
       ]
     },
     {
       id: 'premium',
-      name: 'Premium',
-      emoji: '🥈',
-      durationDays: 90,
-      price: 129000,
-      priceFormatted: '129.000',
+      tier: 'premium' as const,
+      name: 'Gói Nâng Cao',
+      badge: 'Nhiều Người Chọn',
+      price: '99.000đ',
+      period: '/tháng',
       color: '#9B59B6',
-      isPopular: true,
-      features: [
-        '+20% điểm thưởng mỗi ngày',
-        'Giảm 25% phí tham gia đấu trường',
-        'Đồng bộ dữ liệu không giới hạn',
-        'Phân tích tư thế AI thời gian thực',
-        'Khung avatar & hiệu ứng riêng'
-      ],
-      notIncluded: [
-        'Huấn luyện viên cá nhân AI 1v1'
+      bonus: 20,
+      reduction: 25,
+      perks: [
+        '+20% điểm thưởng toàn hệ thống',
+        'Giảm 25% phí đấu trường',
+        'Phân tích góc khớp AI chuyên sâu',
+        'Đồng bộ dữ liệu thời gian thực',
+        '+50 Ruby tặng kèm',
+        'Mở khóa Khung Avatar Tím'
       ]
     },
     {
       id: 'vip',
-      name: 'VIP',
-      emoji: '👑',
-      durationDays: 365,
-      price: 399000,
-      priceFormatted: '399.000',
-      color: '#F39C12',
-      features: [
+      tier: 'vip' as const,
+      name: 'Gói VIP Pro',
+      badge: '👑 Khuyên Dùng',
+      price: '199.000đ',
+      period: '/tháng',
+      color: '#FF6B35',
+      isPopular: true,
+      bonus: 35,
+      reduction: 50,
+      perks: [
         '+35% điểm thưởng toàn hệ thống',
-        'Giảm 50% phí tham gia đấu trường',
-        'Đồng bộ dữ liệu thời gian thực',
+        'Giảm 50% phí đấu trường',
+        'Mở khóa toàn bộ Khung Avatar & Danh hiệu VIP',
         'Phân tích góc khớp AI chuẩn thi đấu',
-        'Mở khóa toàn bộ Khung Avatar & Danh hiệu',
-        'Hỗ trợ ưu tiên 24/7'
-      ],
-      notIncluded: []
+        'Tăng Stamina tối đa lên 500',
+        '+100 Ruby tặng ngay lập tức',
+        'Ưu tiên xếp trận với Master'
+      ]
     }
   ];
-
-  const handleSubscribe = (plan: PlanDetail) => {
-    upgradeMembership(plan.id);
-    setSelectedPlan(null);
-  };
-
-  const isCurrentTier = (tier: string) => membership.tier === tier;
 
   return (
     <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
-          👑 Membership
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: '#1A1A2E',
+              border: '1px solid #25253D',
+              borderRadius: 10,
+              width: 36,
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              marginRight: 12,
+            }}
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>
+            👑 Membership
+          </h1>
+        </div>
+
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            background: membership.tier !== 'free' ? 'rgba(243, 156, 18, 0.2)' : '#1A1A2E',
-            padding: '6px 12px',
+            background: `${getTierColor(membership.tier)}20`,
+            padding: '6px 14px',
             borderRadius: 20,
-            border: membership.tier !== 'free' ? '1px solid #F39C12' : '1px solid #25253D'
+            border: `1px solid ${getTierColor(membership.tier)}50`
           }}
         >
-          <span style={{ fontSize: 16 }}>{membership.tier === 'vip' ? '👑' : membership.tier === 'premium' ? '🥈' : membership.tier === 'basic' ? '🥉' : '🌱'}</span>
-          <span style={{ fontWeight: 600, color: membership.tier !== 'free' ? '#F39C12' : '#B0B0C3', fontSize: 13 }}>
-            {membership.tier.toUpperCase()} Member
+          <span style={{ fontSize: 14 }}>{getTierEmoji(membership.tier)}</span>
+          <span style={{ fontWeight: 700, color: getTierColor(membership.tier), fontSize: 13 }}>
+            {getTierName(membership.tier)}
           </span>
         </div>
       </div>
 
-      {/* Current Membership Status Banner */}
-      {membership.tier !== 'free' ? (
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #F39C12 0%, #E67E22 100%)',
-            borderRadius: 20,
-            padding: 20,
-            color: '#FFFFFF',
-            marginBottom: 24,
-            boxShadow: '0 8px 24px rgba(243, 156, 18, 0.3)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-            <div
-              style={{
-                width: 60,
-                height: 60,
-                borderRadius: 16,
-                background: 'rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 32,
-                marginRight: 16
-              }}
-            >
-              {membership.tier === 'vip' ? '👑' : membership.tier === 'premium' ? '🥈' : '🥉'}
-            </div>
-            <div>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>{membership.tier.toUpperCase()} Member</div>
-              <div style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.85)', marginTop: 2 }}>
-                Hết hạn: {membership.expiryDate || '31/12/2026'}
-              </div>
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.15)',
-              borderRadius: 12,
-              padding: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-around',
-              textAlign: 'center'
-            }}
-          >
-            <div>
-              <Sparkles size={18} style={{ margin: '0 auto 4px' }} />
-              <div style={{ fontSize: 16, fontWeight: 700 }}>+{membership.dailyBonusPercent}%</div>
-              <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.8)' }}>Bonus Điểm</div>
-            </div>
-            <div style={{ width: 1, height: 30, background: 'rgba(255, 255, 255, 0.25)' }} />
-            <div>
-              <Percent size={18} style={{ margin: '0 auto 4px' }} />
-              <div style={{ fontSize: 16, fontWeight: 700 }}>-{membership.battleCostReduction}%</div>
-              <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.8)' }}>Giảm Phí</div>
-            </div>
-            <div style={{ width: 1, height: 30, background: 'rgba(255, 255, 255, 0.25)' }} />
-            <div>
-              <RefreshCw size={18} style={{ margin: '0 auto 4px' }} />
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{membership.unlimitedSync ? '∞' : 'Có'}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.8)' }}>Sync</div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div
-          style={{
-            background: '#1A1A2E',
-            borderRadius: 20,
-            padding: 20,
-            border: '1px solid #25253D',
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: 24
-          }}
-        >
+      {/* Current Status Card */}
+      <div
+        style={{
+          background: membership.tier !== 'free'
+            ? 'linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%)'
+            : '#1A1A2E',
+          borderRadius: 20,
+          padding: 20,
+          marginBottom: 24,
+          color: '#FFFFFF',
+          border: '1px solid #25253D',
+          boxShadow: membership.tier !== 'free' ? '0 8px 24px rgba(255, 107, 53, 0.3)' : 'none'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
           <div
             style={{
               width: 60,
               height: 60,
               borderRadius: 16,
-              background: '#25253D',
+              background: 'rgba(255, 255, 255, 0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -202,308 +198,173 @@ export const MembershipPage: React.FC = () => {
               marginRight: 16
             }}
           >
-            🌱
+            {getTierEmoji(membership.tier)}
           </div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
-              Free Member
+            <div style={{ fontSize: 20, fontWeight: 700 }}>
+              {getTierName(membership.tier)} Member
             </div>
-            <div style={{ fontSize: 13, color: '#B0B0C3', marginTop: 2 }}>
-              Nâng cấp để nhận nhiều ưu đãi độc quyền!
+            <div style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.8)', marginTop: 2 }}>
+              {membership.tier === 'free'
+                ? 'Nâng cấp để mở khóa tính năng AI & bonus không giới hạn'
+                : `Hạn sử dụng đến: ${membership.expiryDate || '2026-12-31'}`}
             </div>
           </div>
         </div>
-      )}
 
-      {/* Membership Plans List */}
-      <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 12 }}>
-        📦 Gói Membership
+        {/* Perks overview */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 8,
+            background: 'rgba(0, 0, 0, 0.2)',
+            padding: 12,
+            borderRadius: 12,
+            textAlign: 'center'
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.7)' }}>Bonus Điểm</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#FFD700', marginTop: 2 }}>
+              +{membership.dailyBonusPercent}%
+            </div>
+          </div>
+          <div style={{ borderLeft: '1px solid rgba(255, 255, 255, 0.15)', borderRight: '1px solid rgba(255, 255, 255, 0.15)' }}>
+            <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.7)' }}>Giảm Phí</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#2ED573', marginTop: 2 }}>
+              -{membership.battleCostReduction}%
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.7)' }}>Sync AI</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#FFFFFF', marginTop: 2 }}>
+              {membership.unlimitedSync ? 'Không giới hạn' : '3 bài/ngày'}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-        {plans.map((plan) => {
-          const isCurrent = isCurrentTier(plan.id);
+      {/* Plan List */}
+      <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 14 }}>
+        📦 Chọn Gói Membership
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {plans.map((p) => {
+          const isCurrent = membership.tier === p.tier;
 
           return (
-            <div
-              key={plan.id}
-              onClick={() => setSelectedPlan(plan)}
+            <AppCard
+              key={p.id}
               style={{
-                background: '#1A1A2E',
-                borderRadius: 16,
-                padding: 16,
-                border: plan.isPopular
-                  ? `2px solid ${plan.color}`
-                  : isCurrent
-                    ? '2px solid #2ED573'
-                    : '1px solid #25253D',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
+                border: p.isPopular ? '2px solid #FF6B35' : isCurrent ? `2px solid ${p.color}` : '1px solid #25253D',
+                position: 'relative',
+                padding: 20
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+              {p.isPopular && (
                 <div
                   style={{
-                    width: 50,
-                    height: 50,
+                    position: 'absolute',
+                    top: -12,
+                    right: 16,
+                    background: 'linear-gradient(135deg, #FF6B35, #FFD700)',
+                    color: '#000000',
+                    fontSize: 11,
+                    fontWeight: 900,
+                    padding: '3px 10px',
                     borderRadius: 12,
-                    background: `${plan.color}25`,
+                    boxShadow: '0 2px 8px rgba(255, 107, 53, 0.4)'
+                  }}
+                >
+                  {p.badge}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
+                    {p.name}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginTop: 4 }}>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: p.color }}>
+                      {p.price}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#B0B0C3' }}>
+                      {p.period}
+                    </span>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: `${p.color}20`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 28,
-                    marginRight: 14,
-                    flexShrink: 0
+                    fontSize: 22
                   }}
                 >
-                  {plan.emoji}
-                </div>
-
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
-                      {plan.name}
-                    </span>
-                    {isCurrent && (
-                      <span
-                        style={{
-                          background: 'rgba(46, 213, 115, 0.2)',
-                          color: '#2ED573',
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: 8
-                        }}
-                      >
-                        ĐANG DÙNG
-                      </span>
-                    )}
-                    {plan.isPopular && (
-                      <span
-                        style={{
-                          background: `${plan.color}25`,
-                          color: plan.color,
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: 8
-                        }}
-                      >
-                        PHỔ BIẾN
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 13, color: '#B0B0C3', marginTop: 2 }}>
-                    {plan.durationDays} ngày
-                  </div>
-                </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: plan.color }}>
-                    {plan.priceFormatted}đ
-                  </div>
-                  <div style={{ fontSize: 11, color: '#6B6B80' }}>
-                    /{plan.durationDays} ngày
-                  </div>
+                  {getTierEmoji(p.tier)}
                 </div>
               </div>
 
-              {/* Mini feature tags */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {plan.features.slice(0, 3).map((feat, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      background: '#25253D',
-                      color: '#B0B0C3',
-                      fontSize: 11,
-                      padding: '4px 8px',
-                      borderRadius: 8
-                    }}
-                  >
-                    {feat}
-                  </span>
+              {/* Perks Checklist */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
+                {p.perks.map((perk, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Check size={16} color="#2ED573" style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: '#B0B0C3' }}>{perk}</span>
+                  </div>
                 ))}
               </div>
-            </div>
+
+              {/* Upgrade Button */}
+              {isCurrent ? (
+                <button
+                  disabled
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: '#25253D',
+                    border: 'none',
+                    borderRadius: 12,
+                    color: '#2ED573',
+                    fontWeight: 700,
+                    fontSize: 13
+                  }}
+                >
+                  ✓ GÓI HIỆN TẠI
+                </button>
+              ) : (
+                <button
+                  onClick={() => upgradeMembership(p.tier as any)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: p.isPopular
+                      ? 'linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%)'
+                      : 'linear-gradient(135deg, #5352ED 0%, #7070FF 100%)',
+                    border: 'none',
+                    borderRadius: 12,
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    boxShadow: p.isPopular ? '0 4px 14px rgba(255, 107, 53, 0.4)' : 'none'
+                  }}
+                >
+                  NÂNG CẤP NGAY ({p.price})
+                </button>
+              )}
+            </AppCard>
           );
         })}
       </div>
-
-      {/* Perks section */}
-      {membership.perks && membership.perks.length > 0 && (
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF', marginBottom: 12 }}>
-            ✨ Quyền lợi của bạn
-          </div>
-
-          <div
-            style={{
-              background: '#1A1A2E',
-              borderRadius: 16,
-              padding: 16,
-              border: '1px solid #25253D'
-            }}
-          >
-            {membership.perks.map((perk, i, arr) => (
-              <React.Fragment key={i}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' }}>
-                  <div
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      background: 'rgba(46, 213, 115, 0.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}
-                  >
-                    <Check size={14} color="#2ED573" />
-                  </div>
-                  <span style={{ fontSize: 14, color: '#FFFFFF' }}>{perk}</span>
-                </div>
-                {i < arr.length - 1 && (
-                  <div style={{ height: 1, background: '#25253D', margin: '6px 0' }} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Plan Details Modal Sheet */}
-      {selectedPlan && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center'
-          }}
-          onClick={() => setSelectedPlan(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 640,
-              background: '#0F0F23',
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              padding: '16px 20px 32px',
-              borderTop: '1px solid #25253D',
-              boxShadow: '0 -8px 24px rgba(0,0,0,0.5)'
-            }}
-          >
-            {/* Handle bar */}
-            <div
-              style={{
-                width: 40,
-                height: 4,
-                background: '#6B6B80',
-                borderRadius: 2,
-                margin: '0 auto 16px'
-              }}
-            />
-
-            {/* Plan Header */}
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 16,
-                  background: `${selectedPlan.color}25`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 32,
-                  marginRight: 16
-                }}
-              >
-                {selectedPlan.emoji}
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
-                  {selectedPlan.name} Membership
-                </div>
-                <div style={{ fontSize: 13, color: '#B0B0C3' }}>
-                  {selectedPlan.durationDays} ngày
-                </div>
-              </div>
-
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: selectedPlan.color }}>
-                  {selectedPlan.priceFormatted}đ
-                </div>
-                <div style={{ fontSize: 11, color: '#6B6B80' }}>
-                  /{selectedPlan.durationDays} ngày
-                </div>
-              </div>
-            </div>
-
-            {/* Features list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
-              {selectedPlan.features.map((feature, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <CheckCircle size={18} color="#2ED573" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, color: '#FFFFFF' }}>{feature}</span>
-                </div>
-              ))}
-
-              {selectedPlan.notIncluded.map((feature, idx) => (
-                <div key={`not-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <X size={18} color="#6B6B80" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: 14, color: '#6B6B80' }}>{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Buy button */}
-            <button
-              onClick={() => handleSubscribe(selectedPlan)}
-              style={{
-                width: '100%',
-                padding: 14,
-                borderRadius: 14,
-                background: `linear-gradient(135deg, ${selectedPlan.color} 0%, #FF6B35 100%)`,
-                border: 'none',
-                color: '#FFFFFF',
-                fontWeight: 700,
-                fontSize: 16,
-                cursor: 'pointer',
-                marginBottom: 12,
-                boxShadow: `0 4px 16px ${selectedPlan.color}40`
-              }}
-            >
-              MUA NGAY
-            </button>
-
-            <button
-              onClick={() => setSelectedPlan(null)}
-              style={{
-                width: '100%',
-                background: 'none',
-                border: 'none',
-                color: '#6B6B80',
-                fontSize: 15,
-                cursor: 'pointer'
-              }}
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

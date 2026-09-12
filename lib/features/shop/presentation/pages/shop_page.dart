@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models.dart'; // For SkinRarity enum
@@ -34,10 +35,21 @@ class _ShopPageState extends ConsumerState<ShopPage> {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/profile');
+                    }
+                  },
+                ),
+                const SizedBox(width: 4),
                 const Text(
                   '🛒 Cửa Hàng',
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),

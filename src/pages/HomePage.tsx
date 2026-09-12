@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { Flame, Coins, Zap, Trophy, CheckCircle, Flag, Dumbbell } from 'lucide-react';
+import { AppCard, AvatarWidget, XpProgressBar, ProgressBar } from '../components/ui';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,85 +15,60 @@ export const HomePage: React.FC = () => {
   const activeBattles = battles.filter(b => b.status === 'active' || b.status === 'waiting');
 
   return (
-    <div style={{ padding: '16px', maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
+    <div style={{ padding: 16, maxWidth: 640, margin: '0 auto', paddingBottom: 90 }}>
       {/* Top Brand Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <img 
-            src="/Logo.png" 
-            alt="Fitness Battle" 
-            style={{ 
-              width: 32, 
-              height: 32, 
+          <img
+            src="/Logo.png"
+            alt="Fitness Battle"
+            style={{
+              width: 32,
+              height: 32,
               borderRadius: 8,
-              filter: 'drop-shadow(0 0 6px rgba(255, 107, 53, 0.4))'
-            }} 
+              objectFit: 'contain',
+            }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
           />
-          <span style={{ fontSize: 16, fontWeight: 900, background: 'linear-gradient(135deg, #FF6B35, #FFD700)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: 0.5 }}>
+          <span style={{ fontSize: 16, fontWeight: 900, color: '#FF6B35', letterSpacing: 0.5 }}>
             FITNESS BATTLE
           </span>
         </div>
+
         {/* Ruby Counter */}
         <div
           onClick={() => navigate('/shop')}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 4,
             background: '#1A1A2E',
-            padding: '6px 14px',
+            padding: '6px 12px',
             borderRadius: 20,
+            border: '1px solid #25253D',
             cursor: 'pointer',
-            border: '1px solid #25253D'
           }}
         >
-          <span style={{ fontSize: 15 }}>💎</span>
+          <span style={{ fontSize: 14 }}>💎</span>
           <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: 13 }}>
             {user.ruby}
           </span>
         </div>
       </div>
 
-      {/* User Header */}
+      {/* Header User Info */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-        {/* Avatar */}
-        <div 
-          style={{ position: 'relative', width: 56, height: 56, cursor: 'pointer', flexShrink: 0 }}
+        <AvatarWidget
+          avatarUrl={user.avatar}
+          size={56}
+          level={user.level}
+          isVIP={user.isVIP}
           onClick={() => navigate('/profile')}
-        >
-          <img
-            src={user.avatar}
-            alt={user.name}
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '2px solid #25253D',
-              background: '#25253D'
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              background: '#FF6B35',
-              color: '#FFFFFF',
-              borderRadius: 10,
-              padding: '1px 5px',
-              fontSize: 10,
-              fontWeight: 800,
-              border: '2px solid #0F0F23'
-            }}
-          >
-            {user.level}
-          </div>
-        </div>
-
-        {/* User Info */}
-        <div style={{ marginLeft: 12, flex: 1 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
+        />
+        <div style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             Xin chào, {user.name}! 👋
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
@@ -105,117 +81,54 @@ export const HomePage: React.FC = () => {
       </div>
 
       {/* XP Progress Card */}
-      <div
-        style={{
-          background: '#1A1A2E',
-          borderRadius: 16,
-          padding: 16,
-          border: '1px solid #25253D',
-          marginBottom: 20
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #FF6B35, #FF8E53)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#FFFFFF',
-                fontWeight: 800,
-                fontSize: 12
-              }}
-            >
-              {user.level}
-            </div>
-            <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14 }}>
-              Cấp {user.level}
-            </span>
-          </div>
-          <span style={{ color: '#B0B0C3', fontSize: 12 }}>
-            {user.xp} / {user.xpToNextLevel} XP
-          </span>
-        </div>
-        {/* Progress Bar */}
-        <div style={{ height: 8, background: '#25253D', borderRadius: 4, overflow: 'hidden' }}>
-          <div
-            style={{
-              height: '100%',
-              width: `${Math.min(100, Math.round((user.xp / user.xpToNextLevel) * 100))}%`,
-              background: 'linear-gradient(90deg, #FF6B35, #FF8E53)',
-              borderRadius: 4,
-              transition: 'width 0.4s ease'
-            }}
-          />
-        </div>
-      </div>
+      <AppCard style={{ marginBottom: 20 }}>
+        <XpProgressBar
+          currentXp={user.xp}
+          xpToNextLevel={user.xpToNextLevel}
+          level={user.level}
+        />
+      </AppCard>
 
-      {/* Quick Stats */}
+      {/* Quick Stats Grid (3 columns) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
         {/* Coins */}
-        <div
-          onClick={() => navigate('/shop')}
-          style={{
-            background: '#1A1A2E',
-            borderRadius: 16,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid #25253D',
-            cursor: 'pointer'
-          }}
+        <AppCard
+          onTap={() => navigate('/shop')}
+          style={{ textAlign: 'center', padding: '16px 12px' }}
         >
-          <Coins size={28} color="#F7C948" style={{ margin: '0 auto 8px' }} />
+          <Coins size={28} color="#F7C948" style={{ margin: '0 auto 8px', display: 'block' }} />
           <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
-            {user.coins}
+            {user.coins.toLocaleString()}
           </div>
           <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
             Coins
           </div>
-        </div>
+        </AppCard>
 
         {/* Stamina */}
-        <div
-          style={{
-            background: '#1A1A2E',
-            borderRadius: 16,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid #25253D'
-          }}
-        >
-          <Zap size={28} color="#5352ED" style={{ margin: '0 auto 8px' }} />
+        <AppCard style={{ textAlign: 'center', padding: '16px 12px' }}>
+          <Zap size={28} color="#5352ED" style={{ margin: '0 auto 8px', display: 'block' }} />
           <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
             {user.stamina}/{user.maxStamina}
           </div>
           <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
             Stamina
           </div>
-        </div>
+        </AppCard>
 
         {/* Rank */}
-        <div
-          onClick={() => navigate('/ranking')}
-          style={{
-            background: '#1A1A2E',
-            borderRadius: 16,
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid #25253D',
-            cursor: 'pointer'
-          }}
+        <AppCard
+          onTap={() => navigate('/ranking')}
+          style={{ textAlign: 'center', padding: '16px 12px' }}
         >
-          <Trophy size={28} color="#FF6B35" style={{ margin: '0 auto 8px' }} />
+          <Trophy size={28} color="#FF6B35" style={{ margin: '0 auto 8px', display: 'block' }} />
           <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
             #{user.rank}
           </div>
           <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
             Hạng
           </div>
-        </div>
+        </AppCard>
       </div>
 
       {/* Exercise Quick Access */}
@@ -231,7 +144,7 @@ export const HomePage: React.FC = () => {
             color: '#FF6B35',
             fontWeight: 600,
             fontSize: 14,
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           Xem tất cả
@@ -278,7 +191,7 @@ export const HomePage: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 24,
-          color: '#FFFFFF'
+          color: '#FFFFFF',
         }}
       >
         <div>
@@ -299,18 +212,11 @@ export const HomePage: React.FC = () => {
             borderRadius: 12,
             padding: '10px 14px',
             textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center'
           }}
         >
-          <Flame size={24} color="#FFFFFF" />
-          <div style={{ fontWeight: 700, fontSize: 18, color: '#FFFFFF', marginTop: 2 }}>
-            {user.streak}
-          </div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>
-            Streak
-          </div>
+          <Flame size={24} color="#FFFFFF" style={{ margin: '0 auto 4px', display: 'block' }} />
+          <div style={{ fontWeight: 700, fontSize: 18 }}>{user.streak}</div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>Streak</div>
         </div>
       </div>
 
@@ -327,7 +233,7 @@ export const HomePage: React.FC = () => {
             color: '#FF6B35',
             fontWeight: 600,
             fontSize: 14,
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           Xem tất cả
@@ -341,7 +247,7 @@ export const HomePage: React.FC = () => {
           overflowX: 'auto',
           paddingBottom: 8,
           marginBottom: 24,
-          scrollbarWidth: 'none'
+          scrollbarWidth: 'none',
         }}
       >
         {activeBattles.map((battle) => (
@@ -349,52 +255,44 @@ export const HomePage: React.FC = () => {
             key={battle.id}
             onClick={() => navigate('/battle')}
             style={{
-              minWidth: 280,
+              minWidth: 260,
+              flex: '0 0 auto',
               background: 'linear-gradient(135deg, #FF4757 0%, #FF6B81 100%)',
               borderRadius: 16,
               padding: 16,
+              color: '#FFFFFF',
               cursor: 'pointer',
-              flexShrink: 0
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ fontWeight: 700, color: '#FFFFFF', fontSize: 14 }}>
-                {battle.title}
-              </span>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>{battle.title}</span>
               <span
                 style={{
                   background: 'rgba(255,255,255,0.25)',
                   padding: '2px 8px',
-                  borderRadius: 12,
+                  borderRadius: 10,
                   fontSize: 10,
-                  fontWeight: 700,
-                  color: '#FFFFFF'
+                  fontWeight: 800,
                 }}
               >
-                {battle.status === 'active' ? 'LIVE' : 'CHỜ'}
+                LIVE
               </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 13 }}>
-                  {battle.players[0]?.userName || 'Người chơi 1'}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11 }}>
-                  {battle.players[0]?.heartRate || 135} BPM
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{battle.players[0]?.userName || 'Bạn'}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
+                  {battle.players[0]?.heartRate || 142} BPM
                 </div>
               </div>
 
-              <div style={{ color: '#FFFFFF', fontWeight: 800, fontSize: 16, padding: '0 8px' }}>
-                VS
-              </div>
+              <span style={{ fontWeight: 900, fontSize: 15, opacity: 0.9 }}>VS</span>
 
               <div style={{ textAlign: 'right' }}>
-                <div style={{ color: '#FFFFFF', fontWeight: 600, fontSize: 13 }}>
-                  {battle.players[1]?.userName || 'Người chơi 2'}
-                </div>
-                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11 }}>
-                  {battle.players[1]?.heartRate || 140} BPM
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{battle.players[1]?.userName || 'Đối thủ'}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
+                  {battle.players[1]?.heartRate || 138} BPM
                 </div>
               </div>
             </div>
@@ -402,7 +300,7 @@ export const HomePage: React.FC = () => {
         ))}
       </div>
 
-      {/* Daily Challenges */}
+      {/* Challenges Today */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <span style={{ fontSize: 18, fontWeight: 700, color: '#FFFFFF' }}>
           🏆 Thử thách hôm nay
@@ -415,7 +313,7 @@ export const HomePage: React.FC = () => {
             color: '#FF6B35',
             fontWeight: 600,
             fontSize: 14,
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           Xem tất cả
@@ -424,60 +322,44 @@ export const HomePage: React.FC = () => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
         {challenges.slice(0, 3).map((ch) => {
-          const pct = Math.min(100, Math.round((ch.current / ch.target) * 100));
+          const color = ch.color || '#FF6B35';
           return (
-            <div
-              key={ch.id}
-              onClick={() => navigate('/challenge')}
-              style={{
-                background: '#1A1A2E',
-                borderRadius: 16,
-                padding: 16,
-                border: '1px solid #25253D',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                cursor: 'pointer'
-              }}
-            >
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  background: `${ch.color}25`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                {ch.completed ? (
-                  <CheckCircle size={24} color={ch.color} />
-                ) : (
-                  <Flag size={24} color={ch.color} />
-                )}
-              </div>
+            <AppCard key={ch.id} onTap={() => navigate('/challenge')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    background: `${color}25`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  {ch.completed ? (
+                    <CheckCircle size={24} color={color} />
+                  ) : (
+                    <Flag size={24} color={color} />
+                  )}
+                </div>
 
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14, marginBottom: 6 }}>
-                  {ch.title}
-                </div>
-                <div style={{ height: 6, background: '#25253D', borderRadius: 3, overflow: 'hidden', marginBottom: 6 }}>
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${pct}%`,
-                      background: ch.color,
-                      borderRadius: 3
-                    }}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF', marginBottom: 6 }}>
+                    {ch.title}
+                  </div>
+                  <ProgressBar
+                    progress={ch.current / Math.max(1, ch.target)}
+                    color={color}
+                    height={6}
                   />
-                </div>
-                <div style={{ fontSize: 12, color: '#B0B0C3' }}>
-                  {ch.current}/{ch.target} {ch.unit}
+                  <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 4 }}>
+                    {ch.current}/{ch.target} {ch.unit}
+                  </div>
                 </div>
               </div>
-            </div>
+            </AppCard>
           );
         })}
       </div>
@@ -489,51 +371,42 @@ export const HomePage: React.FC = () => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {recentActivities.slice(0, 3).map((act) => (
-          <div
-            key={act.id}
-            style={{
-              background: '#1A1A2E',
-              borderRadius: 16,
-              padding: 16,
-              border: '1px solid #25253D',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12
-            }}
-          >
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                background: '#25253D',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}
-            >
-              <Dumbbell size={22} color="#FF6B35" />
-            </div>
+          <AppCard key={act.id}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  background: '#25253D',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Dumbbell size={22} color="#FF6B35" />
+              </div>
 
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, color: '#FFFFFF', fontSize: 14 }}>
-                {act.type}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#FFFFFF' }}>
+                  {act.type}
+                </div>
+                <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
+                  {act.duration} phút • {act.calories} cal
+                </div>
               </div>
-              <div style={{ fontSize: 13, color: '#B0B0C3', marginTop: 2 }}>
-                {act.duration} phút • {act.calories} cal
-              </div>
-            </div>
 
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: 600, color: '#FF6B35', fontSize: 14 }}>
-                +{act.xp} XP
-              </div>
-              <div style={{ fontSize: 11, color: '#6B6B80', marginTop: 2 }}>
-                {act.date}
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#FF6B35' }}>
+                  +{act.xp} XP
+                </div>
+                <div style={{ fontSize: 11, color: '#6B6B80', marginTop: 2 }}>
+                  {act.date}
+                </div>
               </div>
             </div>
-          </div>
+          </AppCard>
         ))}
       </div>
     </div>
@@ -555,23 +428,21 @@ const ExerciseQuickCard: React.FC<ExerciseQuickCardProps> = ({
   current,
   target,
   color,
-  onTap
+  onTap,
 }) => {
-  const pct = Math.min(1, current / target);
+  const progress = Math.min(1, current / Math.max(1, target));
 
   return (
     <div
       onClick={onTap}
       style={{
         background: `${color}15`,
-        border: `1px solid ${color}45`,
         borderRadius: 16,
         padding: 12,
+        border: `1px solid ${color}45`,
         textAlign: 'center',
         cursor: 'pointer',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
+        transition: 'transform 0.15s ease',
       }}
     >
       <div style={{ fontSize: 24, marginBottom: 4 }}>{emoji}</div>
@@ -584,13 +455,14 @@ const ExerciseQuickCard: React.FC<ExerciseQuickCardProps> = ({
       <div style={{ fontSize: 10, color: '#6B6B80', marginBottom: 6 }}>
         /{target}
       </div>
-      <div style={{ width: '100%', height: 4, background: '#25253D', borderRadius: 2, overflow: 'hidden' }}>
+      {/* Progress Line */}
+      <div style={{ height: 4, background: '#25253D', borderRadius: 2, overflow: 'hidden' }}>
         <div
           style={{
             height: '100%',
-            width: `${pct * 100}%`,
+            width: `${Math.round(progress * 100)}%`,
             background: color,
-            borderRadius: 2
+            borderRadius: 2,
           }}
         />
       </div>

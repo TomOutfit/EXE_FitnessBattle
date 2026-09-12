@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/models_exercise.dart';
-import '../../../../core/mock_data_exercise.dart'; // For MembershipPlan
 
 class MembershipPage extends ConsumerWidget {
   const MembershipPage({super.key});
@@ -23,10 +23,21 @@ class MembershipPage extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/profile');
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 4),
                   const Text(
                     '👑 Membership',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
