@@ -1,4 +1,8 @@
-import type { User, Challenge, Battle, ActivitySession, SkinItem, LeaderboardEntry, ExerciseInfo, AppAccount, AuthResult } from '../types';
+import type {
+  User, Challenge, Battle, ActivitySession, SkinItem,
+  LeaderboardEntry, ExerciseInfo, AppAccount, AuthResult,
+  ExerciseLeaderboardEntry, Voucher, PremiumArena, BattlePassSeason
+} from '../types';
 import {
   initialUserSeed as defaultUser,
   initialExercisesSeed as defaultExercises,
@@ -6,7 +10,13 @@ import {
   initialBattlesSeed as defaultBattles,
   initialActivitiesSeed as defaultActivities,
   initialSkinItemsSeed as defaultSkinItems,
-  initialLeaderboardSeed as defaultLeaderboard
+  initialLeaderboardSeed as defaultLeaderboard,
+  initialPushupLeaderboardSeed as defaultPushupLeaderboard,
+  initialPullupLeaderboardSeed as defaultPullupLeaderboard,
+  initialWalkingLeaderboardSeed as defaultWalkingLeaderboard,
+  initialVouchersSeed as defaultVouchers,
+  initialPremiumArenasSeed as defaultArenas,
+  initialBattlePassSeasonSeed as defaultBattlePass
 } from '../data/seedData';
 
 const KEY_USER = 'fb_db_user';
@@ -18,6 +28,13 @@ const KEY_BATTLES = 'fb_db_battles';
 const KEY_ACTIVITIES = 'fb_db_activities';
 const KEY_SHOP_ITEMS = 'fb_db_shop_items';
 const KEY_LEADERBOARD = 'fb_db_leaderboard';
+const KEY_PUSHUP_LEADERBOARD = 'fb_db_pushup_leaderboard';
+const KEY_PULLUP_LEADERBOARD = 'fb_db_pullup_leaderboard';
+const KEY_WALKING_LEADERBOARD = 'fb_db_walking_leaderboard';
+const KEY_EXERCISE_SESSIONS = 'fb_db_exercise_sessions';
+const KEY_VOUCHERS = 'fb_db_vouchers';
+const KEY_ARENAS = 'fb_db_arenas';
+const KEY_BATTLE_PASS = 'fb_db_battle_pass';
 const KEY_INITIALIZED = 'fb_db_initialized';
 
 export class DatabaseService {
@@ -100,7 +117,6 @@ export class DatabaseService {
   }
 
   public hashPassword(password: string, salt: string): string {
-    // Basic salted SHA-256 equivalent in JS / simple client hash
     let hash = 0;
     const str = `${salt}#FitnessBattle#${password}#${salt}`;
     for (let i = 0; i < str.length; i++) {
@@ -350,15 +366,96 @@ export class DatabaseService {
     localStorage.setItem(KEY_LEADERBOARD, JSON.stringify(leaderboard));
   }
 
+  public getPushupLeaderboard(): ExerciseLeaderboardEntry[] {
+    try {
+      const saved = localStorage.getItem(KEY_PUSHUP_LEADERBOARD);
+      return saved ? JSON.parse(saved) : [...defaultPushupLeaderboard];
+    } catch {
+      return [...defaultPushupLeaderboard];
+    }
+  }
+
+  public savePushupLeaderboard(entries: ExerciseLeaderboardEntry[]): void {
+    localStorage.setItem(KEY_PUSHUP_LEADERBOARD, JSON.stringify(entries));
+  }
+
+  public getPullupLeaderboard(): ExerciseLeaderboardEntry[] {
+    try {
+      const saved = localStorage.getItem(KEY_PULLUP_LEADERBOARD);
+      return saved ? JSON.parse(saved) : [...defaultPullupLeaderboard];
+    } catch {
+      return [...defaultPullupLeaderboard];
+    }
+  }
+
+  public savePullupLeaderboard(entries: ExerciseLeaderboardEntry[]): void {
+    localStorage.setItem(KEY_PULLUP_LEADERBOARD, JSON.stringify(entries));
+  }
+
+  public getWalkingLeaderboard(): ExerciseLeaderboardEntry[] {
+    try {
+      const saved = localStorage.getItem(KEY_WALKING_LEADERBOARD);
+      return saved ? JSON.parse(saved) : [...defaultWalkingLeaderboard];
+    } catch {
+      return [...defaultWalkingLeaderboard];
+    }
+  }
+
+  public saveWalkingLeaderboard(entries: ExerciseLeaderboardEntry[]): void {
+    localStorage.setItem(KEY_WALKING_LEADERBOARD, JSON.stringify(entries));
+  }
+
+  public getVouchers(): Voucher[] {
+    try {
+      const saved = localStorage.getItem(KEY_VOUCHERS);
+      return saved ? JSON.parse(saved) : [...defaultVouchers];
+    } catch {
+      return [...defaultVouchers];
+    }
+  }
+
+  public saveVouchers(vouchers: Voucher[]): void {
+    localStorage.setItem(KEY_VOUCHERS, JSON.stringify(vouchers));
+  }
+
+  public getArenas(): PremiumArena[] {
+    try {
+      const saved = localStorage.getItem(KEY_ARENAS);
+      return saved ? JSON.parse(saved) : [...defaultArenas];
+    } catch {
+      return [...defaultArenas];
+    }
+  }
+
+  public saveArenas(arenas: PremiumArena[]): void {
+    localStorage.setItem(KEY_ARENAS, JSON.stringify(arenas));
+  }
+
+  public getBattlePass(): BattlePassSeason {
+    try {
+      const saved = localStorage.getItem(KEY_BATTLE_PASS);
+      return saved ? JSON.parse(saved) : { ...defaultBattlePass };
+    } catch {
+      return { ...defaultBattlePass };
+    }
+  }
+
+  public saveBattlePass(season: BattlePassSeason): void {
+    localStorage.setItem(KEY_BATTLE_PASS, JSON.stringify(season));
+  }
+
   public getStatsSummary(): Record<string, number> {
     return {
-      'Tài khoản (Users)': 1,
+      'Tài khoản (Users)': this.getAllAccounts().length || 1,
       'Bài tập (Exercises)': this.getExercises().length,
       'Nhiệm vụ (Challenges)': this.getChallenges().length,
       'Phòng đấu (Battles)': this.getBattles().length,
       'Lịch sử tập (Activities)': this.getActivities().length,
       'Vật phẩm (Shop Items)': this.getShopItems().length,
       'Bảng xếp hạng (Leaderboard)': this.getLeaderboard().length,
+      'BXH Động tác (Exercise Rankings)': this.getPushupLeaderboard().length + this.getPullupLeaderboard().length + this.getWalkingLeaderboard().length,
+      'Đấu trường Ruby (Arenas)': this.getArenas().length,
+      'Vouchers đối tác': this.getVouchers().length,
     };
   }
 
@@ -370,6 +467,13 @@ export class DatabaseService {
     localStorage.removeItem(KEY_ACTIVITIES);
     localStorage.removeItem(KEY_SHOP_ITEMS);
     localStorage.removeItem(KEY_LEADERBOARD);
+    localStorage.removeItem(KEY_PUSHUP_LEADERBOARD);
+    localStorage.removeItem(KEY_PULLUP_LEADERBOARD);
+    localStorage.removeItem(KEY_WALKING_LEADERBOARD);
+    localStorage.removeItem(KEY_EXERCISE_SESSIONS);
+    localStorage.removeItem(KEY_VOUCHERS);
+    localStorage.removeItem(KEY_ARENAS);
+    localStorage.removeItem(KEY_BATTLE_PASS);
     localStorage.removeItem(KEY_INITIALIZED);
     this.seedInitialData();
   }
