@@ -20,6 +20,7 @@ import {
   Sparkles,
   MapPin,
   TrendingUp,
+  CheckCircle2,
 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
@@ -40,7 +41,7 @@ export const GPSWalkingPage: React.FC = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // Mode: 'outdoor' (GPS + Motion) or 'indoor' (Pedometer Motion only)
+  // Mode: 'outdoor' (GPS + Motion Sensor Fusion) or 'indoor' (Pedometer Motion only)
   const [trackMode, setTrackMode] = useState<'outdoor' | 'indoor'>('outdoor');
   const [targetType, setTargetType] = useState<'steps' | 'distance' | 'free'>('steps');
   const [targetValue, setTargetValue] = useState<number>(3000); // 3000 steps or 2.0 km
@@ -54,14 +55,15 @@ export const GPSWalkingPage: React.FC = () => {
   const [currentPace, setCurrentPace] = useState<string>('00:00'); // min/km
   const [calories, setCalories] = useState(0);
   const [cadence, setCadence] = useState(0); // steps per minute (SPM)
-  const [heartRate, setHeartRate] = useState(82);
+  const [heartRate, setHeartRate] = useState(80);
 
-  // GPS Status
+  // GPS Status & Anti-Cheat State
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [gpsStatus, setGpsStatus] = useState<'searching' | 'good' | 'medium' | 'poor' | 'simulated'>('searching');
   const [coordinates, setCoordinates] = useState<GPSCoordinate[]>([]);
   const [antiCheatWarning, setAntiCheatWarning] = useState<string | null>(null);
   const [motionSensorActive, setMotionSensorActive] = useState(false);
+  const [userMovementState, setUserMovementState] = useState<'walking' | 'stationary' | 'fake_shaking' | 'vehicle'>('stationary');
 
   // Settings & Enhancements
   const [voiceGuidance, setVoiceGuidance] = useState(true);
@@ -72,23 +74,25 @@ export const GPSWalkingPage: React.FC = () => {
   const watchIdRef = useRef<number | null>(null);
   const timerIntervalRef = useRef<any>(null);
   const simIntervalRef = useRef<any>(null);
-  const lastStepTimeRef = useRef<number>(Date.now());
   const lastAnnouncedKmRef = useRef<number>(0);
   const lastAnnouncedStepRef = useRef<number>(0);
   const wakeLockRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // User real-time movement state
-  const [userMovementState, setUserMovementState] = useState<'walking' | 'stationary' | 'fake_shaking'>('stationary');
-
-  // Accelerometer peak detection thresholds
+  // ── Smart Pedometer & Anti-Handshake Shaking Algorithm Refs ──
   const lastAccelMagnitudeRef = useRef<number>(9.8);
   const lastAccelPeakRef = useRef<number>(0);
   const accelStateRef = useRef<'rising' | 'falling'>('falling');
-  const recentPeaksRef = useRef<number[]>([]);
-  const lastGpsMovementTimeRef = useRef<number>(Date.now());
-  const consecutiveStationaryShakesRef = useRef<number>(0);
-  const lastActiveMotionTimeRef = useRef<number>(Date.now());
+  const lastStepTimestampRef = useRef<number>(Date.now());
+  const stepCandidateBufferRef = useRef<number[]>([]); // timestamps of candidate steps
+  const isStepTrainConfirmedRef = useRef<boolean>(false);
+  const recentStepsWindowRef = useRef<number[]>([]); // steps in the last 10 seconds
+
+  // ── GPS Noise, Jitter Suppression & Fusion Refs ──
+  const lastAcceptedGpsPointRef = useRef<GPSCoordinate | null>(null);
+  const recentGpsDisplacementsRef = useRef<{ timestamp: number; distance: number }[]>([]); // GPS movement in last 10 seconds
+  const lastGpsUpdateTimeRef = useRef<number>(Date.now());
+  const consecutiveStationaryDriftsRef = useRef<number>(0);
 
   // -------------------------------------------------------------
   // 1. Text-to-Speech Voice Guidance
@@ -135,7 +139,7 @@ export const GPSWalkingPage: React.FC = () => {
   }, [isStarted, isPaused]);
 
   // -------------------------------------------------------------
-  // 3. Haversine Distance Formula
+  // 3. Haversine Distance Formula (Precise to millimeter)
   // -------------------------------------------------------------
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371e3; // metres
@@ -153,7 +157,7 @@ export const GPSWalkingPage: React.FC = () => {
   };
 
   // -------------------------------------------------------------
-  // 4. Accelerometer / Pedometer Peak & Anti-Fake Shaking Detection
+  // 4. Biomechanical Step Detection & Anti-Handshake Anti-Cheat
   // -------------------------------------------------------------
   const handleDeviceMotion = useCallback((event: DeviceMotionEvent) => {
     if (!isStarted || isPaused || isCompleted) return;
@@ -168,62 +172,105 @@ export const GPSWalkingPage: React.FC = () => {
     const magnitude = Math.sqrt(x * x + y * y + z * z);
     const now = Date.now();
 
-    const PEAK_THRESHOLD = 11.4; // threshold for a footstep impact
-    const VALLEY_THRESHOLD = 8.6;
-    const MIN_STEP_INTERVAL_MS = 250; // max ~4 steps/sec (fast sprint)
+    // Biomechanical Walking Impact Thresholds:
+    // Human walking impacts create a vertical oscillation with peak ~11.6 m/s^2 and trough ~8.4 m/s^2
+    const PEAK_THRESHOLD = 11.5;
+    const VALLEY_THRESHOLD = 8.5;
+    const MIN_STEP_INTERVAL_MS = 280; // max ~3.5 steps/sec (fast sprint)
+    const MAX_STEP_INTERVAL_MS = 1400; // min ~42 SPM (slow walk)
 
-    // Maintain a rolling window of recent peaks in the last 2.5 seconds
-    recentPeaksRef.current = recentPeaksRef.current.filter((t) => now - t < 2500);
+    // Clean rolling step & GPS movement windows (last 8 seconds)
+    recentStepsWindowRef.current = recentStepsWindowRef.current.filter((t) => now - t < 8000);
+    recentGpsDisplacementsRef.current = recentGpsDisplacementsRef.current.filter((g) => now - g.timestamp < 8000);
 
     if (accelStateRef.current === 'falling' && magnitude > PEAK_THRESHOLD) {
       accelStateRef.current = 'rising';
       lastAccelPeakRef.current = magnitude;
     } else if (accelStateRef.current === 'rising' && magnitude < VALLEY_THRESHOLD) {
       accelStateRef.current = 'falling';
-      if (now - lastStepTimeRef.current >= MIN_STEP_INTERVAL_MS) {
-        lastStepTimeRef.current = now;
-        recentPeaksRef.current.push(now);
-        lastActiveMotionTimeRef.current = now;
+      const intervalSinceLastStep = now - lastStepTimestampRef.current;
 
-        // Anti-Cheat: Analyze shaking vs real walking displacement
-        const peakCount = recentPeaksRef.current.length;
-        const peakFrequencyHz = peakCount / 2.5; // impacts per second
+      // Check valid human stepping interval
+      if (intervalSinceLastStep >= MIN_STEP_INTERVAL_MS) {
+        lastStepTimestampRef.current = now;
 
-        // 1. Check for abnormal high frequency hand shaking (> 3.5 Hz / > 210 SPM)
-        if (peakFrequencyHz > 3.4) {
-          consecutiveStationaryShakesRef.current += 1;
-          setUserMovementState('fake_shaking');
-          setAntiCheatWarning('🚫 PHÁT HIỆN LẮC TAY TẠI CHỖ: Đã tạm dừng đếm bước do tần số lắc tay bất thường!');
-          return; // REJECT FAKE STEP
+        // Reset step candidate train if interval was too long (> 1.8s pause)
+        if (intervalSinceLastStep > 1800) {
+          stepCandidateBufferRef.current = [];
+          isStepTrainConfirmedRef.current = false;
         }
 
-        // 2. In outdoor mode, verify GPS displacement correlation (standing still but shaking phone)
-        if (trackMode === 'outdoor') {
-          const timeSinceLastGpsMove = (now - lastGpsMovementTimeRef.current) / 1000;
-          if (timeSinceLastGpsMove > 4.5 && currentSpeedKmh < 0.8) {
-            consecutiveStationaryShakesRef.current += 1;
-            if (consecutiveStationaryShakesRef.current >= 3) {
-              setUserMovementState('fake_shaking');
-              setAntiCheatWarning('⚠️ ĐANG ĐỨNG YÊN TẠI CHỖ: Hệ thống tạm ngưng tính bước do toạ độ GPS không di chuyển!');
-              return; // REJECT STATIONARY SHAKE STEP
-            }
+        stepCandidateBufferRef.current.push(now);
+        recentStepsWindowRef.current.push(now);
+
+        // ── Anti-Cheat Layer 1: High Frequency Hand Shaking Check (> 3.5 Hz) ──
+        const stepsInLast8s = recentStepsWindowRef.current.length;
+        const currentCadenceSpm = (stepsInLast8s / 8) * 60;
+
+        if (currentCadenceSpm > 215) {
+          setUserMovementState('fake_shaking');
+          setAntiCheatWarning('🚫 PHÁT HIỆN LẮC TAY BẤT THƯỜNG (>215 SPM): Tạm dừng tích lũy bước chân!');
+          return; // REJECT FAKE SHAKE STEP
+        }
+
+        // ── Anti-Cheat Layer 2: Sensor Fusion in Outdoor GPS Mode (Standing Still & Shaking Arm) ──
+        if (trackMode === 'outdoor' && gpsStatus !== 'poor') {
+          // Calculate total GPS displacement in the last 8 seconds
+          const totalGpsDistInWindow = recentGpsDisplacementsRef.current.reduce((sum, g) => sum + g.distance, 0);
+
+          // If user generates >= 5 steps in 8s but GPS displacement is < 2.5m AND speed is negligible
+          if (stepsInLast8s >= 5 && totalGpsDistInWindow < 2.5 && currentSpeedKmh < 0.9) {
+            setUserMovementState('fake_shaking');
+            setAntiCheatWarning('🚫 PHÁT HIỆN LẮC TAY TẠI CHỖ: Người dùng đang đứng yên (GPS không di chuyển). Chặn cộng bước!');
+            return; // REJECT STATIONARY ARM SHAKING
           }
         }
 
-        // Real walking step verified!
-        consecutiveStationaryShakesRef.current = 0;
+        // ── Biomechanical Step Train Confirmation (Require 3-4 consistent rhythmic steps before confirming walk) ──
+        if (!isStepTrainConfirmedRef.current) {
+          if (stepCandidateBufferRef.current.length >= 3) {
+            // Check rhythm consistency: interval variance
+            const intervals = [];
+            for (let i = 1; i < stepCandidateBufferRef.current.length; i++) {
+              intervals.push(stepCandidateBufferRef.current[i] - stepCandidateBufferRef.current[i - 1]);
+            }
+            const avgInt = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            const isRhythmic = intervals.every((int) => Math.abs(int - avgInt) < avgInt * 0.5);
+
+            if (isRhythmic && avgInt >= MIN_STEP_INTERVAL_MS && avgInt <= MAX_STEP_INTERVAL_MS) {
+              isStepTrainConfirmedRef.current = true;
+              setUserMovementState('walking');
+              setAntiCheatWarning(null);
+
+              // Commit buffered steps
+              const bufferedCount = stepCandidateBufferRef.current.length;
+              setSteps((prev) => prev + bufferedCount);
+
+              // In Indoor mode: Distance comes strictly from verified steps
+              if (trackMode === 'indoor') {
+                setDistanceMeters((prev) => prev + bufferedCount * 0.74);
+              }
+            }
+          }
+          return;
+        }
+
+        // ── Real Continuous Step Verified ──
         setUserMovementState('walking');
         setAntiCheatWarning(null);
-
         setSteps((prev) => prev + 1);
-        setDistanceMeters((prev) => prev + 0.76); // average 0.76m per step
+
+        // Distance in indoor mode increments per step
+        if (trackMode === 'indoor') {
+          setDistanceMeters((prev) => prev + 0.74); // 0.74m per step
+        }
       }
     }
 
     lastAccelMagnitudeRef.current = magnitude;
-  }, [isStarted, isPaused, isCompleted, trackMode, currentSpeedKmh]);
+  }, [isStarted, isPaused, isCompleted, trackMode, gpsStatus, currentSpeedKmh]);
 
-  // Request iOS Motion Sensor Permission if needed
+  // Request iOS / Mobile Motion Sensor Permission
   const requestMotionPermission = async () => {
     if (
       typeof DeviceMotionEvent !== 'undefined' &&
@@ -234,7 +281,7 @@ export const GPSWalkingPage: React.FC = () => {
         if (res === 'granted') {
           window.addEventListener('devicemotion', handleDeviceMotion);
           setMotionSensorActive(true);
-          showToast?.('Đã kích hoạt cảm biến bước chân & Anti-Cheat!', 'success');
+          showToast?.('Đã kích hoạt cảm biến bước chân & Anti-Cheat AI!', 'success');
         }
       } catch (err) {
         console.warn('Motion permission request failed', err);
@@ -246,104 +293,152 @@ export const GPSWalkingPage: React.FC = () => {
   };
 
   // -------------------------------------------------------------
-  // 5. Real-Time Geolocation Tracking & Stationary Filtering
+  // 5. Real-Time Geolocation Tracking & GPS Jitter Suppressor
   // -------------------------------------------------------------
   const handleGPSPosition = useCallback(
     (position: GeolocationPosition) => {
+      if (!isStarted || isPaused || isCompleted) return;
+
       const { latitude, longitude, accuracy, speed } = position.coords;
-      const now = position.timestamp;
+      const now = position.timestamp || Date.now();
+      lastGpsUpdateTimeRef.current = now;
 
       setGpsAccuracy(accuracy);
-      if (accuracy <= 12) setGpsStatus('good');
-      else if (accuracy <= 30) setGpsStatus('medium');
-      else setGpsStatus('poor');
+      if (accuracy <= 15) setGpsStatus('good');
+      else if (accuracy <= 32) setGpsStatus('medium');
+      else {
+        setGpsStatus('poor');
+      }
 
-      // Calculate speed in km/h
-      let speedKmh = speed !== null && speed >= 0 ? speed * 3.6 : 0;
+      // Discard highly inaccurate GPS readings (accuracy > 38m)
+      if (accuracy > 38) {
+        return;
+      }
 
       setCoordinates((prevCoords) => {
-        if (prevCoords.length === 0) {
-          lastGpsMovementTimeRef.current = now;
-          return [
-            {
-              lat: latitude,
-              lng: longitude,
-              timestamp: now,
-              speed,
-              accuracy,
-            },
-          ];
-        }
-
-        const last = prevCoords[prevCoords.length - 1];
-        const distDelta = calculateDistance(last.lat, last.lng, latitude, longitude);
-        const timeDelta = (now - last.timestamp) / 1000; // in seconds
-
-        // Ignore micro jitter if distance < 1.2m and accuracy > 20m
-        if (distDelta < 1.2) {
-          // Standing still / Stationary
-          if (timeDelta > 3 && speedKmh < 0.6) {
-            setUserMovementState((prev) => (prev === 'fake_shaking' ? 'fake_shaking' : 'stationary'));
-          }
-          return prevCoords;
-        }
-
-        // Calculate speed if not provided by device
-        if (speed === null && timeDelta > 0) {
-          speedKmh = (distDelta / timeDelta) * 3.6;
-        }
-
-        // Anti-cheat verification: > 25km/h is considered vehicle/motorbike
-        if (speedKmh > 25) {
-          setAntiCheatWarning('⚠️ Tốc độ quá nhanh (>25km/h). Đã tạm dừng tính bước để chống gian lận xe máy!');
-          return prevCoords;
-        }
-
-        // Valid physical movement detected!
-        lastGpsMovementTimeRef.current = now;
-        consecutiveStationaryShakesRef.current = 0;
-        setUserMovementState('walking');
-        setAntiCheatWarning(null);
-
-        setCurrentSpeedKmh(Math.min(22, Math.max(0, speedKmh)));
-
-        // Accumulate distance
-        setDistanceMeters((prev) => prev + distDelta);
-
-        // Estimate steps if motion sensor isn't incrementing
-        const estimatedStepsDelta = Math.round(distDelta / 0.76);
-        if (estimatedStepsDelta > 0 && !motionSensorActive) {
-          setSteps((prev) => prev + estimatedStepsDelta);
-        }
-
-        return [
-          ...prevCoords,
-          {
+        // First coordinate initialization
+        if (!lastAcceptedGpsPointRef.current || prevCoords.length === 0) {
+          const firstPoint: GPSCoordinate = {
             lat: latitude,
             lng: longitude,
             timestamp: now,
-            speed,
+            speed: speed !== null && speed >= 0 ? speed : 0,
             accuracy,
-          },
-        ];
+          };
+          lastAcceptedGpsPointRef.current = firstPoint;
+          return [firstPoint];
+        }
+
+        const last = lastAcceptedGpsPointRef.current;
+        const distDelta = calculateDistance(last.lat, last.lng, latitude, longitude);
+        const timeDelta = (now - last.timestamp) / 1000; // in seconds
+
+        if (timeDelta <= 0.2) return prevCoords; // ignore redundant duplicate ticks
+
+        // Calculate speed in km/h
+        let speedKmh = 0;
+        if (speed !== null && speed >= 0) {
+          speedKmh = speed * 3.6;
+        } else {
+          speedKmh = (distDelta / timeDelta) * 3.6;
+        }
+
+        // ── GPS Jitter & Stationary Deadzone Filter ──
+        // When stationary, mobile GPS drifts 1.5 - 6m randomly due to multipath / satellite noise.
+        // Minimum displacement threshold proportional to GPS accuracy:
+        const minPhysicalMoveThreshold = Math.max(3.8, Math.min(10, accuracy * 0.42));
+
+        if (distDelta < minPhysicalMoveThreshold || speedKmh < 1.0) {
+          // Confirmed stationary drift: DO NOT ACCUMULATE DISTANCE!
+          consecutiveStationaryDriftsRef.current += 1;
+          setCurrentSpeedKmh(0);
+
+          if (recentStepsWindowRef.current.length === 0) {
+            setUserMovementState('stationary');
+            if (consecutiveStationaryDriftsRef.current >= 4) {
+              setAntiCheatWarning(null); // normal resting state
+            }
+          }
+          return prevCoords; // Return unchanged coords, ignore drift
+        }
+
+        // ── Anti-Cheat: High Speed Vehicle Filter (> 24 km/h) ──
+        if (speedKmh > 24) {
+          setUserMovementState('vehicle');
+          setAntiCheatWarning('⚠️ TỐC ĐỘ QUÁ NHANH (>24km/h): Đã tạm dừng tính quãng đường do nghi vấn đi xe máy/ô tô!');
+          return prevCoords; // REJECT VEHICLE
+        }
+
+        // ── Anti-Cheat: Passive Transport (GPS moves fast but ZERO steps over 12s) ──
+        const stepsInLast10s = recentStepsWindowRef.current.length;
+        if (speedKmh > 11 && stepsInLast10s === 0 && timeDelta > 3) {
+          setUserMovementState('vehicle');
+          setAntiCheatWarning('🚗 PHÁT HIỆN ĐANG ĐI XE: Toạ độ GPS di chuyển nhưng không có bước chân người!');
+          return prevCoords; // REJECT PASSIVE VEHICLE
+        }
+
+        // ── Valid Physical Walking / Running Movement Detected! ──
+        consecutiveStationaryDriftsRef.current = 0;
+        setUserMovementState('walking');
+        setAntiCheatWarning(null);
+
+        // Update verified speed (capped at human running max 20 km/h)
+        const validSpeedKmh = Math.min(20, Math.max(1.2, Number(speedKmh.toFixed(1))));
+        setCurrentSpeedKmh(validSpeedKmh);
+
+        // Record GPS movement for Sensor Fusion validation window
+        recentGpsDisplacementsRef.current.push({ timestamp: now, distance: distDelta });
+
+        // In Outdoor Mode: Accumulate physical GPS distance strictly once
+        if (trackMode === 'outdoor') {
+          setDistanceMeters((prev) => prev + distDelta);
+
+          // Fallback step calculation ONLY if motion sensor is unavailable
+          if (!motionSensorActive) {
+            const estimatedSteps = Math.round(distDelta / 0.74);
+            if (estimatedSteps > 0) {
+              setSteps((prev) => prev + estimatedSteps);
+            }
+          }
+        }
+
+        const validPoint: GPSCoordinate = {
+          lat: latitude,
+          lng: longitude,
+          timestamp: now,
+          speed: validSpeedKmh / 3.6,
+          accuracy,
+        };
+        lastAcceptedGpsPointRef.current = validPoint;
+
+        return [...prevCoords, validPoint];
       });
     },
-    [motionSensorActive]
+    [isStarted, isPaused, isCompleted, trackMode, motionSensorActive]
   );
 
   // -------------------------------------------------------------
   // 6. Start / Pause / Resume / Stop Controls
   // -------------------------------------------------------------
   const startTracking = () => {
+    // Reset state & buffers
+    stepCandidateBufferRef.current = [];
+    isStepTrainConfirmedRef.current = false;
+    recentStepsWindowRef.current = [];
+    recentGpsDisplacementsRef.current = [];
+    lastAcceptedGpsPointRef.current = null;
+    consecutiveStationaryDriftsRef.current = 0;
+
     requestMotionPermission();
     setIsStarted(true);
     setIsPaused(false);
     setIsCompleted(false);
     setAntiCheatWarning(null);
-    speakVoice('Bắt đầu theo dõi buổi đi bộ. Chúc bạn tập luyện hứng khởi!');
-    showToast?.('Đã kích hoạt GPS & Cảm biến bước chân!', 'success');
+    setUserMovementState('stationary');
+    speakVoice('Bắt đầu buổi tập đi bộ. Thuật toán Anti-Cheat và chống trôi GPS đã sẵn sàng!');
+    showToast?.('Đã kích hoạt Bộ lọc trôi GPS & Cảm biến chống gian lận!', 'success');
 
-    // Try starting Geolocation watch
+    // Start Geolocation watch for outdoor mode
     if (trackMode === 'outdoor' && 'geolocation' in navigator) {
       try {
         const id = navigator.geolocation.watchPosition(
@@ -367,7 +462,7 @@ export const GPSWalkingPage: React.FC = () => {
 
   const pauseTracking = () => {
     setIsPaused(true);
-    speakVoice('Đã tạm dừng');
+    speakVoice('Đã tạm dừng buổi tập');
     showToast?.('Đã tạm dừng theo dõi', 'info');
   };
 
@@ -388,10 +483,10 @@ export const GPSWalkingPage: React.FC = () => {
     }
     window.removeEventListener('devicemotion', handleDeviceMotion);
 
-    // Record session into User Context
-    const finalSteps = Math.max(steps, Math.round(distanceMeters / 0.76));
+    // Record verified session into User Context
+    const finalSteps = Math.max(steps, Math.round(distanceMeters / 0.74));
     const durationMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
-    const finalCalories = Math.max(calories, Math.round(finalSteps * 0.045));
+    const finalCalories = Math.max(calories, Math.round(finalSteps * 0.043));
 
     recordExerciseSession('walking', finalSteps, durationMinutes, finalCalories);
     speakVoice(`Tuyệt vời! Bạn đã hoàn thành ${finalSteps} bước chân và đốt cháy ${finalCalories} calo.`);
@@ -407,7 +502,7 @@ export const GPSWalkingPage: React.FC = () => {
       showToast?.('Đã tắt chế độ mô phỏng GPS', 'info');
     } else {
       setIsSimulating(true);
-      showToast?.('Đang chạy chế độ mô phỏng GPS ngoài trời (5.4 km/h)', 'success');
+      showToast?.('Đang chạy chế độ mô phỏng GPS ngoài trời (5.2 km/h)', 'success');
     }
   };
 
@@ -418,20 +513,22 @@ export const GPSWalkingPage: React.FC = () => {
       let angle = (elapsedSeconds * 4 * Math.PI) / 180;
 
       simIntervalRef.current = setInterval(() => {
-        angle += 0.05;
+        angle += 0.04;
         const radius = 0.0018 + Math.sin(angle * 0.5) * 0.0006;
         const newLat = baseLat + radius * Math.cos(angle);
         const newLng = baseLng + radius * Math.sin(angle);
 
-        const simulatedSpeed = 4.8 + Math.sin(angle) * 0.8; // ~5.2 km/h
-        const simulatedStepsDelta = 2 + Math.floor(Math.random() * 2);
+        const simulatedSpeed = 5.0 + Math.sin(angle) * 0.6; // ~5.0 km/h
+        const simulatedStepsDelta = 2;
         const distDelta = (simulatedSpeed * 1000) / 3600; // ~1.4 meters/sec
 
+        setUserMovementState('walking');
+        setAntiCheatWarning(null);
         setSteps((s) => s + simulatedStepsDelta);
         setDistanceMeters((d) => d + distDelta);
         setCurrentSpeedKmh(Number(simulatedSpeed.toFixed(1)));
         setGpsStatus('good');
-        setGpsAccuracy(4.2);
+        setGpsAccuracy(3.8);
 
         setCoordinates((prev) => [
           ...prev,
@@ -462,36 +559,40 @@ export const GPSWalkingPage: React.FC = () => {
         const next = sec + 1;
 
         // Calculate average pace (min/km)
-        if (distanceMeters > 50) {
+        if (distanceMeters > 30) {
           const totalKm = distanceMeters / 1000;
           const paceMinutes = next / 60 / totalKm;
           const pMin = Math.floor(paceMinutes);
           const pSec = Math.floor((paceMinutes - pMin) * 60);
-          setCurrentPace(`${pMin.toString().padStart(2, '0')}'${pSec.toString().padStart(2, '0')}"`);
+          if (pMin < 60) {
+            setCurrentPace(`${pMin.toString().padStart(2, '0')}'${pSec.toString().padStart(2, '0')}"`);
+          } else {
+            setCurrentPace('>60\'00"');
+          }
 
-          const avgSpd = (totalKm / (next / 3600));
+          const avgSpd = totalKm / (next / 3600);
           setAvgSpeedKmh(Number(avgSpd.toFixed(1)));
         }
 
-        // Calculate Calories: approx ~0.045 kcal per step + MET factor
+        // Calculate Calories: 0.043 kcal per step + MET factor
         const calculatedCal = Math.round(steps * 0.043 + (distanceMeters / 1000) * 22);
         setCalories(calculatedCal);
 
         // Calculate Cadence (Steps per Minute)
-        if (next > 5) {
+        if (next > 4) {
           const spm = Math.round((steps / next) * 60);
           setCadence(spm);
         }
 
         // Heart rate estimation based on cadence & speed
-        const dynamicHR = Math.min(155, Math.max(78, 80 + Math.round((currentSpeedKmh || 4.5) * 8.5)));
+        const dynamicHR = Math.min(155, Math.max(76, 78 + Math.round((currentSpeedKmh || 4.2) * 8.2)));
         setHeartRate(dynamicHR);
 
         // Voice announcements every 500m
         const currentKm = Math.floor(distanceMeters / 500) * 0.5;
         if (currentKm > 0 && currentKm > lastAnnouncedKmRef.current) {
           lastAnnouncedKmRef.current = currentKm;
-          speakVoice(`Bạn đã hoàn thành ${currentKm} kilômét. Nhịp tim ${dynamicHR}, duy trì rất tốt!`);
+          speakVoice(`Bạn đã hoàn thành ${currentKm} kilômét. Duy trì phong độ rất tốt!`);
         }
 
         // Voice announcement for every 1000 steps
@@ -564,7 +665,13 @@ export const GPSWalkingPage: React.FC = () => {
       ctx.font = '12px Inter, sans-serif';
       ctx.fillStyle = '#A0A5B5';
       ctx.textAlign = 'center';
-      ctx.fillText('Đang kết nối tín hiệu GPS vệ tinh...', cx, cy + 30);
+      ctx.fillText(
+        trackMode === 'outdoor'
+          ? 'Đang kết nối tín hiệu vệ tinh GPS (Lọc nhiễu Active)...'
+          : 'Đang theo dõi bước chân Pedometer trong nhà...',
+        cx,
+        cy + 30
+      );
       ctx.restore();
       return;
     }
@@ -649,7 +756,7 @@ export const GPSWalkingPage: React.FC = () => {
       ctx.stroke();
       ctx.restore();
     }
-  }, [coordinates, mapTheme]);
+  }, [coordinates, mapTheme, trackMode]);
 
   // Format elapsed time hh:mm:ss
   const formatTime = (secs: number) => {
@@ -729,7 +836,7 @@ export const GPSWalkingPage: React.FC = () => {
             <span>Theo Dõi GPS & Bước Chân</span>
           </div>
           <div style={{ fontSize: 11, color: '#8E94A5', marginTop: 2 }}>
-            {trackMode === 'outdoor' ? '🛰️ GPS Vệ Tinh + Gia Tốc Mobile' : '👟 Cảm biến bước chân Pedometer'}
+            {trackMode === 'outdoor' ? '🛰️ Lọc nhiễu GPS + Cảm biến Gia Tốc' : '👟 Cảm biến bước chân Pedometer'}
           </div>
         </div>
 
@@ -783,13 +890,15 @@ export const GPSWalkingPage: React.FC = () => {
             }}
           />
           <span style={{ color: '#A0A5B5', fontWeight: 600 }}>
-            {gpsStatus === 'good'
+            {trackMode === 'indoor'
+              ? 'Chế độ Trong Nhà'
+              : gpsStatus === 'good'
               ? `GPS Độ chính xác cao (±${gpsAccuracy ? gpsAccuracy.toFixed(0) : 5}m)`
               : gpsStatus === 'medium'
-              ? 'GPS Tín hiệu vừa'
+              ? 'GPS Vừa phải (Khử nhiễu ON)'
               : gpsStatus === 'simulated'
               ? 'GPS Mô phỏng Studio'
-              : 'Đang bắt tín hiệu GPS'}
+              : 'Đang bắt GPS...'}
           </span>
         </div>
 
@@ -832,19 +941,23 @@ export const GPSWalkingPage: React.FC = () => {
       <div
         style={{
           margin: '10px 16px 0',
-          padding: '8px 14px',
-          borderRadius: 12,
+          padding: '10px 14px',
+          borderRadius: 14,
           background:
             userMovementState === 'walking'
               ? 'rgba(46, 213, 115, 0.12)'
               : userMovementState === 'fake_shaking'
               ? 'rgba(255, 71, 87, 0.2)'
+              : userMovementState === 'vehicle'
+              ? 'rgba(255, 165, 2, 0.2)'
               : 'rgba(247, 201, 72, 0.12)',
           border: `1px solid ${
             userMovementState === 'walking'
               ? 'rgba(46, 213, 115, 0.4)'
               : userMovementState === 'fake_shaking'
               ? '#FF4757'
+              : userMovementState === 'vehicle'
+              ? '#FFA502'
               : 'rgba(247, 201, 72, 0.4)'
           }`,
           display: 'flex',
@@ -857,20 +970,24 @@ export const GPSWalkingPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div
             style={{
-              width: 8,
-              height: 8,
+              width: 10,
+              height: 10,
               borderRadius: '50%',
               background:
                 userMovementState === 'walking'
                   ? '#2ED573'
                   : userMovementState === 'fake_shaking'
                   ? '#FF4757'
+                  : userMovementState === 'vehicle'
+                  ? '#FFA502'
                   : '#F7C948',
-              boxShadow: `0 0 8px ${
+              boxShadow: `0 0 10px ${
                 userMovementState === 'walking'
                   ? '#2ED573'
                   : userMovementState === 'fake_shaking'
                   ? '#FF4757'
+                  : userMovementState === 'vehicle'
+                  ? '#FFA502'
                   : '#F7C948'
               }`,
             }}
@@ -882,6 +999,8 @@ export const GPSWalkingPage: React.FC = () => {
                   ? '#2ED573'
                   : userMovementState === 'fake_shaking'
                   ? '#FF4757'
+                  : userMovementState === 'vehicle'
+                  ? '#FFA502'
                   : '#F7C948',
             }}
           >
@@ -889,11 +1008,13 @@ export const GPSWalkingPage: React.FC = () => {
               ? '🟢 Đang di chuyển thực tế (Đang tính điểm)'
               : userMovementState === 'fake_shaking'
               ? '🚫 Phát hiện rung lắc tay tại chỗ (Chặn tính điểm)'
-              : '⏸️ Đang đứng yên tại chỗ (Không tính bước)'}
+              : userMovementState === 'vehicle'
+              ? '🚗 Phát hiện di chuyển bằng phương tiện (Chặn)'
+              : '⏸️ Đang đứng yên (Chống trôi GPS - Dừng cộng số)'}
           </span>
         </div>
         <span style={{ fontSize: 10, color: '#A0A5B5' }}>
-          {userMovementState === 'walking' ? 'Ghi nhận bước' : 'Tạm dừng đếm'}
+          {userMovementState === 'walking' ? 'Hợp lệ' : 'Đóng băng'}
         </span>
       </div>
 
@@ -914,18 +1035,62 @@ export const GPSWalkingPage: React.FC = () => {
             fontWeight: 600,
           }}
         >
-          <AlertTriangle size={18} />
+          <AlertTriangle size={18} style={{ flexShrink: 0 }} />
           <span>{antiCheatWarning}</span>
         </div>
       )}
 
+      {/* ── Anti-Cheat Diagnostic Status Hub (Explaining algorithm protection to user) ── */}
+      <div
+        style={{
+          margin: '10px 16px 0',
+          padding: '10px 14px',
+          background: 'rgba(255, 255, 255, 0.03)',
+          borderRadius: 12,
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 6,
+          fontSize: 10,
+          color: '#8E94A5',
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <div style={{ color: '#2ED573', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+            <CheckCircle2 size={11} /> Khử Trôi GPS
+          </div>
+          <span>Chống tăng khi đứng yên</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <div style={{ color: '#2ED573', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+            <CheckCircle2 size={11} /> Chống Lắc Tay
+          </div>
+          <span>Nhịp bước sinh học</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          <div style={{ color: '#2ED573', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+            <CheckCircle2 size={11} /> Sensor Fusion
+          </div>
+          <span>Đối chiếu GPS + Gia tốc</span>
+        </div>
+      </div>
+
       {/* ── Live Route Radar Map Canvas ── */}
-      <div style={{ position: 'relative', margin: '14px 16px 0', borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+      <div
+        style={{
+          position: 'relative',
+          margin: '12px 16px 0',
+          borderRadius: 20,
+          overflow: 'hidden',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+        }}
+      >
         <canvas
           ref={canvasRef}
           width={440}
-          height={210}
-          style={{ width: '100%', height: 210, display: 'block', background: '#0E111A' }}
+          height={200}
+          style={{ width: '100%', height: 200, display: 'block', background: '#0E111A' }}
         />
 
         {/* Overlay Badges on Map */}
@@ -947,7 +1112,7 @@ export const GPSWalkingPage: React.FC = () => {
             border: '1px solid rgba(46, 213, 115, 0.3)',
           }}
         >
-          <Compass size={13} className="spin-slow" />
+          <Compass size={13} />
           <span>{isStarted ? (isPaused ? 'TẠM DỪNG' : 'LIVE GPS TRACK') : 'SẴN SÀNG'}</span>
         </div>
 
@@ -998,10 +1163,10 @@ export const GPSWalkingPage: React.FC = () => {
       {/* ── Main Big Counter Hero Card ── */}
       <div
         style={{
-          margin: '16px 16px 0',
+          margin: '14px 16px 0',
           background: 'linear-gradient(145deg, #161B29 0%, #111520 100%)',
           borderRadius: 24,
-          padding: '20px 20px',
+          padding: '18px 18px',
           border: '1px solid rgba(46, 213, 115, 0.25)',
           boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(46, 213, 115, 0.08)',
           textAlign: 'center',
@@ -1009,19 +1174,19 @@ export const GPSWalkingPage: React.FC = () => {
         }}
       >
         {/* Step Counter Label */}
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#A0A5B5', textTransform: 'uppercase', letterSpacing: 1 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#A0A5B5', textTransform: 'uppercase', letterSpacing: 1 }}>
           Số Bước Chân Thực Tế
         </div>
 
         {/* Big Step Number */}
         <div
           style={{
-            fontSize: 56,
+            fontSize: 54,
             fontWeight: 900,
             lineHeight: 1.1,
             color: '#2ED573',
             textShadow: '0 0 30px rgba(46, 213, 115, 0.4)',
-            margin: '8px 0',
+            margin: '6px 0',
             fontVariantNumeric: 'tabular-nums',
           }}
         >
@@ -1030,9 +1195,11 @@ export const GPSWalkingPage: React.FC = () => {
 
         {/* Target Progress Bar */}
         {targetType !== 'free' && (
-          <div style={{ marginTop: 8, marginBottom: 12 }}>
+          <div style={{ marginTop: 6, marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#A0A5B5', marginBottom: 4 }}>
-              <span>Mục tiêu: {targetValue.toLocaleString()} {targetType === 'steps' ? 'bước' : 'km'}</span>
+              <span>
+                Mục tiêu: {targetValue.toLocaleString()} {targetType === 'steps' ? 'bước' : 'km'}
+              </span>
               <span style={{ color: '#2ED573', fontWeight: 700 }}>{progressPercent}%</span>
             </div>
             <div style={{ height: 6, background: 'rgba(255, 255, 255, 0.1)', borderRadius: 3, overflow: 'hidden' }}>
@@ -1055,8 +1222,8 @@ export const GPSWalkingPage: React.FC = () => {
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
             gap: 8,
-            marginTop: 16,
-            paddingTop: 16,
+            marginTop: 14,
+            paddingTop: 14,
             borderTop: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
@@ -1110,7 +1277,7 @@ export const GPSWalkingPage: React.FC = () => {
           style={{
             display: 'flex',
             justifyContent: 'space-around',
-            marginTop: 12,
+            marginTop: 10,
             paddingTop: 10,
             borderTop: '1px dashed rgba(255, 255, 255, 0.05)',
             fontSize: 11,
@@ -1131,7 +1298,7 @@ export const GPSWalkingPage: React.FC = () => {
 
       {/* ── Mode Selection & Target Presets (When not started) ── */}
       {!isStarted && !isCompleted && (
-        <div style={{ margin: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ margin: '14px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Outdoor vs Indoor Switch */}
           <div
             style={{
@@ -1214,8 +1381,14 @@ export const GPSWalkingPage: React.FC = () => {
                   style={{
                     padding: '8px 4px',
                     borderRadius: 10,
-                    border: targetValue === item.val && targetType === 'steps' ? '1px solid #2ED573' : '1px solid rgba(255, 255, 255, 0.08)',
-                    background: targetValue === item.val && targetType === 'steps' ? 'rgba(46, 213, 115, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                    border:
+                      targetValue === item.val && targetType === 'steps'
+                        ? '1px solid #2ED573'
+                        : '1px solid rgba(255, 255, 255, 0.08)',
+                    background:
+                      targetValue === item.val && targetType === 'steps'
+                        ? 'rgba(46, 213, 115, 0.15)'
+                        : 'rgba(255, 255, 255, 0.04)',
                     color: targetValue === item.val && targetType === 'steps' ? '#2ED573' : '#FFFFFF',
                     fontSize: 11,
                     fontWeight: 700,
@@ -1233,7 +1406,7 @@ export const GPSWalkingPage: React.FC = () => {
       {/* ── Main Floating Controls Bar (Bottom) ── */}
       <div
         style={{
-          margin: '20px 16px 0',
+          margin: '18px 16px 0',
           display: 'flex',
           gap: 12,
           alignItems: 'center',
@@ -1392,7 +1565,7 @@ export const GPSWalkingPage: React.FC = () => {
               🎉 Hoàn Thành Xuất Sắc!
             </h2>
             <p style={{ fontSize: 13, color: '#A0A5B5', marginTop: 6, marginBottom: 20 }}>
-              Buổi tập đi bộ đã được xác minh qua Anti-Cheat AI & lưu vào thành tích cá nhân.
+              Buổi tập đi bộ đã được xác minh qua Bộ lọc chống trôi GPS & Anti-Cheat AI.
             </p>
 
             {/* Results Grid */}

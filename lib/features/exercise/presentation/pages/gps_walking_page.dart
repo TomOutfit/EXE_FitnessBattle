@@ -3,20 +3,26 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
-import '../../../../core/mock_data_exercise.dart';
+import '../../../../core/providers.dart';
 
 class GPSCoordinatePoint {
   final double lat;
   final double lng;
-  final double speed;
+  final double speed; // m/s
+  final double accuracy;
   final DateTime timestamp;
 
   GPSCoordinatePoint({
     required this.lat,
     required this.lng,
     required this.speed,
+    required this.accuracy,
     required this.timestamp,
   });
 }
@@ -30,13 +36,16 @@ class GPSWalkingPage extends ConsumerStatefulWidget {
 
 class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
     with SingleTickerProviderStateMixin {
+  // Tracking state
   bool _isStarted = false;
   bool _isPaused = false;
   bool _isCompleted = false;
 
-  String _trackMode = 'outdoor'; // 'outdoor' or 'indoor'
+  // Mode: 'outdoor' (GPS + Sensor Fusion) or 'indoor' (Pedometer only)
+  String _trackMode = 'outdoor';
   int _targetSteps = 3000;
 
+  // Metrics
   int _steps = 0;
   double _distanceMeters = 0.0;
   int _elapsedSeconds = 0;
@@ -45,20 +54,36 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
   String _currentPace = '00:00';
   int _calories = 0;
   int _cadence = 0;
-  int _heartRate = 85;
+  int _heartRate = 80;
 
-  String _gpsStatus = 'good'; // 'good', 'searching', 'poor'
-  double _gpsAccuracy = 4.5;
+  // GPS & Anti-Cheat AI State
+  String _gpsStatus = 'searching'; // 'good', 'medium', 'poor', 'searching'
+  double _gpsAccuracy = 0.0;
   String? _antiCheatWarning;
-  bool _isSimulating = true;
-  String _movementState = 'walking'; // 'walking', 'stationary', 'fake_shaking'
-  int _consecutiveStationaryShakes = 0;
+  String _movementState = 'stationary'; // 'walking', 'stationary', 'fake_shaking', 'vehicle'
+  bool _voiceGuidance = true;
+  bool _sensorsReady = false;
 
+  // Diagnostic & Sensor Fusion Buffers
   final List<GPSCoordinatePoint> _routePoints = [];
-  Timer? _trackerTimer;
-  Timer? _stepMotionTimer;
+  final List<DateTime> _recentStepsWindow = [];
+  final List<Map<String, dynamic>> _recentGpsMovements = []; // {timestamp, distance}
+  GPSCoordinatePoint? _lastAcceptedGpsPoint;
+  int _consecutiveStationaryDrifts = 0;
 
+  // Step detection variables
+  double _lastAccelMagnitude = 9.8;
+  String _accelState = 'falling';
+  DateTime _lastStepTimestamp = DateTime.now();
+  final List<DateTime> _stepCandidateBuffer = [];
+  bool _isStepTrainConfirmed = false;
+
+  // Streams & Timers
+  StreamSubscription<Position>? _positionStreamSub;
+  StreamSubscription<AccelerometerEvent>? _accelStreamSub;
+  Timer? _metricsTimer;
   late AnimationController _pulseController;
+  final FlutterTts _flutterTts = FlutterTts();
 
   @override
   void initState() {
@@ -67,107 +92,389 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+
+    _initTts();
+    _checkAndRequestPermissions();
+  }
+
+  void _initTts() async {
+    try {
+      await _flutterTts.setLanguage('vi-VN');
+      await _flutterTts.setSpeechRate(0.9);
+      await _flutterTts.setVolume(1.0);
+    } catch (_) {}
+  }
+
+  void _speak(String text) async {
+    if (!_voiceGuidance) return;
+    try {
+      await _flutterTts.stop();
+      await _flutterTts.speak(text);
+    } catch (_) {}
+  }
+
+  Future<void> _checkAndRequestPermissions() async {
+    await [
+      Permission.location,
+      Permission.locationWhenInUse,
+      Permission.activityRecognition,
+      Permission.sensors,
+    ].request();
   }
 
   @override
   void dispose() {
-    _trackerTimer?.cancel();
-    _stepMotionTimer?.cancel();
+    _stopSensorStreams();
+    _metricsTimer?.cancel();
     _pulseController.dispose();
+    _flutterTts.stop();
     super.dispose();
   }
 
+  void _stopSensorStreams() {
+    _positionStreamSub?.cancel();
+    _positionStreamSub = null;
+    _accelStreamSub?.cancel();
+    _accelStreamSub = null;
+  }
+
+  // -------------------------------------------------------------
+  // 1. Haversine Distance Calculation (Meter precision)
+  // -------------------------------------------------------------
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double r = 6371000; // Earth radius in meters
+    final double phi1 = (lat1 * pi) / 180;
+    final double phi2 = (lat2 * pi) / 180;
+    final double deltaPhi = ((lat2 - lat1) * pi) / 180;
+    final double deltaLambda = ((lon2 - lon1) * pi) / 180;
+
+    final double a = sin(deltaPhi / 2) * sin(deltaPhi / 2) +
+        cos(phi1) * cos(phi2) * sin(deltaLambda / 2) * sin(deltaLambda / 2);
+    final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return r * c;
+  }
+
+  // -------------------------------------------------------------
+  // 2. Real Hardware Accelerometer Step Detection & Anti-Cheat
+  // -------------------------------------------------------------
+  void _startAccelerometerTracking() {
+    _accelStreamSub?.cancel();
+    _accelStreamSub = accelerometerEventStream().listen((AccelerometerEvent event) {
+      if (!_isStarted || _isPaused || _isCompleted) return;
+
+      final double x = event.x;
+      final double y = event.y;
+      final double z = event.z;
+      final double magnitude = sqrt(x * x + y * y + z * z);
+      final DateTime now = DateTime.now();
+
+      const double peakThreshold = 11.5;
+      const double valleyThreshold = 8.5;
+      const int minStepIntervalMs = 280; // max ~214 SPM (sprint)
+      const int maxStepIntervalMs = 1400; // min ~42 SPM (slow walk)
+
+      // Clean rolling 8-second window
+      _recentStepsWindow.removeWhere((t) => now.difference(t).inMilliseconds > 8000);
+      _recentGpsMovements.removeWhere((g) => now.difference(g['timestamp'] as DateTime).inMilliseconds > 8000);
+
+      if (_accelState == 'falling' && magnitude > peakThreshold) {
+        _accelState = 'rising';
+      } else if (_accelState == 'rising' && magnitude < valleyThreshold) {
+        _accelState = 'falling';
+        final int intervalMs = now.difference(_lastStepTimestamp).inMilliseconds;
+
+        if (intervalMs >= minStepIntervalMs) {
+          _lastStepTimestamp = now;
+
+          // Reset step candidate buffer if paused too long (> 1.8s)
+          if (intervalMs > 1800) {
+            _stepCandidateBuffer.clear();
+            _isStepTrainConfirmed = false;
+          }
+
+          _stepCandidateBuffer.add(now);
+          _recentStepsWindow.add(now);
+
+          // ── Anti-Cheat Layer 1: High Frequency Hand Shaking (> 215 SPM) ──
+          final int stepsIn8s = _recentStepsWindow.length;
+          final double cadenceSpm = (stepsIn8s / 8) * 60;
+          if (cadenceSpm > 215) {
+            setState(() {
+              _movementState = 'fake_shaking';
+              _antiCheatWarning = '🚫 PHÁT HIỆN LẮC TAY BẤT THƯỜNG (>215 SPM): Tạm dừng tích lũy bước chân!';
+            });
+            return; // REJECT FAKE SHAKE STEP
+          }
+
+          // ── Anti-Cheat Layer 2: Sensor Fusion in Outdoor Mode (Standing Still & Shaking Phone) ──
+          if (_trackMode == 'outdoor' && _gpsStatus != 'poor' && _lastAcceptedGpsPoint != null) {
+            final double totalGpsDistIn8s = _recentGpsMovements.fold<double>(
+              0.0,
+              (sum, item) => sum + (item['distance'] as double),
+            );
+
+            // User produces >= 5 steps in 8s but GPS displacement is < 2.5m and GPS speed is negligible
+            if (stepsIn8s >= 5 && totalGpsDistIn8s < 2.5 && _currentSpeedKmh < 0.9) {
+              setState(() {
+                _movementState = 'fake_shaking';
+                _antiCheatWarning = '🚫 PHÁT HIỆN LẮC TAY TẠI CHỖ: Người dùng đang đứng yên (GPS không di chuyển). Đã đóng băng không cộng bước!';
+              });
+              return; // REJECT STATIONARY SHAKE STEP
+            }
+          }
+
+          // ── Biomechanical Step Train Confirmation (Require 3 consistent rhythmic steps) ──
+          if (!_isStepTrainConfirmed) {
+            if (_stepCandidateBuffer.length >= 3) {
+              final List<int> intervals = [];
+              for (int i = 1; i < _stepCandidateBuffer.length; i++) {
+                intervals.add(_stepCandidateBuffer[i].difference(_stepCandidateBuffer[i - 1]).inMilliseconds);
+              }
+              final double avgInterval = intervals.reduce((a, b) => a + b) / intervals.length;
+              final bool isRhythmic = intervals.every((intv) => (intv - avgInterval).abs() < avgInterval * 0.5);
+
+              if (isRhythmic && avgInterval >= minStepIntervalMs && avgInterval <= maxStepIntervalMs) {
+                _isStepTrainConfirmed = true;
+                final int bufferedCount = _stepCandidateBuffer.length;
+                setState(() {
+                  _movementState = 'walking';
+                  _antiCheatWarning = null;
+                  _steps += bufferedCount;
+                  if (_trackMode == 'indoor') {
+                    _distanceMeters += bufferedCount * 0.74;
+                  }
+                });
+              }
+            }
+            return;
+          }
+
+          // ── Real Continuous Step Verified ──
+          setState(() {
+            _movementState = 'walking';
+            _antiCheatWarning = null;
+            _steps += 1;
+            if (_trackMode == 'indoor') {
+              _distanceMeters += 0.74;
+            }
+          });
+        }
+      }
+
+      _lastAccelMagnitude = magnitude;
+    });
+  }
+
+  // -------------------------------------------------------------
+  // 3. Real Hardware Geolocation Tracking & GPS Jitter Suppressor
+  // -------------------------------------------------------------
+  void _startGPSLocationTracking() async {
+    final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      setState(() {
+        _gpsStatus = 'poor';
+        _antiCheatWarning = 'Vui lòng bật định vị GPS trên thiết bị để theo dõi ngoài trời.';
+      });
+      return;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        setState(() {
+          _gpsStatus = 'poor';
+          _antiCheatWarning = 'Quyền GPS bị từ chối.';
+        });
+        return;
+      }
+    }
+
+    const LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.bestForNavigation,
+      distanceFilter: 2, // notify every 2 meters
+    );
+
+    _positionStreamSub?.cancel();
+    _positionStreamSub = Geolocator.getPositionStream(locationSettings: locationSettings).listen((Position position) {
+      if (!_isStarted || _isPaused || _isCompleted) return;
+
+      final double latitude = position.latitude;
+      final double longitude = position.longitude;
+      final double accuracy = position.accuracy;
+      final double speed = position.speed; // m/s
+      final DateTime now = position.timestamp;
+
+      setState(() {
+        _gpsAccuracy = accuracy;
+        if (accuracy <= 15) {
+          _gpsStatus = 'good';
+        } else if (accuracy <= 32) {
+          _gpsStatus = 'medium';
+        } else {
+          _gpsStatus = 'poor';
+        }
+      });
+
+      // Discard inaccurate GPS readings (accuracy > 38m)
+      if (accuracy > 38) return;
+
+      if (_lastAcceptedGpsPoint == null || _routePoints.isEmpty) {
+        final firstPoint = GPSCoordinatePoint(
+          lat: latitude,
+          lng: longitude,
+          speed: speed >= 0 ? speed : 0,
+          accuracy: accuracy,
+          timestamp: now,
+        );
+        _lastAcceptedGpsPoint = firstPoint;
+        setState(() {
+          _routePoints.add(firstPoint);
+        });
+        return;
+      }
+
+      final last = _lastAcceptedGpsPoint!;
+      final double distDelta = _calculateDistance(last.lat, last.lng, latitude, longitude);
+      final double timeDelta = now.difference(last.timestamp).inMilliseconds / 1000.0;
+
+      if (timeDelta <= 0.2) return; // ignore redundant duplicate ticks
+
+      double speedKmh = 0.0;
+      if (speed >= 0) {
+        speedKmh = speed * 3.6;
+      } else {
+        speedKmh = (distDelta / timeDelta) * 3.6;
+      }
+
+      // ── GPS Jitter & Stationary Deadzone Filter ──
+      // Dynamic minimum physical movement threshold proportional to GPS accuracy
+      final double minPhysicalMoveThreshold = max(3.8, min(10.0, accuracy * 0.42));
+
+      if (distDelta < minPhysicalMoveThreshold || speedKmh < 1.0) {
+        // Confirmed stationary jitter: DO NOT ADD DISTANCE!
+        _consecutiveStationaryDrifts++;
+        setState(() {
+          _currentSpeedKmh = 0.0;
+          if (_recentStepsWindow.isEmpty) {
+            _movementState = 'stationary';
+            if (_consecutiveStationaryDrifts >= 4) {
+              _antiCheatWarning = null;
+            }
+          }
+        });
+        return; // Return without accumulating fake distance!
+      }
+
+      // ── Anti-Cheat: High Speed Vehicle Filter (> 24 km/h) ──
+      if (speedKmh > 24.0) {
+        setState(() {
+          _movementState = 'vehicle';
+          _antiCheatWarning = '⚠️ TỐC ĐỘ QUÁ NHANH (>24km/h): Đã tạm dừng tính quãng đường do nghi vấn đi xe máy/ô tô!';
+        });
+        return; // REJECT VEHICLE
+      }
+
+      // ── Anti-Cheat: Passive Transport (GPS moves fast but ZERO steps over 12s) ──
+      final int stepsInLast10s = _recentStepsWindow.length;
+      if (speedKmh > 11.0 && stepsInLast10s == 0 && timeDelta > 3) {
+        setState(() {
+          _movementState = 'vehicle';
+          _antiCheatWarning = '🚗 PHÁT HIỆN ĐANG ĐI XE: Toạ độ GPS di chuyển nhưng không có bước chân người!';
+        });
+        return; // REJECT PASSIVE TRANSPORT
+      }
+
+      // ── Valid Physical Walking Movement Detected! ──
+      _consecutiveStationaryDrifts = 0;
+      final double validSpeedKmh = min(20.0, max(1.2, double.parse(speedKmh.toStringAsFixed(1))));
+
+      _recentGpsMovements.add({'timestamp': now, 'distance': distDelta});
+
+      final validPoint = GPSCoordinatePoint(
+        lat: latitude,
+        lng: longitude,
+        speed: validSpeedKmh / 3.6,
+        accuracy: accuracy,
+        timestamp: now,
+      );
+      _lastAcceptedGpsPoint = validPoint;
+
+      setState(() {
+        _movementState = 'walking';
+        _antiCheatWarning = null;
+        _currentSpeedKmh = validSpeedKmh;
+        _routePoints.add(validPoint);
+
+        if (_trackMode == 'outdoor') {
+          _distanceMeters += distDelta;
+        }
+      });
+    });
+  }
+
+  // -------------------------------------------------------------
+  // 4. Start / Pause / Resume / Finish Controls
+  // -------------------------------------------------------------
   void _startTracking() {
     setState(() {
       _isStarted = true;
       _isPaused = false;
       _isCompleted = false;
       _antiCheatWarning = null;
-      _movementState = 'walking';
-      _consecutiveStationaryShakes = 0;
+      _movementState = 'stationary';
+      _recentStepsWindow.clear();
+      _recentGpsMovements.clear();
+      _stepCandidateBuffer.clear();
+      _isStepTrainConfirmed = false;
+      _lastAcceptedGpsPoint = null;
+      _consecutiveStationaryDrifts = 0;
+      _sensorsReady = true;
     });
 
-    _startTimers();
+    _speak('Bắt đầu theo dõi buổi đi bộ. Cảm biến và định vị GPS thực tế đã kích hoạt!');
+    _startAccelerometerTracking();
+    if (_trackMode == 'outdoor') {
+      _startGPSLocationTracking();
+    }
+
+    _startMetricsTimer();
   }
 
-  void _startTimers() {
-    _trackerTimer?.cancel();
-    _stepMotionTimer?.cancel();
-
-    double baseLat = 10.7769;
-    double baseLng = 106.7009;
-
-    _trackerTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  void _startMetricsTimer() {
+    _metricsTimer?.cancel();
+    _metricsTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!_isStarted || _isPaused || _isCompleted) return;
 
       setState(() {
         _elapsedSeconds++;
 
-        // Simulate GPS & Step accumulation with realistic walking pattern
-        if (_isSimulating) {
-          if (_movementState == 'stationary') {
-            // Standing still: speed = 0, no steps accumulated
-            _currentSpeedKmh = 0.0;
-            _cadence = 0;
-            _antiCheatWarning = null;
-          } else if (_movementState == 'fake_shaking') {
-            // Shaking phone while standing still: block step accumulation
-            _currentSpeedKmh = 0.0;
-            _cadence = 180;
-            _antiCheatWarning = '🚫 PHÁT HIỆN LẮC TAY TẠI CHỖ: Đã tạm dừng đếm bước do không có di chuyển thực tế!';
-          } else {
-            // Valid Walking movement
-            final double angle = (_elapsedSeconds * 4 * pi) / 180;
-            final double radius = 0.0018 + sin(angle * 0.5) * 0.0006;
-            final double newLat = baseLat + radius * cos(angle);
-            final double newLng = baseLng + radius * sin(angle);
-
-            final double simSpeed = 4.8 + sin(angle) * 0.8; // ~5.2 km/h
-            _currentSpeedKmh = double.parse(simSpeed.toStringAsFixed(1));
-
-            final int stepDelta = 2 + (Random().nextInt(2));
-            _steps += stepDelta;
-
-            final double distDelta = (simSpeed * 1000) / 3600; // ~1.4 m/s
-            _distanceMeters += distDelta;
-
-            _routePoints.add(GPSCoordinatePoint(
-              lat: newLat,
-              lng: newLng,
-              speed: simSpeed,
-              timestamp: DateTime.now(),
-            ));
-
-            // Anti-cheat verification
-            if (_currentSpeedKmh > 25.0) {
-              _antiCheatWarning = 'Tốc độ quá nhanh (>25km/h). Đã tạm dừng đếm để chống gian lận xe máy!';
-            } else {
-              _antiCheatWarning = null;
-            }
-          }
-        }
-
-        // Calculate Pace (min/km)
-        if (_distanceMeters > 50) {
+        // ── Calculate Pace (min/km) ──
+        if (_distanceMeters > 30) {
           final double totalKm = _distanceMeters / 1000;
           final double paceMinutes = (_elapsedSeconds / 60) / totalKm;
           final int pMin = paceMinutes.floor();
           final int pSec = ((paceMinutes - pMin) * 60).floor();
-          _currentPace = '${pMin.toString().padLeft(2, '0')}\'${pSec.toString().padLeft(2, '0')}"';
+          if (pMin < 60) {
+            _currentPace = '${pMin.toString().padLeft(2, '0')}\'${pSec.toString().padLeft(2, '0')}"';
+          } else {
+            _currentPace = '>60\'00"';
+          }
 
           _avgSpeedKmh = double.parse((totalKm / (_elapsedSeconds / 3600)).toStringAsFixed(1));
         }
 
-        // Calories: ~0.043 kcal per step + MET factor
+        // ── Calories: ~0.043 kcal per step + MET factor ──
         _calories = (_steps * 0.043 + (_distanceMeters / 1000) * 22).round();
 
-        // Cadence (SPM)
-        if (_elapsedSeconds > 5) {
+        // ── Cadence (SPM) ──
+        if (_elapsedSeconds > 4) {
           _cadence = ((_steps / _elapsedSeconds) * 60).round();
         }
 
-        // Heart Rate
-        _heartRate = min(155, max(78, (80 + _currentSpeedKmh * 8.5).round()));
+        // ── Dynamic Heart Rate ──
+        _heartRate = min(155, max(76, (78 + _currentSpeedKmh * 8.2).round()));
       });
     });
   }
@@ -176,12 +483,14 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
     setState(() {
       _isPaused = true;
     });
+    _speak('Đã tạm dừng');
   }
 
   void _resumeTracking() {
     setState(() {
       _isPaused = false;
     });
+    _speak('Tiếp tục luyện tập');
   }
 
   void _finishTracking() {
@@ -191,16 +500,26 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
       _isCompleted = true;
     });
 
-    _trackerTimer?.cancel();
-    _stepMotionTimer?.cancel();
+    _stopSensorStreams();
+    _metricsTimer?.cancel();
 
-    // Update Riverpod Providers
-    final finalSteps = max(_steps, (_distanceMeters / 0.76).round());
-    ref.read(userExerciseStatsProvider.notifier).addWalkingSteps(finalSteps);
-    ref.read(dailyWalkingGoalProvider.notifier).updateSteps(
-      ref.read(dailyWalkingGoalProvider).currentSteps + finalSteps,
+    // Update Riverpod Providers & Sync to All Features
+    final finalSteps = max(_steps, (_distanceMeters / 0.74).round());
+    final durationMin = max(1, (_elapsedSeconds / 60).ceil());
+    final cal = _calories > 0 ? _calories : (finalSteps * 0.04).round();
+
+    WorkoutSyncService.syncWorkout(
+      ref: ref,
+      exerciseType: 'walking',
+      totalReps: finalSteps,
+      validReps: finalSteps,
+      durationMinutes: durationMin,
+      caloriesBurned: cal,
+      accuracy: 100.0,
+      formIssues: const [],
     );
 
+    _speak('Tuyệt vời! Bạn đã hoàn thành $finalSteps bước chân.');
     _showCompletionDialog();
   }
 
@@ -255,7 +574,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Buổi tập đã được xác minh qua Anti-Cheat AI và lưu vào hồ sơ cá nhân.',
+              'Buổi tập đã được xác minh qua Cảm biến thực tế & Bộ lọc chống trôi GPS.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
@@ -384,7 +703,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
               ],
             ),
             Text(
-              _trackMode == 'outdoor' ? '🛰️ GPS Vệ Tinh + Gia Tốc Mobile' : '👟 Cảm biến bước chân Pedometer',
+              _trackMode == 'outdoor' ? '🛰️ Khử Nhiễu GPS + Cảm Biến Gia Tốc' : '👟 Cảm biến bước chân Pedometer',
               style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
             ),
           ],
@@ -392,10 +711,13 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.volume_up, color: Color(0xFF2ED573)),
+            icon: Icon(_voiceGuidance ? Icons.volume_up : Icons.volume_off, color: _voiceGuidance ? const Color(0xFF2ED573) : AppColors.textMuted),
             onPressed: () {
+              setState(() {
+                _voiceGuidance = !_voiceGuidance;
+              });
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Giọng nói hướng dẫn đã bật')),
+                SnackBar(content: Text(_voiceGuidance ? 'Giọng nói hướng dẫn đã bật' : 'Giọng nói hướng dẫn đã tắt')),
               );
             },
           ),
@@ -421,17 +743,28 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFF2ED573),
+                          color: _gpsStatus == 'good'
+                              ? const Color(0xFF2ED573)
+                              : _gpsStatus == 'medium'
+                              ? const Color(0xFFFFA502)
+                              : AppColors.error,
                           boxShadow: [
-                            BoxShadow(color: Color(0xFF2ED573), blurRadius: 6),
+                            BoxShadow(
+                              color: _gpsStatus == 'good' ? const Color(0xFF2ED573) : const Color(0xFFFFA502),
+                              blurRadius: 6,
+                            ),
                           ],
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'GPS Độ chính xác cao (±${_gpsAccuracy.toStringAsFixed(0)}m)',
+                        _gpsStatus == 'good'
+                            ? 'GPS Độ chính xác cao (±${_gpsAccuracy.toStringAsFixed(0)}m)'
+                            : _gpsStatus == 'medium'
+                            ? 'GPS Trung bình (Khử nhiễu ON)'
+                            : 'Đang kết nối GPS vệ tinh...',
                         style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -442,11 +775,11 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                       color: const Color(0xFF2ED573).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.shield, color: Color(0xFF2ED573), size: 12),
-                        SizedBox(width: 4),
-                        Text('Anti-Cheat AI', style: TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold)),
+                        Icon(Icons.shield, color: _sensorsReady ? const Color(0xFF2ED573) : AppColors.textMuted, size: 12),
+                        const SizedBox(width: 4),
+                        const Text('Anti-Cheat AI', style: TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -463,6 +796,8 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                     ? const Color(0xFF2ED573).withValues(alpha: 0.12)
                     : _movementState == 'fake_shaking'
                     ? AppColors.error.withValues(alpha: 0.2)
+                    : _movementState == 'vehicle'
+                    ? const Color(0xFFFFA502).withValues(alpha: 0.2)
                     : const Color(0xFFF7C948).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
@@ -470,6 +805,8 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                       ? const Color(0xFF2ED573).withValues(alpha: 0.4)
                       : _movementState == 'fake_shaking'
                       ? AppColors.error
+                      : _movementState == 'vehicle'
+                      ? const Color(0xFFFFA502)
                       : const Color(0xFFF7C948).withValues(alpha: 0.4),
                 ),
               ),
@@ -487,6 +824,8 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                               ? const Color(0xFF2ED573)
                               : _movementState == 'fake_shaking'
                               ? AppColors.error
+                              : _movementState == 'vehicle'
+                              ? const Color(0xFFFFA502)
                               : const Color(0xFFF7C948),
                         ),
                       ),
@@ -496,12 +835,16 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                             ? '🟢 Đang di chuyển thực tế (Đang tính điểm)'
                             : _movementState == 'fake_shaking'
                             ? '🚫 Lắc tay tại chỗ bị chặn (Không tính)'
-                            : '⏸️ Đang đứng yên tại chỗ (Không tính bước)',
+                            : _movementState == 'vehicle'
+                            ? '🚗 Phát hiện đi xe (Tạm ngưng tính km)'
+                            : '⏸️ Đang đứng yên (Chống trôi GPS - Dừng cộng)',
                         style: TextStyle(
                           color: _movementState == 'walking'
                               ? const Color(0xFF2ED573)
                               : _movementState == 'fake_shaking'
                               ? AppColors.error
+                              : _movementState == 'vehicle'
+                              ? const Color(0xFFFFA502)
                               : const Color(0xFFF7C948),
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -510,7 +853,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                     ],
                   ),
                   Text(
-                    _movementState == 'walking' ? 'Ghi nhận' : 'Tạm dừng',
+                    _movementState == 'walking' ? 'Ghi nhận' : 'Đóng băng',
                     style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
                   ),
                 ],
@@ -541,6 +884,25 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                   ],
                 ),
               ),
+
+            // Anti-Cheat Diagnostics Hub
+            Container(
+              padding: const EdgeInsets.all(10),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.03),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _DiagnosticBadge(label: 'Khử Trôi GPS', desc: 'Chống tăng khi đứng yên'),
+                  _DiagnosticBadge(label: 'Chống Lắc Tay', desc: 'Nhịp bước sinh học'),
+                  _DiagnosticBadge(label: 'Sensor Fusion', desc: 'GPS + Gia tốc thực tế'),
+                ],
+              ),
+            ),
 
             // Radar Map Visualizer
             Container(
@@ -603,14 +965,14 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // Main Step Counter Card
             AppCard(
               child: Column(
                 children: [
                   const Text(
-                    'SỐ BƯỚC CHÂN THỰC TẾ',
+                    'SỐ BƯỚC CHÂN THỰC TẾ (SENSOR LIVE)',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textMuted, letterSpacing: 1),
                   ),
                   const SizedBox(height: 6),
@@ -682,8 +1044,8 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                   ),
                   icon: const Icon(Icons.play_arrow, size: 28),
                   label: const Text(
-                    'BẮT ĐẦU ĐI BỘ (GPS LIVE)',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                    'BẮT ĐẦU ĐI BỘ (GPS & SENSOR LIVE)',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
                   ),
                   onPressed: _startTracking,
                 ),
@@ -744,6 +1106,31 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DiagnosticBadge extends StatelessWidget {
+  final String label;
+  final String desc;
+
+  const _DiagnosticBadge({required this.label, required this.desc});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Color(0xFF2ED573), size: 11),
+            const SizedBox(width: 3),
+            Text(label, style: const TextStyle(color: Color(0xFF2ED573), fontWeight: FontWeight.bold, fontSize: 10)),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(desc, style: const TextStyle(color: AppColors.textMuted, fontSize: 8)),
+      ],
     );
   }
 }

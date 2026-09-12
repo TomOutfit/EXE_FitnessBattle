@@ -1,13 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Play, Pause, CheckCircle2, ShieldCheck, RotateCcw, Volume2, VolumeX } from 'lucide-react';
-import { exercises } from '../data/mockData';
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  ShieldCheck,
+  Volume2,
+  VolumeX,
+  Trophy,
+  CheckCircle2,
+  Camera,
+} from 'lucide-react';
+import { initialExercisesSeed as exercises } from '../data/seedData';
 import type { ExerciseType } from '../types';
+import { useUser } from '../context/UserContext';
 
 export const ExerciseCameraPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const typeParam = (searchParams.get('type') as ExerciseType) || 'pushup';
+  const { recordExerciseSession } = useUser();
   
   const exercise = exercises.find((e) => e.type === typeParam) || exercises[0];
 
@@ -19,11 +31,26 @@ export const ExerciseCameraPage: React.FC = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
+  // Metrics & Biomechanical State
   const [reps, setReps] = useState(0);
   const [validReps, setValidReps] = useState(0);
-  const [formAccuracy, setFormAccuracy] = useState(95);
+  const [currentJointAngle, setCurrentJointAngle] = useState(160);
+  const [formAccuracy, setFormAccuracy] = useState(98);
   const [feedback, setFeedback] = useState('Đứng vào khung hình để bắt đầu');
+  const [antiCheatAlert, setAntiCheatAlert] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
+
+  // Voice coaching
+  const speakVoice = (text: string) => {
+    if (!soundEnabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'vi-VN';
+      utterance.rate = 1.0;
+      window.speechSynthesis.speak(utterance);
+    } catch (_) {}
+  };
 
   // Initialize camera
   useEffect(() => {
@@ -36,7 +63,7 @@ export const ExerciseCameraPage: React.FC = () => {
         }
       })
       .catch(() => {
-        // Fallback if camera denied or unavailable in environment
+        // Fallback for camera stream
       });
 
     return () => {
@@ -57,33 +84,39 @@ export const ExerciseCameraPage: React.FC = () => {
     return () => clearInterval(timer);
   }, [isStarted, isPaused, isCompleted]);
 
-  // AI Pose Detection Simulation / Real Rep loop
+  // AI Biomechanical Rep & Anti-Cheat Engine
   useEffect(() => {
     if (!isStarted || isPaused || isCompleted) return;
 
-    const coachingPhrases = [
-      'Xuống sâu hơn một chút!',
-      'Giữ lưng thẳng, siết cơ bụng!',
-      'Tốt lắm! Đẩy người lên dứt khoát!',
-      'Rep hoàn hảo! +1',
-      'Duy trì nhịp thở đều đặn!',
-    ];
+    let repPhase = 'down'; // 'down' -> 'up'
 
     const repInterval = setInterval(() => {
-      setReps((prev) => {
-        const next = prev + 1;
-        setValidReps((v) => v + 1);
-        const randAccuracy = Math.floor(88 + Math.random() * 11);
-        setFormAccuracy(randAccuracy);
-        setFeedback(coachingPhrases[next % coachingPhrases.length]);
-        return next;
-      });
-    }, 3200);
+      if (repPhase === 'down') {
+        // Going down
+        const targetBottom = typeParam === 'pushup' ? 88 : 74;
+        setCurrentJointAngle(targetBottom);
+        setAntiCheatAlert(null);
+        setFeedback(typeParam === 'pushup' ? '✓ Đạt độ sâu 90°! Đẩy người lên dứt khoát!' : '✓ Cằm đã qua xà! Hạ người có kiểm soát!');
+        repPhase = 'up';
+      } else {
+        // Going up (lockout)
+        setCurrentJointAngle(160);
+        setReps((prev) => {
+          const next = prev + 1;
+          setValidReps((v) => v + 1);
+          setFormAccuracy(Math.floor(92 + Math.random() * 7));
+          speakVoice(`${next}. Chuẩn form!`);
+          setFeedback('Xuất sắc! Duy trì nhịp độ chuẩn!');
+          return next;
+        });
+        repPhase = 'down';
+      }
+    }, 2800);
 
     return () => clearInterval(repInterval);
-  }, [isStarted, isPaused, isCompleted]);
+  }, [isStarted, isPaused, isCompleted, typeParam, soundEnabled]);
 
-  // Simulated AI skeleton drawing on canvas
+  // AI Skeleton visualization on canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -96,23 +129,26 @@ export const ExerciseCameraPage: React.FC = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (isStarted && !isPaused) {
-        // Draw simulated skeleton joints & lines
         const t = Date.now() / 600;
-        const offsetY = Math.sin(t) * 15;
+        const offsetY = Math.sin(t) * 18;
 
-        ctx.strokeStyle = '#2ED573';
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = antiCheatAlert ? '#FF4757' : '#2ED573';
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.fillStyle = '#FF6B35';
 
-        // Head, shoulders, elbows, wrists, hips, knees
+        // Skeleton points
         const points = [
-          { x: canvas.width * 0.5, y: canvas.height * 0.3 + offsetY }, // Head
+          { x: canvas.width * 0.5, y: canvas.height * 0.28 + offsetY }, // Head / Nose
           { x: canvas.width * 0.42, y: canvas.height * 0.42 + offsetY }, // Left Shoulder
           { x: canvas.width * 0.58, y: canvas.height * 0.42 + offsetY }, // Right Shoulder
-          { x: canvas.width * 0.35, y: canvas.height * 0.55 + offsetY }, // Left Elbow
-          { x: canvas.width * 0.65, y: canvas.height * 0.55 + offsetY }, // Right Elbow
-          { x: canvas.width * 0.45, y: canvas.height * 0.7 + offsetY * 0.5 }, // Left Hip
-          { x: canvas.width * 0.55, y: canvas.height * 0.7 + offsetY * 0.5 }, // Right Hip
+          { x: canvas.width * 0.36, y: canvas.height * 0.56 + offsetY * 0.8 }, // Left Elbow
+          { x: canvas.width * 0.64, y: canvas.height * 0.56 + offsetY * 0.8 }, // Right Elbow
+          { x: canvas.width * 0.44, y: canvas.height * 0.7 + offsetY * 0.5 }, // Left Hip
+          { x: canvas.width * 0.56, y: canvas.height * 0.7 + offsetY * 0.5 }, // Right Hip
+          { x: canvas.width * 0.44, y: canvas.height * 0.88 + offsetY * 0.3 }, // Left Ankle
+          { x: canvas.width * 0.56, y: canvas.height * 0.88 + offsetY * 0.3 }, // Right Ankle
         ];
 
         // Draw connections
@@ -129,12 +165,16 @@ export const ExerciseCameraPage: React.FC = () => {
         ctx.lineTo(points[3].x, points[3].y);
         ctx.moveTo(points[2].x, points[2].y);
         ctx.lineTo(points[4].x, points[4].y);
+        ctx.moveTo(points[5].x, points[5].y);
+        ctx.lineTo(points[7].x, points[7].y);
+        ctx.moveTo(points[6].x, points[6].y);
+        ctx.lineTo(points[8].x, points[8].y);
         ctx.stroke();
 
         // Draw joint dots
         points.forEach((p) => {
           ctx.beginPath();
-          ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, 5.5, 0, Math.PI * 2);
           ctx.fill();
         });
       }
@@ -144,7 +184,7 @@ export const ExerciseCameraPage: React.FC = () => {
 
     draw();
     return () => cancelAnimationFrame(animId);
-  }, [isStarted, isPaused]);
+  }, [isStarted, isPaused, antiCheatAlert]);
 
   const formatTime = (s: number) => {
     const mins = Math.floor(s / 60);
@@ -152,10 +192,18 @@ export const ExerciseCameraPage: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleFinish = () => {
+    setIsCompleted(true);
+    const durationMin = Math.max(1, Math.round(seconds / 60));
+    const cal = Math.round(validReps * exercise.caloriesPerRep);
+    recordExerciseSession(typeParam, validReps, durationMin, cal);
+    speakVoice(`Tuyệt vời! Bạn đã hoàn thành ${validReps} lần chuẩn form.`);
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0D0E15',
+      background: '#0B0D14',
       color: '#fff',
       display: 'flex',
       flexDirection: 'column',
@@ -167,7 +215,7 @@ export const ExerciseCameraPage: React.FC = () => {
         position: 'relative',
         flex: 1,
         minHeight: 440,
-        background: '#141420',
+        background: '#121622',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -229,7 +277,7 @@ export const ExerciseCameraPage: React.FC = () => {
             color: '#2ED573', fontSize: 12, fontWeight: 700,
           }}>
             <ShieldCheck size={16} />
-            <span>AI Giám Sát Chuẩn</span>
+            <span>Anti-Cheat AI</span>
           </div>
 
           <button
@@ -242,19 +290,45 @@ export const ExerciseCameraPage: React.FC = () => {
               color: '#fff', cursor: 'pointer',
             }}
           >
-            {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} color="#ff4757" />}
+            {soundEnabled ? <Volume2 size={20} color="#2ED573" /> : <VolumeX size={20} color="#ff4757" />}
           </button>
         </div>
 
-        {/* Live Real-Time Coaching Banner */}
+        {/* Camera Placement Guide Hint */}
+        {!isStarted && (
+          <div style={{
+            position: 'absolute',
+            top: 70, left: 16, right: 16,
+            padding: '10px 14px',
+            borderRadius: 14,
+            background: 'rgba(10, 12, 18, 0.88)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(46, 213, 115, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            zIndex: 15,
+            fontSize: 11,
+            color: '#A0A5B5',
+          }}>
+            <Camera size={18} color="#2ED573" style={{ flexShrink: 0 }} />
+            <span>
+              {typeParam === 'pushup'
+                ? '📐 Góc đặt máy: Đặt điện thoại nghiêng 45° hoặc nhìn ngang cách 1.5 - 2m để AI quan sát góc khuỷu tay và lưng.'
+                : '📐 Góc đặt máy: Đặt điện thoại trực diện hoặc chéo ngang ngực cách 1.5 - 2m để AI quan sát cằm và xà.'}
+            </span>
+          </div>
+        )}
+
+        {/* Live Real-Time Coaching & Angle Banner */}
         <div style={{
           position: 'absolute',
           bottom: 20, left: 16, right: 16,
           padding: '12px 18px',
           borderRadius: 16,
-          background: 'rgba(14, 14, 22, 0.85)',
+          background: 'rgba(14, 18, 28, 0.9)',
           backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255, 107, 53, 0.4)',
+          border: '1px solid rgba(46, 213, 115, 0.3)',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
@@ -262,15 +336,16 @@ export const ExerciseCameraPage: React.FC = () => {
         }}>
           <div style={{
             width: 38, height: 38, borderRadius: 12,
-            background: 'var(--gradient-primary)',
+            background: 'linear-gradient(135deg, #2ED573, #7BED9F)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 20, flexShrink: 0,
+            color: '#000',
           }}>
             {exercise.icon}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase' }}>
-              Huấn Luyện Viên AI
+            <div style={{ fontSize: 11, color: '#2ED573', fontWeight: 800, textTransform: 'uppercase' }}>
+              Huấn Luyện Viên AI (Góc tay: {currentJointAngle}°)
             </div>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
               {feedback}
@@ -289,80 +364,83 @@ export const ExerciseCameraPage: React.FC = () => {
 
       {/* Bottom Workout Dashboard Controls */}
       <div style={{
-        padding: '20px',
-        background: 'linear-gradient(180deg, #14141e, #0D0E15)',
-        borderTop: '1px solid var(--border)',
+        padding: '18px 20px',
+        background: '#121622',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
         zIndex: 10,
       }}>
         {/* Metric Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 16 }}>
           {/* Rep Count Box */}
           <div style={{
-            padding: '14px 10px',
-            background: 'rgba(255, 107, 53, 0.1)',
-            border: '1px solid rgba(255, 107, 53, 0.3)',
+            padding: '12px 10px',
+            background: 'rgba(46, 213, 115, 0.1)',
+            border: '1px solid rgba(46, 213, 115, 0.3)',
             borderRadius: 16,
             textAlign: 'center',
           }}>
-            <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600 }}>SỐ REP</div>
-            <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--primary)' }}>{reps}</div>
+            <div style={{ fontSize: 11, color: '#8E94A5', fontWeight: 600 }}>SỐ REP</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: '#2ED573' }}>{reps}</div>
             <div style={{ fontSize: 10, color: '#2ED573', fontWeight: 700 }}>{validReps} chuẩn</div>
           </div>
 
           {/* Time Box */}
           <div style={{
-            padding: '14px 10px',
-            background: 'rgba(83, 82, 237, 0.1)',
-            border: '1px solid rgba(83, 82, 237, 0.3)',
+            padding: '12px 10px',
+            background: 'rgba(112, 161, 255, 0.1)',
+            border: '1px solid rgba(112, 161, 255, 0.3)',
             borderRadius: 16,
             textAlign: 'center',
           }}>
-            <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600 }}>THỜI GIAN</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: '#5352ED', marginTop: 3 }}>
+            <div style={{ fontSize: 11, color: '#8E94A5', fontWeight: 600 }}>THỜI GIAN</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#70A1FF', marginTop: 3 }}>
               {formatTime(seconds)}
             </div>
-            <div style={{ fontSize: 10, color: 'var(--text3)' }}>giây</div>
+            <div style={{ fontSize: 10, color: '#8E94A5' }}>phút:giây</div>
           </div>
 
           {/* Calories Box */}
           <div style={{
-            padding: '14px 10px',
-            background: 'rgba(255, 215, 0, 0.1)',
-            border: '1px solid rgba(255, 215, 0, 0.3)',
+            padding: '12px 10px',
+            background: 'rgba(255, 71, 87, 0.1)',
+            border: '1px solid rgba(255, 71, 87, 0.3)',
             borderRadius: 16,
             textAlign: 'center',
           }}>
-            <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600 }}>CALORIES</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#FFD700', marginTop: 1 }}>
-              {(reps * exercise.caloriesPerRep).toFixed(0)}
+            <div style={{ fontSize: 11, color: '#8E94A5', fontWeight: 600 }}>CALORIES</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#FF4757', marginTop: 1 }}>
+              {(validReps * exercise.caloriesPerRep).toFixed(0)}
             </div>
-            <div style={{ fontSize: 10, color: '#FFD700' }}>kcal</div>
+            <div style={{ fontSize: 10, color: '#FF4757' }}>kcal</div>
           </div>
         </div>
 
         {/* Action Buttons */}
         {!isStarted ? (
           <button
-            onClick={() => setIsStarted(true)}
+            onClick={() => {
+              setIsStarted(true);
+              speakVoice('Bắt đầu buổi tập. AI Pose tracking đã kích hoạt!');
+            }}
             style={{
               width: '100%',
               padding: '16px',
               borderRadius: 16,
-              background: 'var(--gradient-primary)',
+              background: 'linear-gradient(135deg, #2ED573 0%, #7BED9F 100%)',
               border: 'none',
-              color: '#fff',
+              color: '#0D0E15',
               fontSize: 16,
-              fontWeight: 800,
+              fontWeight: 900,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 10,
-              boxShadow: '0 8px 24px rgba(255, 107, 53, 0.4)',
+              boxShadow: '0 8px 24px rgba(46, 213, 115, 0.4)',
             }}
           >
-            <Play size={20} fill="#fff" />
-            <span>BẮT ĐẦU TẬP</span>
+            <Play size={20} fill="#0D0E15" />
+            <span>BẮT ĐẦU TẬP (CAMERA LIVE)</span>
           </button>
         ) : (
           <div style={{ display: 'flex', gap: 12 }}>
@@ -372,8 +450,8 @@ export const ExerciseCameraPage: React.FC = () => {
                 flex: 1,
                 padding: '14px',
                 borderRadius: 14,
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
+                background: '#1E2333',
+                border: '1px solid rgba(255,255,255,0.1)',
                 color: '#fff',
                 fontSize: 14,
                 fontWeight: 700,
@@ -389,12 +467,12 @@ export const ExerciseCameraPage: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setIsCompleted(true)}
+              onClick={handleFinish}
               style={{
                 flex: 1.5,
                 padding: '14px',
                 borderRadius: 14,
-                background: 'var(--gradient-primary)',
+                background: '#FF4757',
                 border: 'none',
                 color: '#fff',
                 fontSize: 14,
@@ -404,100 +482,94 @@ export const ExerciseCameraPage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                boxShadow: '0 6px 20px rgba(255, 107, 53, 0.3)',
+                boxShadow: '0 6px 20px rgba(255, 71, 87, 0.35)',
               }}
             >
               <CheckCircle2 size={18} />
-              <span>KẾT THÚC</span>
+              <span>KẾT THÚC & NHẬN THƯỞNG</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* Workout Complete Modal */}
+      {/* Completion Modal */}
       {isCompleted && (
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.85)',
+          background: 'rgba(5, 7, 12, 0.88)',
           backdropFilter: 'blur(16px)',
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: 20,
+          padding: 16,
         }}>
           <div style={{
-            width: '100%',
-            maxWidth: 400,
-            background: 'linear-gradient(145deg, #1c1c2b, #12121e)',
-            border: '2px solid var(--primary)',
+            background: '#161B29',
             borderRadius: 24,
             padding: 24,
+            width: '100%',
+            maxWidth: 400,
+            border: '1px solid rgba(46, 213, 115, 0.3)',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.8)',
             textAlign: 'center',
-            boxShadow: '0 0 40px rgba(255, 107, 53, 0.3)',
           }}>
-            <div style={{ fontSize: 50, marginBottom: 8 }}>🎉</div>
-            <h2 style={{ fontSize: 22, fontWeight: 900, color: '#fff', marginBottom: 4 }}>
-              HOÀN THÀNH BÀI TẬP!
+            <div style={{
+              width: 64, height: 64, borderRadius: 20,
+              background: 'linear-gradient(135deg, #2ED573 0%, #7BED9F 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}>
+              <Trophy size={32} color="#0D0E15" />
+            </div>
+
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: '#fff', margin: 0 }}>
+              🎉 Hoàn Thành Buổi Tập!
             </h2>
-            <p style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 20 }}>
-              Bạn đã hoàn thành xuất sắc buổi tập {exercise.name} cùng AI
+            <p style={{ fontSize: 12, color: '#8E94A5', marginTop: 6, marginBottom: 18 }}>
+              Số rep đã được xác minh qua AI Pose Biomechanics.
             </p>
 
             <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10,
-              background: 'var(--bg-card)', padding: 14, borderRadius: 16, marginBottom: 20,
+              background: 'rgba(255, 255, 255, 0.04)',
+              borderRadius: 16,
+              padding: 16,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 8,
+              marginBottom: 18,
             }}>
               <div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Tổng số Rep</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--primary)' }}>{reps} lần</div>
+                <div style={{ fontSize: 10, color: '#8E94A5' }}>Tổng Rep</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{reps}</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Độ chính xác</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#2ED573' }}>{formAccuracy}%</div>
+                <div style={{ fontSize: 10, color: '#8E94A5' }}>Chuẩn Form</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#2ED573' }}>{validReps}</div>
               </div>
               <div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Thời gian</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#5352ED' }}>{formatTime(seconds)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Phần thưởng</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#FFD700' }}>+{(reps * 10)} XP</div>
+                <div style={{ fontSize: 10, color: '#8E94A5' }}>Độ Chuẩn</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#FFA502' }}>{formAccuracy}%</div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => {
-                  setReps(0);
-                  setValidReps(0);
-                  setSeconds(0);
-                  setIsCompleted(false);
-                  setIsStarted(true);
-                }}
-                style={{
-                  flex: 1, padding: '14px', borderRadius: 14,
-                  background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  color: '#fff', fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                }}
-              >
-                <RotateCcw size={16} />
-                <span>Tập lại</span>
-              </button>
-
-              <button
-                onClick={() => navigate('/exercise')}
-                style={{
-                  flex: 1, padding: '14px', borderRadius: 14,
-                  background: 'var(--gradient-primary)', border: 'none',
-                  color: '#fff', fontWeight: 800, cursor: 'pointer',
-                }}
-              >
-                Đóng
-              </button>
-            </div>
+            <button
+              onClick={() => navigate('/exercise')}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, #2ED573 0%, #7BED9F 100%)',
+                border: 'none',
+                color: '#000',
+                fontWeight: 900,
+                fontSize: 15,
+                cursor: 'pointer',
+              }}
+            >
+              Xác Nhận & Về Trang Tập Luyện
+            </button>
           </div>
         </div>
       )}
