@@ -181,9 +181,34 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User>(() => {
     try {
       const saved = localStorage.getItem(USER_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.level && parsed.level >= 15 && parsed.name !== 'TomOutfit') {
+          return parsed;
+        }
+      }
     } catch {}
-    return { ...DEFAULT_PRESET_ACCOUNTS['demo@fitnessbattle.vn'].user };
+    const defaultInit = {
+      ...defaultUser,
+      id: 'user-1',
+      name: 'Bạn',
+      avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You&backgroundColor=b6e3f4',
+      level: 15,
+      xp: 4250,
+      xpToNextLevel: 6000,
+      streak: 18,
+      totalPoints: 6850,
+      rank: 28,
+      ruby: 350,
+      stamina: 200,
+      maxStamina: 200,
+      coins: 5800,
+      isVIP: false,
+    };
+    try {
+      localStorage.setItem(USER_KEY, JSON.stringify(defaultInit));
+    } catch {}
+    return defaultInit;
   });
 
   // 2. Exercises

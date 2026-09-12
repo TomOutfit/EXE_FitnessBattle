@@ -306,38 +306,18 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({
   xpToNextLevel,
   xpToNext,
   level,
-  compact
 }) => {
   const actualXp = currentXp !== undefined ? currentXp : (xp || 0);
-  const actualNext = xpToNextLevel !== undefined ? xpToNextLevel : (xpToNext || 500);
+  const actualNext = xpToNextLevel !== undefined ? xpToNextLevel : (xpToNext || 6000);
   const pct = Math.min(100, Math.round((actualXp / Math.max(1, actualNext)) * 100));
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div
-            style={{
-              width: compact ? 24 : 28,
-              height: compact ? 24 : 28,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #FF6B35, #FF8E53)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF',
-              fontWeight: 800,
-              fontSize: compact ? 11 : 12,
-              boxShadow: '0 0 8px rgba(255, 107, 53, 0.4)'
-            }}
-          >
-            {level}
-          </div>
-          <span style={{ fontWeight: 600, color: '#FFFFFF', fontSize: compact ? 13 : 14 }}>
-            Cấp {level}
-          </span>
-        </div>
-        <span style={{ color: '#B0B0C3', fontSize: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#FF6B35' }}>
+          Level {level}
+        </span>
+        <span style={{ fontSize: 11, color: '#B0B0C3' }}>
           {actualXp.toLocaleString()} / {actualNext.toLocaleString()} XP
         </span>
       </div>

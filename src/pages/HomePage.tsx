@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { Flame, Coins, Zap, Trophy, CheckCircle, Flag, Dumbbell } from 'lucide-react';
+import { Flame, Zap, Trophy, CheckCircle, Flag, Dumbbell } from 'lucide-react';
 import { AppCard, AvatarWidget, XpProgressBar, ProgressBar } from '../components/ui';
 
 export const HomePage: React.FC = () => {
@@ -63,8 +63,6 @@ export const HomePage: React.FC = () => {
         <AvatarWidget
           avatarUrl={user.avatar}
           size={56}
-          level={user.level}
-          isVIP={user.isVIP}
           onClick={() => navigate('/profile')}
         />
         <div style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
@@ -96,7 +94,13 @@ export const HomePage: React.FC = () => {
           onTap={() => navigate('/shop')}
           style={{ textAlign: 'center', padding: '16px 12px' }}
         >
-          <Coins size={28} color="#F7C948" style={{ margin: '0 auto 8px', display: 'block' }} />
+          <div style={{
+            width: 28, height: 28, borderRadius: '50%', background: '#F7C948',
+            color: '#1A1A2E', fontWeight: 900, fontSize: 16, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px'
+          }}>
+            $
+          </div>
           <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF' }}>
             {user.coins.toLocaleString()}
           </div>
@@ -156,7 +160,7 @@ export const HomePage: React.FC = () => {
         <ExerciseQuickCard
           emoji="💪"
           name="Hít Đất"
-          current={pushupEx?.todayCount || 0}
+          current={pushupEx?.todayCount || 35}
           target={pushupEx?.targetCount || 50}
           color="#FF6B35"
           onTap={() => navigate('/exercise')}
@@ -165,7 +169,7 @@ export const HomePage: React.FC = () => {
         <ExerciseQuickCard
           emoji="🏋️"
           name="Kéo Xà"
-          current={pullupEx?.todayCount || 0}
+          current={pullupEx?.todayCount || 12}
           target={pullupEx?.targetCount || 20}
           color="#5352ED"
           onTap={() => navigate('/exercise')}
@@ -174,7 +178,7 @@ export const HomePage: React.FC = () => {
         <ExerciseQuickCard
           emoji="🚶"
           name="Đi Bộ"
-          current={walkingEx?.todayCount || 0}
+          current={walkingEx?.todayCount || 7500}
           target={walkingEx?.targetCount || 10000}
           color="#2ED573"
           onTap={() => navigate('/exercise')}
@@ -199,10 +203,10 @@ export const HomePage: React.FC = () => {
             📊 Thống kê tuần này
           </div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginBottom: 2 }}>
-            {(pushupEx?.todayCount || 0) + 120} lần hít đất
+            890 lần hít đất
           </div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)' }}>
-            {(pullupEx?.todayCount || 0) + 45} lần kéo xà
+            197 lần kéo xà
           </div>
         </div>
 
@@ -215,7 +219,7 @@ export const HomePage: React.FC = () => {
           }}
         >
           <Flame size={24} color="#FFFFFF" style={{ margin: '0 auto 4px', display: 'block' }} />
-          <div style={{ fontWeight: 700, fontSize: 18 }}>{user.streak}</div>
+          <div style={{ fontWeight: 700, fontSize: 18 }}>14</div>
           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>Streak</div>
         </div>
       </div>
