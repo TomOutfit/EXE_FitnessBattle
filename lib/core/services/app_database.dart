@@ -54,17 +54,17 @@ class AppDatabase {
     final vipSalt = 'fb_salt_vip_2026';
     final initialAccounts = [
       AppAccount(
-        id: 'user-1',
-        name: 'Chiến Binh Titan',
-        email: 'demo@fitnessbattle.vn',
-        passwordHash: hashPassword('demo123456', demoSalt),
+        id: 'user-tomoutfit',
+        name: 'TomOutfit',
+        email: 'tomoutfit@fitnessbattle.vn',
+        passwordHash: hashPassword('tomoutfit123', demoSalt),
         salt: demoSalt,
         createdAt: DateTime.now().subtract(const Duration(days: 30)),
         isVIP: false,
       ),
       AppAccount(
         id: 'user-vip',
-        name: 'Minh Đạt Champion',
+        name: 'VIP Pro Master',
         email: 'vip@fitnessbattle.vn',
         passwordHash: hashPassword('vip123456', vipSalt),
         salt: vipSalt,
@@ -73,10 +73,10 @@ class AppDatabase {
       ),
     ];
     await _saveAccountsList(initialAccounts);
-    await _prefs?.setString(_keyCurrentAccountId, 'user-1');
+    await _prefs?.setString(_keyCurrentAccountId, 'user-tomoutfit');
     await _prefs?.setBool(_keyIsLoggedIn, true);
 
-    await saveUser(initialUserSeed.copyWith(email: 'demo@fitnessbattle.vn'));
+    await saveUser(initialUserSeed);
 
     // 2. Seed Challenges
     await saveChallenges(initialChallengesSeed);
@@ -404,10 +404,11 @@ class AppDatabase {
         weeklyCalories: List<int>.from(rawStats['weeklyCalories'] ?? [320, 410, 220, 580, 0, 490, 380]),
       );
 
+      final isOldDefault = map['name'] == 'Bạn' || map['name'] == 'Chiến Binh Titan';
       final loadedUser = User(
-        id: map['id'] ?? initialUserSeed.id,
-        name: map['name'] ?? initialUserSeed.name,
-        avatar: map['avatar'] ?? initialUserSeed.avatar,
+        id: isOldDefault ? 'user-tomoutfit' : (map['id'] ?? initialUserSeed.id),
+        name: isOldDefault ? 'TomOutfit' : (map['name'] ?? initialUserSeed.name),
+        avatar: isOldDefault ? initialUserSeed.avatar : (map['avatar'] ?? initialUserSeed.avatar),
         level: map['level'] ?? initialUserSeed.level,
         xp: map['xp'] ?? initialUserSeed.xp,
         xpToNextLevel: map['xpToNextLevel'] ?? initialUserSeed.xpToNextLevel,

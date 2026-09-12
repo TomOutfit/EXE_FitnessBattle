@@ -8,9 +8,10 @@ import 'models_exercise.dart';
 
 /// Initial User Profile Seed
 final initialUserSeed = User(
-  id: 'user-1',
-  name: 'Bạn',
-  avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You&backgroundColor=b6e3f4',
+  id: 'user-tomoutfit',
+  name: 'TomOutfit',
+  email: 'tomoutfit@fitnessbattle.vn',
+  avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=TomOutfit&backgroundColor=b6e3f4',
   level: 15,
   xp: 4250,
   xpToNextLevel: 6000,

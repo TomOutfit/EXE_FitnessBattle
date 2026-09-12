@@ -111,17 +111,43 @@ const SHOP_ITEMS_KEY = 'fb_shop_items';
 const MEMBERSHIP_KEY = 'fb_membership';
 
 const DEFAULT_PRESET_ACCOUNTS: Record<string, StoredAccount> = {
+  'tomoutfit@fitnessbattle.vn': {
+    email: 'tomoutfit@fitnessbattle.vn',
+    password: 'tomoutfit123',
+    avatarSeed: 'TomOutfit',
+    avatarColor: 'b6e3f4',
+    avatarEmoji: '⚡',
+    user: {
+      ...defaultUser,
+      id: 'user-tomoutfit',
+      name: 'TomOutfit',
+      email: 'tomoutfit@fitnessbattle.vn',
+      avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=TomOutfit&backgroundColor=b6e3f4',
+      level: 15,
+      xp: 4250,
+      xpToNextLevel: 6000,
+      streak: 18,
+      totalPoints: 6850,
+      rank: 28,
+      ruby: 350,
+      stamina: 200,
+      maxStamina: 200,
+      coins: 5800,
+      isVIP: false,
+    }
+  },
   'demo@fitnessbattle.vn': {
     email: 'demo@fitnessbattle.vn',
     password: 'demo123456',
-    avatarSeed: 'Warrior',
+    avatarSeed: 'TomOutfit',
     avatarColor: 'b6e3f4',
     avatarEmoji: '🏃',
     user: {
       ...defaultUser,
-      id: 'demo_user_1',
-      name: 'Demo User',
+      id: 'user-tomoutfit',
+      name: 'TomOutfit',
       email: 'demo@fitnessbattle.vn',
+      avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=TomOutfit&backgroundColor=b6e3f4',
       level: 15,
       xp: 4250,
       xpToNextLevel: 6000,
@@ -183,16 +209,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem(USER_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.level && parsed.level >= 15 && parsed.name !== 'TomOutfit') {
+        if (parsed && parsed.name === 'TomOutfit' && parsed.level >= 15) {
           return parsed;
         }
       }
     } catch {}
-    const defaultInit = {
+    const defaultInit: User = {
       ...defaultUser,
-      id: 'user-1',
-      name: 'Bạn',
-      avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You&backgroundColor=b6e3f4',
+      id: 'user-tomoutfit',
+      name: 'TomOutfit',
+      email: 'tomoutfit@fitnessbattle.vn',
+      avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=TomOutfit&backgroundColor=b6e3f4',
       level: 15,
       xp: 4250,
       xpToNextLevel: 6000,
