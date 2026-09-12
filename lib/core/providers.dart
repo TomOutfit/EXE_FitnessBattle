@@ -239,6 +239,19 @@ class UserNotifier extends StateNotifier<User> {
     return true;
   }
 
+  void addXP(int amount) {
+    final newXp = state.xp + amount;
+    final levelUp = newXp >= state.xpToNextLevel;
+    final newLevel = levelUp ? state.level + 1 : state.level;
+    final remainingXp = levelUp ? newXp - state.xpToNextLevel : newXp;
+    state = state.copyWith(
+      xp: remainingXp,
+      level: newLevel,
+      xpToNextLevel: levelUp ? (state.xpToNextLevel * 1.5).floor() : state.xpToNextLevel,
+    );
+    AppDatabase.instance.saveUser(state);
+  }
+
   void addCoins(int amount) {
     state = state.copyWith(coins: state.coins + amount);
     AppDatabase.instance.saveUser(state);
@@ -426,7 +439,7 @@ class ChallengesNotifier extends StateNotifier<List<Challenge>> {
   void claimReward(String challengeId) {
     state = state.map((c) {
       if (c.id == challengeId) {
-        return c.copyWith(completed: true);
+        return c.copyWith(completed: true, claimed: true);
       }
       return c;
     }).toList();

@@ -426,6 +426,7 @@ class Challenge {
   final String icon;
   final String color;
   final bool completed;
+  final bool claimed;
 
   Challenge({
     required this.id,
@@ -440,6 +441,7 @@ class Challenge {
     required this.icon,
     required this.color,
     required this.completed,
+    this.claimed = false,
   });
 
   Challenge copyWith({
@@ -455,6 +457,7 @@ class Challenge {
     String? icon,
     String? color,
     bool? completed,
+    bool? claimed,
   }) {
     return Challenge(
       id: id ?? this.id,
@@ -469,6 +472,52 @@ class Challenge {
       icon: icon ?? this.icon,
       color: color ?? this.color,
       completed: completed ?? this.completed,
+      claimed: claimed ?? this.claimed,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'type': type.name,
+    'target': target,
+    'current': current,
+    'unit': unit,
+    'reward': {
+      'xp': reward.xp,
+      'coins': reward.coins,
+      'ruby': reward.ruby,
+    },
+    'expiresAt': expiresAt,
+    'icon': icon,
+    'color': color,
+    'completed': completed,
+    'claimed': claimed,
+  };
+
+  factory Challenge.fromJson(Map<String, dynamic> json) {
+    return Challenge(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      type: ChallengeType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => ChallengeType.daily,
+      ),
+      target: json['target'] as int,
+      current: json['current'] as int,
+      unit: json['unit'] as String,
+      reward: ChallengeReward(
+        xp: json['reward']?['xp'] as int? ?? 100,
+        coins: json['reward']?['coins'] as int? ?? 50,
+        ruby: json['reward']?['ruby'] as int?,
+      ),
+      expiresAt: json['expiresAt'] as String,
+      icon: json['icon'] as String,
+      color: json['color'] as String,
+      completed: json['completed'] as bool? ?? false,
+      claimed: json['claimed'] as bool? ?? false,
     );
   }
 }

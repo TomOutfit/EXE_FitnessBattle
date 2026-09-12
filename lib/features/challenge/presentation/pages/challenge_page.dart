@@ -244,23 +244,52 @@ class _ChallengeList extends ConsumerWidget {
                     ),
                     const Spacer(),
                     if (challenge.completed)
-                      ElevatedButton(
-                        onPressed: () {
-                          ref.read(challengesProvider.notifier).claimReward(challenge.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Đã nhận thưởng +${challenge.reward.xp} XP, +${challenge.reward.coins} Coins!'),
-                              backgroundColor: AppColors.success,
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('Nhận thưởng', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                      )
+                      if (challenge.claimed)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceLight,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle, size: 14, color: AppColors.success),
+                              SizedBox(width: 4),
+                              Text(
+                                'Đã nhận',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.success,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        ElevatedButton(
+                          onPressed: () {
+                            ref.read(challengesProvider.notifier).claimReward(challenge.id);
+                            ref.read(userProvider.notifier).addXP(challenge.reward.xp);
+                            ref.read(userProvider.notifier).addCoins(challenge.reward.coins);
+                            if (challenge.reward.ruby != null && challenge.reward.ruby! > 0) {
+                              ref.read(userProvider.notifier).addRuby(challenge.reward.ruby!);
+                            }
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Đã nhận thưởng +${challenge.reward.xp} XP, +${challenge.reward.coins} Coins!'),
+                                backgroundColor: AppColors.success,
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.success,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('Nhận thưởng', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                        )
                     else
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
