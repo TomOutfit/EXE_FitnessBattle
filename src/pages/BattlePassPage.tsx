@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Check, Brain, Crown, Shield, BarChart2, Heart, Swords } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Check, Brain, Crown, Shield, BarChart2, Heart, Swords, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui';
 import { useUser } from '../context/UserContext';
 
@@ -12,6 +13,7 @@ const PREMIUM_FEATURES = [
 ];
 
 export const BattlePassPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, upgradeToVIP, showToast } = useUser();
   const [showModal, setShowModal] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'month' | 'year'>('month');
@@ -26,13 +28,32 @@ export const BattlePassPage: React.FC = () => {
     <div style={{ padding: '0 0 100px' }}>
       {/* Header */}
       <div style={{ padding: '16px 20px 0', background: 'linear-gradient(180deg, #14141e, var(--bg))', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ marginBottom: 16 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text)', marginBottom: 4 }}>
-            ⭐ <span style={{ background: 'linear-gradient(135deg, #ff6b35, #ff4757)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Premium</span>
-          </h1>
-          <p style={{ fontSize: 12, color: 'var(--text3)' }}>
-            Nâng cao trải nghiệm tập luyện với AI Coach & báo cáo sức khỏe
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: '#1A1A2E',
+              border: '1px solid #25253D',
+              borderRadius: 10,
+              width: 36,
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#FFFFFF'
+            }}
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 900, color: 'var(--text)', margin: 0 }}>
+              ⭐ <span style={{ background: 'linear-gradient(135deg, #ff6b35, #ff4757)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Battle Pass & VIP</span>
+            </h1>
+            <p style={{ fontSize: 12, color: 'var(--text3)', margin: 0, marginTop: 2 }}>
+              Nâng cao trải nghiệm tập luyện với AI Coach & báo cáo sức khỏe
+            </p>
+          </div>
         </div>
 
         {/* Tabs */}
