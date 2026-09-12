@@ -7,6 +7,7 @@ import 'seed_data.dart';
 import 'exercise_providers.dart';
 import 'services/step_tracking_service.dart';
 import 'services/app_database.dart';
+import 'firebase_sync_service.dart';
 
 // Re-export exercise providers
 export 'exercise_providers.dart' show 
@@ -27,9 +28,34 @@ export 'exercise_providers.dart' show
 // =============================================================
 class UserNotifier extends StateNotifier<User> {
   Timer? _regenTimer;
+  StreamSubscription? _remoteSub;
 
   UserNotifier() : super(AppDatabase.instance.getUser().applyStaminaRegeneration()) {
     _startStaminaRegenTimer();
+    _startRemoteSync();
+  }
+
+  void _startRemoteSync() {
+    try {
+      _remoteSub = FirebaseSyncService.streamUser(state.id).listen((snap) {
+        if (snap.exists && snap.data() != null) {
+          final data = snap.data()!;
+          state = state.copyWith(
+            coins: data['coins'] is int ? data['coins'] : state.coins,
+            ruby: data['ruby'] is int ? data['ruby'] : state.ruby,
+            stamina: data['stamina'] is int ? data['stamina'] : state.stamina,
+            xp: data['xp'] is int ? data['xp'] : state.xp,
+            level: data['level'] is int ? data['level'] : state.level,
+            streak: data['streak'] is int ? data['streak'] : state.streak,
+            calories: data['calories'] is int ? data['calories'] : state.calories,
+            totalPoints: data['totalPoints'] is int ? data['totalPoints'] : state.totalPoints,
+          );
+          AppDatabase.instance.saveUser(state);
+        }
+      }, onError: (e) {
+        // Safe fallback if offline
+      });
+    } catch (_) {}
   }
 
   void _startStaminaRegenTimer() {
@@ -42,6 +68,7 @@ class UserNotifier extends StateNotifier<User> {
   @override
   void dispose() {
     _regenTimer?.cancel();
+    _remoteSub?.cancel();
     super.dispose();
   }
 
@@ -381,7 +408,39 @@ final battlesProvider = StateNotifierProvider<BattlesNotifier, List<Battle>>((re
 // CHALLENGES STATE (DAILY / WEEKLY QUESTS)
 // =============================================================
 class ChallengesNotifier extends StateNotifier<List<Challenge>> {
-  ChallengesNotifier() : super(AppDatabase.instance.getChallenges());
+  StreamSubscription? _remoteSub;
+
+  ChallengesNotifier() : super(AppDatabase.instance.getChallenges()) {
+    _startRemoteSync();
+  }
+
+  void _startRemoteSync() {
+    try {
+      final user = AppDatabase.instance.getUser();
+      _remoteSub = FirebaseSyncService.streamChallenges(user.id).listen((snap) {
+        if (snap.exists && snap.data() != null) {
+          final data = snap.data()!;
+          if (data['items'] is List) {
+            final list = (data['items'] as List)
+                .map((item) => Challenge.fromJson(Map<String, dynamic>.from(item as Map)))
+                .toList();
+            if (list.isNotEmpty) {
+              state = list;
+              AppDatabase.instance.saveChallenges(state);
+            }
+          }
+        }
+      }, onError: (e) {
+        // Safe fallback
+      });
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _remoteSub?.cancel();
+    super.dispose();
+  }
 
   void updateProgress(String challengeId, int increment) {
     state = state.map((c) {
@@ -437,13 +496,28 @@ class ChallengesNotifier extends StateNotifier<List<Challenge>> {
   }
 
   void claimReward(String challengeId) {
+    Challenge? targetCh;
     state = state.map((c) {
       if (c.id == challengeId) {
+        targetCh = c;
         return c.copyWith(completed: true, claimed: true);
       }
       return c;
     }).toList();
     AppDatabase.instance.saveChallenges(state);
+
+    // Đồng bộ lên Firebase Cloud Firestore
+    if (targetCh != null) {
+      final user = AppDatabase.instance.getUser();
+      FirebaseSyncService.claimChallenge(
+        userId: user.id,
+        challengeId: challengeId,
+        allChallenges: state,
+        rewardXp: targetCh!.reward.xp,
+        rewardCoins: targetCh!.reward.coins,
+        rewardRuby: targetCh!.reward.ruby ?? 0,
+      );
+    }
   }
 }
 

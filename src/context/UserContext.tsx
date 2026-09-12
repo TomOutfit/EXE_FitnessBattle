@@ -10,6 +10,13 @@ import {
   initialLeaderboardSeed as defaultLeaderboard
 } from '../data/seedData';
 import type { ToastData } from '../components/ui';
+import {
+  initUserInFirestore,
+  subscribeToUser,
+  initChallengesInFirestore,
+  subscribeToUserChallenges,
+  syncChallengeClaim
+} from '../services/firebase';
 
 export interface OnboardingData {
   name: string;
@@ -302,6 +309,44 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(MEMBERSHIP_KEY, JSON.stringify(membership));
   }, [membership]);
 
+  // Firebase Cloud Firestore Real-time Listeners
+  useEffect(() => {
+    if (!user.id) return;
+
+    // 1. Khởi tạo documents nếu chưa tồn tại
+    initUserInFirestore(user);
+    initChallengesInFirestore(user.id, challenges);
+
+    // 2. Lắng nghe thay đổi User từ Cloud
+    const unsubUser = subscribeToUser(user.id, (remoteData) => {
+      if (remoteData) {
+        setUser(prev => ({
+          ...prev,
+          coins: typeof remoteData.coins === 'number' ? remoteData.coins : prev.coins,
+          ruby: typeof remoteData.ruby === 'number' ? remoteData.ruby : prev.ruby,
+          stamina: typeof remoteData.stamina === 'number' ? remoteData.stamina : prev.stamina,
+          xp: typeof remoteData.xp === 'number' ? remoteData.xp : prev.xp,
+          level: typeof remoteData.level === 'number' ? remoteData.level : prev.level,
+          streak: typeof remoteData.streak === 'number' ? remoteData.streak : prev.streak,
+          calories: typeof remoteData.calories === 'number' ? remoteData.calories : prev.calories,
+          totalPoints: typeof remoteData.totalPoints === 'number' ? remoteData.totalPoints : prev.totalPoints,
+        }));
+      }
+    });
+
+    // 3. Lắng nghe thay đổi Thử thách từ Cloud
+    const unsubChallenges = subscribeToUserChallenges(user.id, (remoteChallenges) => {
+      if (Array.isArray(remoteChallenges) && remoteChallenges.length > 0) {
+        setChallenges(remoteChallenges);
+      }
+    });
+
+    return () => {
+      unsubUser();
+      unsubChallenges();
+    };
+  }, [user.id]);
+
   // Periodic Stamina Auto-Regeneration Ticker
   useEffect(() => {
     const interval = setInterval(() => {
@@ -445,15 +490,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!ch) return;
     if (!ch.completed || ch.claimed) return;
 
-    setChallenges(prev =>
-      prev.map(item => (item.id === challengeId ? { ...item, claimed: true } : item))
-    );
+    const updated = challenges.map(item => (item.id === challengeId ? { ...item, claimed: true } : item));
+    setChallenges(updated);
 
     addXP(ch.reward.xp);
     addCoins(ch.reward.coins);
     if (ch.reward.ruby && ch.reward.ruby > 0) {
       buyRuby(ch.reward.ruby);
     }
+
+    // Đồng bộ lên Firebase Cloud Firestore Real-time
+    syncChallengeClaim(user.id, updated, {
+      xp: ch.reward.xp,
+      coins: ch.reward.coins,
+      ruby: ch.reward.ruby || 0
+    });
+
     showToast(
       `Đã nhận +${ch.reward.xp} XP, +${ch.reward.coins} Coins${ch.reward.ruby ? `, +${ch.reward.ruby} Ruby` : ''}!`,
       'success'
