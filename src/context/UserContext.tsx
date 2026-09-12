@@ -192,8 +192,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [challenges, setChallenges] = useState<Challenge[]>(() => {
     try {
       const saved = localStorage.getItem(CHALLENGES_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length >= defaultChallenges.length) {
+          return parsed;
+        }
+      }
     } catch {}
+    localStorage.setItem(CHALLENGES_KEY, JSON.stringify(defaultChallenges));
     return [...defaultChallenges];
   });
 
@@ -445,7 +451,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     addXP(ch.reward.xp);
     addCoins(ch.reward.coins);
-    showToast(`Đã nhận +${ch.reward.xp} XP và +${ch.reward.coins} Coins!`, 'success');
+    if (ch.reward.ruby && ch.reward.ruby > 0) {
+      buyRuby(ch.reward.ruby);
+    }
+    showToast(
+      `Đã nhận +${ch.reward.xp} XP, +${ch.reward.coins} Coins${ch.reward.ruby ? `, +${ch.reward.ruby} Ruby` : ''}!`,
+      'success'
+    );
   };
 
   // Buy Shop Item

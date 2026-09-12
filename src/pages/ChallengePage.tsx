@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
-import { Flame, Zap, Swords, Trophy, CheckCircle, Award } from 'lucide-react';
+import { Flame, Zap, Swords, Trophy, CheckCircle, Award, Clock } from 'lucide-react';
 import { AppCard, ProgressBar } from '../components/ui';
 
 export const ChallengePage: React.FC = () => {
@@ -20,6 +20,22 @@ export const ChallengePage: React.FC = () => {
       default:
         return <Award size={28} color={color} />;
     }
+  };
+
+  const getTimeRemaining = (expiresAt: string) => {
+    const expiry = new Date(expiresAt);
+    if (isNaN(expiry.getTime())) {
+      return expiresAt;
+    }
+    const diffMs = expiry.getTime() - Date.now();
+    if (diffMs <= 0) return 'Hết hạn';
+    const diffDays = Math.floor(diffMs / 86400000);
+    const diffHours = Math.floor((diffMs % 86400000) / 3600000);
+    const diffMinutes = Math.floor((diffMs % 3600000) / 60000);
+
+    if (diffDays > 0) return `${diffDays} ngày`;
+    if (diffHours > 0) return `${diffHours} giờ`;
+    return `${diffMinutes} phút`;
   };
 
   const filtered = challenges.filter(c => c.type === activeTab);
@@ -117,10 +133,10 @@ export const ChallengePage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
                   <div
                     style={{
-                      width: 54,
-                      height: 54,
+                      width: 56,
+                      height: 56,
                       borderRadius: 16,
-                      background: `${color}20`,
+                      background: `${color}25`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -140,7 +156,7 @@ export const ChallengePage: React.FC = () => {
                         <CheckCircle size={18} color="#2ED573" />
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 2 }}>
+                    <div style={{ fontSize: 13, color: '#B0B0C3', marginTop: 3 }}>
                       {ch.description}
                     </div>
                   </div>
@@ -152,7 +168,7 @@ export const ChallengePage: React.FC = () => {
                     <span style={{ color: '#FFFFFF', fontWeight: 600 }}>
                       {ch.current}/{ch.target} {ch.unit}
                     </span>
-                    <span style={{ color: '#B0B0C3' }}>
+                    <span style={{ color: color, fontWeight: 700 }}>
                       {Math.min(100, Math.round(progress * 100))}%
                     </span>
                   </div>
@@ -164,29 +180,38 @@ export const ChallengePage: React.FC = () => {
                 </div>
 
                 {/* Reward & Claim button */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#FF6B35' }}>
                       +{ch.reward.xp} XP
                     </span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#F7C948' }}>
                       +{ch.reward.coins} Coins
                     </span>
+                    {ch.reward.ruby && ch.reward.ruby > 0 && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#FF4757' }}>
+                        💎 +{ch.reward.ruby} Ruby
+                      </span>
+                    )}
                   </div>
 
                   {isClaimed ? (
-                    <span
+                    <div
                       style={{
                         background: '#25253D',
-                        color: '#6B6B80',
+                        color: '#2ED573',
                         fontSize: 12,
-                        fontWeight: 600,
+                        fontWeight: 700,
                         padding: '6px 14px',
-                        borderRadius: 10
+                        borderRadius: 10,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
                       }}
                     >
-                      ✓ Đã nhận
-                    </span>
+                      <CheckCircle size={14} color="#2ED573" />
+                      Đã nhận
+                    </div>
                   ) : isCompleted ? (
                     <button
                       onClick={() => claimChallenge(ch.id)}
@@ -205,18 +230,22 @@ export const ChallengePage: React.FC = () => {
                       NHẬN THƯỞNG
                     </button>
                   ) : (
-                    <span
+                    <div
                       style={{
                         background: '#25253D',
                         color: '#B0B0C3',
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: 500,
-                        padding: '6px 12px',
-                        borderRadius: 10
+                        padding: '5px 10px',
+                        borderRadius: 10,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
                       }}
                     >
-                      Đang thực hiện
-                    </span>
+                      <Clock size={13} color="#6B6B80" />
+                      <span>{getTimeRemaining(ch.expiresAt)}</span>
+                    </div>
                   )}
                 </div>
               </AppCard>
