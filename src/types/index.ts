@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   name: string;
+  email?: string;
   avatar: string;
   level: number;
   xp: number;
@@ -26,6 +27,22 @@ export interface User {
   vipSlot?: number;
   equippedSkinFrame?: string;
   equippedTitle?: string;
+  lastStaminaRefillAt?: string;
+}
+
+export interface AppAccount {
+  email: string;
+  passwordHash: string;
+  salt: string;
+  user: User;
+  createdAt: string;
+  lastLoginAt: string;
+}
+
+export interface AuthResult {
+  success: boolean;
+  message: string;
+  user?: User;
 }
 
 export interface Badge {

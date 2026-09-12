@@ -2,6 +2,7 @@
 class User {
   final String id;
   final String name;
+  final String? email;
   final String avatar;
   final int level;
   final int xp;
@@ -27,10 +28,12 @@ class User {
   final String? vipSlot;
   final String? equippedSkinFrame;
   final String? equippedTitle;
+  final DateTime? lastStaminaRefillAt;
 
   User({
     required this.id,
     required this.name,
+    this.email,
     required this.avatar,
     required this.level,
     required this.xp,
@@ -56,11 +59,38 @@ class User {
     this.vipSlot,
     this.equippedSkinFrame,
     this.equippedTitle,
+    this.lastStaminaRefillAt,
   });
+
+  /// Automatically computes and restores stamina based on real elapsed time
+  /// Rate: 1 Stamina every 180 seconds (3 minutes) up to maxStamina
+  User applyStaminaRegeneration({DateTime? now}) {
+    final currentTime = now ?? DateTime.now();
+    if (stamina >= maxStamina) {
+      return copyWith(lastStaminaRefillAt: currentTime);
+    }
+
+    final lastRefill = lastStaminaRefillAt ?? currentTime;
+    final secondsElapsed = currentTime.difference(lastRefill).inSeconds;
+    const refillIntervalSeconds = 180; // 3 mins per 1 Stamina point
+
+    if (secondsElapsed >= refillIntervalSeconds) {
+      final pointsToAdd = secondsElapsed ~/ refillIntervalSeconds;
+      final newStamina = (stamina + pointsToAdd).clamp(0, maxStamina);
+      final remainingTime = lastRefill.add(Duration(seconds: pointsToAdd * refillIntervalSeconds));
+      return copyWith(
+        stamina: newStamina,
+        lastStaminaRefillAt: newStamina >= maxStamina ? currentTime : remainingTime,
+      );
+    }
+
+    return this;
+  }
 
   User copyWith({
     String? id,
     String? name,
+    String? email,
     String? avatar,
     int? level,
     int? xp,
@@ -86,10 +116,12 @@ class User {
     String? vipSlot,
     String? equippedSkinFrame,
     String? equippedTitle,
+    DateTime? lastStaminaRefillAt,
   }) {
     return User(
       id: id ?? this.id,
       name: name ?? this.name,
+      email: email ?? this.email,
       avatar: avatar ?? this.avatar,
       level: level ?? this.level,
       xp: xp ?? this.xp,
@@ -115,8 +147,64 @@ class User {
       vipSlot: vipSlot ?? this.vipSlot,
       equippedSkinFrame: equippedSkinFrame ?? this.equippedSkinFrame,
       equippedTitle: equippedTitle ?? this.equippedTitle,
+      lastStaminaRefillAt: lastStaminaRefillAt ?? this.lastStaminaRefillAt,
     );
   }
+}
+
+// Account Authentication Model
+class AppAccount {
+  final String id;
+  final String name;
+  final String email;
+  final String passwordHash; // Salted SHA-256
+  final String salt;
+  final DateTime createdAt;
+  final bool isVIP;
+
+  AppAccount({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.passwordHash,
+    required this.salt,
+    required this.createdAt,
+    this.isVIP = false,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'email': email,
+    'passwordHash': passwordHash,
+    'salt': salt,
+    'createdAt': createdAt.toIso8601String(),
+    'isVIP': isVIP,
+  };
+
+  factory AppAccount.fromJson(Map<String, dynamic> map) => AppAccount(
+    id: map['id'] ?? '',
+    name: map['name'] ?? '',
+    email: map['email'] ?? '',
+    passwordHash: map['passwordHash'] ?? '',
+    salt: map['salt'] ?? '',
+    createdAt: DateTime.tryParse(map['createdAt'] ?? '') ?? DateTime.now(),
+    isVIP: map['isVIP'] ?? false,
+  );
+}
+
+class AuthResult {
+  final bool success;
+  final String? errorMessage;
+  final User? user;
+  final AppAccount? account;
+
+  AuthResult({
+    required this.success,
+    this.errorMessage,
+    this.user,
+    this.account,
+  });
 }
 
 class Badge {
@@ -132,6 +220,50 @@ class Badge {
     required this.icon,
     required this.color,
     required this.earned,
+  });
+
+  Badge copyWith({
+    String? id,
+    String? name,
+    String? icon,
+    String? color,
+    bool? earned,
+  }) {
+    return Badge(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+      earned: earned ?? this.earned,
+    );
+  }
+}
+
+class BattleHistoryItem {
+  final String id;
+  final String battleType;
+  final String exerciseName;
+  final String opponentName;
+  final String opponentAvatar;
+  final int myScore;
+  final int opponentScore;
+  final String result; // 'win', 'lose', 'draw', 'cheat'
+  final int xpGained;
+  final int pointsGained;
+  final DateTime timestamp;
+
+  BattleHistoryItem({
+    required this.id,
+    required this.battleType,
+    required this.exerciseName,
+    required this.opponentName,
+    required this.opponentAvatar,
+    required this.myScore,
+    required this.opponentScore,
+    required this.result,
+    required this.xpGained,
+    required this.pointsGained,
+    required this.timestamp,
   });
 }
 

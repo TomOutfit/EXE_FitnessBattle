@@ -5,20 +5,22 @@ import type {
   BattlePassSeason, Voucher,
 } from '../types';
 
-// ─── USER ─────────────────────────────────────────────────────────────────────
+// ============================================================================
+// SEED DATA FOR FITNESS BATTLE DATABASE (Dynamic Persistent Engine)
+// ============================================================================
 
-export const currentUser: User = {
+export const initialUserSeed: User = {
   id: 'user-1',
   name: 'Bạn',
   avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You&backgroundColor=b6e3f4',
-  level: 12,
-  xp: 3450,
-  xpToNextLevel: 5000,
-  streak: 14,
-  totalPoints: 4820,
-  rank: 47,
-  winCount: 28,
-  loseCount: 11,
+  level: 15,
+  xp: 4250,
+  xpToNextLevel: 6000,
+  streak: 18,
+  totalPoints: 6850,
+  rank: 28,
+  winCount: 38,
+  loseCount: 12,
   heartRate: 0,
   calories: 0,
   joinDate: '2026-01-15',
@@ -27,32 +29,30 @@ export const currentUser: User = {
     { id: 'b2', name: 'Chuỗi 7 Ngày', icon: 'flame', color: '#f7c948', earned: true },
     { id: 'b3', name: 'Top 50 Server', icon: 'trophy', color: '#ffd700', earned: true },
     { id: 'b4', name: 'Vua Cardio', icon: 'heart-pulse', color: '#ff4757', earned: true },
-    { id: 'b5', name: 'Giao Lưu Tích Cực', icon: 'users', color: '#5352ed', earned: false },
+    { id: 'b5', name: 'Giao Lưu Tích Cực', icon: 'users', color: '#5352ed', earned: true },
     { id: 'b6', name: 'Quán Quân Mùa', icon: 'crown', color: '#ff6b81', earned: false },
   ],
   stats: {
-    totalWorkouts: 89,
-    totalMinutes: 2840,
-    avgHeartRate: 135,
-    totalCalories: 42500,
-    weeklyMinutes: [45, 60, 30, 90, 0, 75, 55],
-    weeklyCalories: [320, 410, 220, 580, 0, 490, 380],
+    totalWorkouts: 124,
+    totalMinutes: 3420,
+    avgHeartRate: 138,
+    totalCalories: 58600,
+    weeklyMinutes: [45, 60, 30, 90, 45, 75, 55],
+    weeklyCalories: [320, 410, 220, 580, 350, 490, 380],
   },
-  ruby: 85,
-  stamina: 100,
-  maxStamina: 100,
-  coins: 1250,
+  ruby: 350,
+  stamina: 200,
+  maxStamina: 200,
+  coins: 5800,
   coinsExpiringDays: 14,
   hasBattlePass: true,
-  battlePassTier: 14,
+  battlePassTier: 18,
   isVIP: false,
   equippedSkinFrame: '🔮 Neon Frame',
   equippedTitle: '⚡ Titan Warrior',
 };
 
-// ─── EXERCISES ────────────────────────────────────────────────────────────────
-
-export const exercises: ExerciseInfo[] = [
+export const initialExercisesSeed: ExerciseInfo[] = [
   {
     type: 'pushup',
     name: 'Hít Đất',
@@ -88,32 +88,28 @@ export const exercises: ExerciseInfo[] = [
   },
 ];
 
-// ─── EXERCISE LEADERBOARDS ───────────────────────────────────────────────────
-
-export const pushupLeaderboard: ExerciseLeaderboardEntry[] = [
+export const initialPushupLeaderboardSeed: ExerciseLeaderboardEntry[] = [
   { rank: 1, userId: 'u1', userName: 'Minh Đạt', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=MinhDat', bestScore: 105, totalSessions: 245, avgAccuracy: 92.5, type: 'pushup' },
   { rank: 2, userId: 'u2', userName: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=ThuHa', bestScore: 98, totalSessions: 198, avgAccuracy: 89.2, type: 'pushup' },
   { rank: 3, userId: 'u3', userName: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=HoangNam', bestScore: 87, totalSessions: 156, avgAccuracy: 85.7, type: 'pushup' },
   { rank: 47, userId: 'user-1', userName: 'Bạn', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You', bestScore: 52, totalSessions: 89, avgAccuracy: 78.3, type: 'pushup', isCurrentUser: true },
 ];
 
-export const pullupLeaderboard: ExerciseLeaderboardEntry[] = [
+export const initialPullupLeaderboardSeed: ExerciseLeaderboardEntry[] = [
   { rank: 1, userId: 'u1', userName: 'Minh Đạt', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=MinhDat', bestScore: 42, totalSessions: 312, avgAccuracy: 95.2, type: 'pullup' },
   { rank: 2, userId: 'u4', userName: 'Lan Phương', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=LanPhuong', bestScore: 38, totalSessions: 178, avgAccuracy: 91.8, type: 'pullup' },
   { rank: 3, userId: 'u5', userName: 'Khoa Phạm', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=KhoaPham', bestScore: 35, totalSessions: 134, avgAccuracy: 88.4, type: 'pullup' },
   { rank: 52, userId: 'user-1', userName: 'Bạn', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You', bestScore: 18, totalSessions: 67, avgAccuracy: 76.5, type: 'pullup', isCurrentUser: true },
 ];
 
-export const walkingLeaderboard: ExerciseLeaderboardEntry[] = [
+export const initialWalkingLeaderboardSeed: ExerciseLeaderboardEntry[] = [
   { rank: 1, userId: 'u3', userName: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=HoangNam', bestScore: 25000, totalSessions: 89, avgAccuracy: 100.0, type: 'walking' },
   { rank: 2, userId: 'u2', userName: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=ThuHa', bestScore: 23000, totalSessions: 76, avgAccuracy: 100.0, type: 'walking' },
   { rank: 3, userId: 'u1', userName: 'Minh Đạt', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=MinhDat', bestScore: 21500, totalSessions: 92, avgAccuracy: 100.0, type: 'walking' },
   { rank: 38, userId: 'user-1', userName: 'Bạn', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You', bestScore: 8500, totalSessions: 45, avgAccuracy: 100.0, type: 'walking', isCurrentUser: true },
 ];
 
-// ─── LEADERBOARD ─────────────────────────────────────────────────────────────
-
-export const leaderboard: LeaderboardEntry[] = [
+export const initialLeaderboardSeed: LeaderboardEntry[] = [
   { rank: 1, userId: 'u1', userName: 'Minh Đạt', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=MinhDat&backgroundColor=ffdfbf', level: 28, points: 15200, isVIP: true },
   { rank: 2, userId: 'u2', userName: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=ThuHa&backgroundColor=c0aede', level: 25, points: 13800, isVIP: true },
   { rank: 3, userId: 'u3', userName: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=HoangNam&backgroundColor=b6e3f4', level: 24, points: 12100 },
@@ -127,9 +123,7 @@ export const leaderboard: LeaderboardEntry[] = [
   { rank: 47, userId: 'user-1', userName: 'Bạn', avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=You&backgroundColor=b6e3f4', level: 12, points: 4820, isCurrentUser: true },
 ];
 
-// ─── BATTLES ─────────────────────────────────────────────────────────────────
-
-export const battles: Battle[] = [
+export const initialBattlesSeed: Battle[] = [
   {
     id: 'b1', title: 'Cuộc Chiến Rank Sắt', type: 'ranked', status: 'waiting',
     players: [
@@ -149,9 +143,7 @@ export const battles: Battle[] = [
   },
 ];
 
-// ─── CHALLENGES ──────────────────────────────────────────────────────────────
-
-export const challenges: Challenge[] = [
+export const initialChallengesSeed: Challenge[] = [
   {
     id: 'c1', title: 'Thử thách 14 ngày liên tiếp',
     description: 'Tập luyện mỗi ngày trong 14 ngày liên tiếp',
@@ -178,9 +170,7 @@ export const challenges: Challenge[] = [
   },
 ];
 
-// ─── VOUCHERS (SHOP) ─────────────────────────────────────────────────────────
-
-export const shopVouchers: VoucherItem[] = [
+export const initialShopVouchersSeed: VoucherItem[] = [
   {
     id: 'v1',
     title: 'Thẻ Tập Gym 7 Ngày Free',
@@ -231,9 +221,7 @@ export const shopVouchers: VoucherItem[] = [
   },
 ];
 
-// ─── MEMBERSHIP PLANS ────────────────────────────────────────────────────────
-
-export const membershipPlans: MembershipPlan[] = [
+export const initialMembershipPlansSeed: MembershipPlan[] = [
   {
     id: 'free',
     name: 'Gói Miễn Phí',
@@ -281,18 +269,14 @@ export const membershipPlans: MembershipPlan[] = [
   },
 ];
 
-// ─── FRIENDS ─────────────────────────────────────────────────────────────────
-
-export const friends: Friend[] = [
+export const initialFriendsSeed: Friend[] = [
   { id: 'u2', name: 'Thu Hà', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=ThuHa&backgroundColor=c0aede', level: 25, streak: 21, isOnline: true, lastActive: 'now' },
   { id: 'u3', name: 'Hoàng Nam', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=HoangNam&backgroundColor=b6e3f4', level: 24, streak: 8, isOnline: true, lastActive: 'now' },
   { id: 'u4', name: 'Lan Phương', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=LanPhuong&backgroundColor=ffd5dc', level: 22, streak: 15, isOnline: false, lastActive: '2 giờ trước' },
   { id: 'u5', name: 'Khoa Phạm', avatar: 'https://api.dicebear.com/9.x/avataaars/svg?seed=KhoaPham&backgroundColor=d1f4e0', level: 20, streak: 3, isOnline: false, lastActive: '1 ngày trước' },
 ];
 
-// ─── ACTIVITIES ──────────────────────────────────────────────────────────────
-
-export const recentActivities: ActivitySession[] = [
+export const initialActivitiesSeed: ActivitySession[] = [
   { id: 'a1', date: 'Hôm nay, 17:30', duration: 45, calories: 380, heartRate: 142, type: 'Gym', xp: 220 },
   { id: 'a2', date: 'Hôm qua, 18:00', duration: 30, calories: 280, heartRate: 155, type: 'HIIT', xp: 180 },
   { id: 'a3', date: '19/7, 07:00', duration: 60, calories: 420, heartRate: 138, type: 'Chạy bộ', xp: 300 },
@@ -300,7 +284,7 @@ export const recentActivities: ActivitySession[] = [
   { id: 'a5', date: '17/7, 07:15', duration: 55, calories: 490, heartRate: 135, type: 'Đạp xe', xp: 270 },
 ];
 
-export const exerciseTypes = [
+export const initialExerciseTypesSeed = [
   { id: 'gym', name: 'Gym', duration: '45-60 phút', color: '#ff6b35' },
   { id: 'run', name: 'Chạy bộ', duration: '20-40 phút', color: '#5352ed' },
   { id: 'hiit', name: 'HIIT', duration: '20-30 phút', color: '#f7c948' },
@@ -308,8 +292,6 @@ export const exerciseTypes = [
   { id: 'yoga', name: 'Yoga', duration: '30-45 phút', color: '#a55eea' },
   { id: 'swim', name: 'Bơi lội', duration: '30-45 phút', color: '#1e90ff' },
 ];
-
-// ─── BATTLE PASS ─────────────────────────────────────────────────────────────
 
 function makeLevels(): import('../types').BattlePassLevel[] {
   const levels: import('../types').BattlePassLevel[] = [];
@@ -367,7 +349,7 @@ function makeLevels(): import('../types').BattlePassLevel[] {
   return levels;
 }
 
-export const battlePassSeason: BattlePassSeason = {
+export const initialBattlePassSeasonSeed: BattlePassSeason = {
   id: 's1',
   name: 'Mùa Giải #7 — Cyber Sprint',
   startDate: '2026-07-01',
@@ -383,18 +365,14 @@ export const battlePassSeason: BattlePassSeason = {
   totalPrizes: 60,
 };
 
-// ─── VOUCHERS ────────────────────────────────────────────────────────────────
-
-export const vouchers: Voucher[] = [
+export const initialVouchersSeed: Voucher[] = [
   { id: 'v1', partner: 'Phúc Long', partnerLogo: '☕', value: '20K', description: 'Giảm 20K cho đơn từ 60K', expiresAt: new Date(Date.now() + 7 * 86400000).toISOString(), claimed: false },
   { id: 'v2', partner: 'Shopee', partnerLogo: '🛒', value: '30K', description: 'Miễn phí vận chuyển ShopeeFood', expiresAt: new Date(Date.now() + 10 * 86400000).toISOString(), claimed: true, claimedAt: '20/7/2026' },
   { id: 'v3', partner: 'Tiki', partnerLogo: '🎬', value: '50K', description: 'Giảm 50K cho đơn sách/thể thao', expiresAt: new Date(Date.now() + 5 * 86400000).toISOString(), claimed: false },
   { id: 'v4', partner: 'Grab', partnerLogo: '🚗', value: '40K', description: 'Voucher GrabBike 40K', expiresAt: new Date(Date.now() + 14 * 86400000).toISOString(), claimed: false },
 ];
 
-// ─── PREMIUM ARENA ───────────────────────────────────────────────────────────
-
-export const premiumArenas: PremiumArena[] = [
+export const initialPremiumArenasSeed: PremiumArena[] = [
   {
     id: 'pa1', name: 'Đấu Trường Titan', description: 'Giải đấu 1v1 cao cấp nhất mùa giải',
     entryRuby: 20, prizePool: 1000, prizePoolBreakdown: [
@@ -422,9 +400,7 @@ export const premiumArenas: PremiumArena[] = [
   },
 ];
 
-// ─── SHOP / SKINS ────────────────────────────────────────────────────────────
-
-export const skinItems: SkinItem[] = [
+export const initialSkinItemsSeed: SkinItem[] = [
   { id: 'frame_neon', name: 'Khung Neon', type: 'avatar_frame', preview: '🔮', price: 50, rarity: 'rare', owned: false, limited: true, season: 'Mùa #7' },
   { id: 'frame_dragon', name: 'Khung Rồng Lửa', type: 'avatar_frame', preview: '🐉', price: 150, rarity: 'legendary', owned: false, limited: true, season: 'Mùa #7' },
   { id: 'title_titan', name: 'Titan Runner', type: 'title', preview: '⚡', price: 30, rarity: 'epic', owned: false },

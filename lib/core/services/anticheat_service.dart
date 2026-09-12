@@ -22,40 +22,33 @@ class AntiCheatResult {
 
 /// Types of anti-cheat violations
 enum AntiCheatViolation {
-  tooFast,           // Rep completed too fast
-  impossibleAngle,   // Body position impossible
-  missingLandmarks,  // Not enough body visible
-  bodyOutOfFrame,    // Body partially out of frame
-  suspiciousPattern,  // Suspicious pattern detected
-  lowConfidence,     // Low detection confidence
+  tooFast,           // Rep completed too fast (< 0.7s)
+  headBobbing,       // Nodding/dropping head instead of bending elbows
+  saggingHips,       // Dropping belly/hips to touch ground early
+  pikingHips,        // Raising butt/hips high in the air
+  halfRep,           // Incomplete depth (< 90 deg pushup / chin not over bar)
+  kippingSwinging,   // Kicking legs or swinging body on pull-up
+  incompleteLockout, // Not locking out arms at top/bottom
+  missingLandmarks,  // Not enough body visible in camera frame
+  lowConfidence,     // Low detection confidence / poor lighting
 }
 
-/// Anti-cheat service for validating exercise form
+/// Anti-cheat service for validating exercise form & detecting cheats
 class AntiCheatService {
   // Configuration
-  final double minRepDuration = 0.5; // Minimum seconds for a rep
-  final double maxRepSpeed = 5.0;    // Max reps per second
-  final double minConfidence = 0.5;  // Minimum landmark confidence
+  final double minPushupDuration = 0.70;
+  final double minPullupDuration = 0.90;
+  final double minConfidence = 0.50;
   
   // Tracking
   DateTime? _lastRepTime;
-  List<double> _recentRepDurations = [];
+  final List<double> _recentRepDurations = [];
   int _consecutiveViolations = 0;
-  
-  // Thresholds for push-up
-  static const double pushupMinElbowAngle = 45;
-  static const double pushupMaxElbowAngle = 200;
-  static const double pushupMinShoulderAngle = 0;
-  static const double pushupMaxShoulderAngle = 90;
-  
-  // Thresholds for pull-up
-  static const double pullupMinElbowAngle = 30;
-  static const double pullupMaxElbowAngle = 200;
   
   /// Reset anti-cheat state
   void reset() {
     _lastRepTime = null;
-    _recentRepDurations = [];
+    _recentRepDurations.clear();
     _consecutiveViolations = 0;
   }
   
@@ -66,17 +59,18 @@ class AntiCheatService {
   }) {
     final issues = <AntiCheatViolation>[];
     String? warning;
+    final now = DateTime.now();
     
     // Check rep duration
-    if (_lastRepTime != null && analyzer.repState == RepState.waiting) {
-      final duration = DateTime.now().difference(_lastRepTime!).inMilliseconds / 1000;
+    if (_lastRepTime != null) {
+      final duration = now.difference(_lastRepTime!).inMilliseconds / 1000.0;
+      final minDuration = exerciseType == RealExerciseType.pushup ? minPushupDuration : minPullupDuration;
       
-      if (duration < minRepDuration) {
+      if (duration < minDuration) {
         issues.add(AntiCheatViolation.tooFast);
-        warning = 'Thực hiện quá nhanh - không tính lần này';
+        warning = 'Thực hiện quá nhanh (${duration.toStringAsFixed(2)}s) - Không tính rep này!';
         _consecutiveViolations++;
-      } else if (duration > 10) {
-        // Too slow is okay, just reset
+      } else {
         _consecutiveViolations = 0;
       }
       
@@ -84,31 +78,16 @@ class AntiCheatService {
       if (_recentRepDurations.length > 5) {
         _recentRepDurations.removeAt(0);
       }
-      
-      _lastRepTime = DateTime.now();
     }
     
-    // Check for suspicious patterns (all reps too fast)
-    if (_recentRepDurations.length >= 3) {
-      final avgDuration = _recentRepDurations.reduce((a, b) => a + b) / _recentRepDurations.length;
-      if (avgDuration < minRepDuration * 1.5) {
-        issues.add(AntiCheatViolation.suspiciousPattern);
-        warning = 'Phát hiện nghi vấn - vui lòng kiểm tra';
-      }
-    }
-    
-    // Too many consecutive violations
-    if (_consecutiveViolations >= 3) {
-      issues.add(AntiCheatViolation.suspiciousPattern);
-      warning = 'Nhiều lần sai liên tiếp - yêu cầu kiểm tra';
-    }
+    _lastRepTime = now;
     
     return issues.isEmpty 
         ? AntiCheatResult.valid()
         : AntiCheatResult.invalid(issues, warning);
   }
   
-  /// Validate pose landmarks
+  /// Validate pose landmarks in real time
   AntiCheatResult validatePose(Pose pose, RealExerciseType exerciseType) {
     final issues = <AntiCheatViolation>[];
     final landmarks = pose.landmarks;
@@ -141,91 +120,35 @@ class AntiCheatService {
       }
     }
     
-    // Check for impossible angles based on exercise type
-    if (exerciseType == RealExerciseType.pushup) {
-      final pushupResult = _validatePushupAngles(landmarks);
-      if (pushupResult != null) {
-        issues.add(pushupResult);
-      }
-    } else {
-      final pullupResult = _validatePullupAngles(landmarks);
-      if (pullupResult != null) {
-        issues.add(pullupResult);
-      }
-    }
-    
     return issues.isEmpty 
         ? AntiCheatResult.valid()
-        : AntiCheatResult.invalid(issues, 'Kiểm tra vị trí cơ thể');
-  }
-  
-  /// Validate push-up specific angles
-  AntiCheatViolation? _validatePushupAngles(Map<PoseLandmarkType, PoseLandmark> landmarks) {
-    final leftElbow = landmarks[PoseLandmarkType.leftElbow];
-    final rightElbow = landmarks[PoseLandmarkType.rightElbow];
-    final leftShoulder = landmarks[PoseLandmarkType.leftShoulder];
-    
-    if (leftElbow == null || rightElbow == null || leftShoulder == null) return null;
-    
-    // Check elbow angles
-    final leftAngle = PoseUtils.calculateAngle(
-      landmarks[PoseLandmarkType.leftShoulder]!,
-      leftElbow,
-      landmarks[PoseLandmarkType.leftWrist]!,
-    );
-    
-    if (leftAngle < pushupMinElbowAngle || leftAngle > pushupMaxElbowAngle) {
-      return AntiCheatViolation.impossibleAngle;
-    }
-    
-    // Check if elbows are bent backwards (impossible)
-    if (leftAngle > 180) {
-      return AntiCheatViolation.impossibleAngle;
-    }
-    
-    return null;
-  }
-  
-  /// Validate pull-up specific angles
-  AntiCheatViolation? _validatePullupAngles(Map<PoseLandmarkType, PoseLandmark> landmarks) {
-    final leftElbow = landmarks[PoseLandmarkType.leftElbow];
-    
-    if (leftElbow == null) return null;
-    
-    final leftAngle = PoseUtils.calculateAngle(
-      landmarks[PoseLandmarkType.leftShoulder]!,
-      leftElbow,
-      landmarks[PoseLandmarkType.leftWrist]!,
-    );
-    
-    if (leftAngle < pullupMinElbowAngle || leftAngle > pullupMaxElbowAngle) {
-      return AntiCheatViolation.impossibleAngle;
-    }
-    
-    return null;
+        : AntiCheatResult.invalid(issues, getViolationMessage(issues.first));
   }
   
   /// Get current violation count
   int get consecutiveViolations => _consecutiveViolations;
-  
-  /// Check if user should be flagged
-  bool get shouldFlag => _consecutiveViolations >= 5;
   
   /// Get violation message
   String getViolationMessage(AntiCheatViolation violation) {
     switch (violation) {
       case AntiCheatViolation.tooFast:
         return 'Thực hiện quá nhanh';
-      case AntiCheatViolation.impossibleAngle:
-        return 'Vị trí bất khả thi';
+      case AntiCheatViolation.headBobbing:
+        return 'Gật đầu ăn gian (hạ ngực, không cúi đầu)';
+      case AntiCheatViolation.saggingHips:
+        return 'Võng lưng (siết cơ bụng giữ thẳng)';
+      case AntiCheatViolation.pikingHips:
+        return 'Nhô mông quá cao';
+      case AntiCheatViolation.halfRep:
+        return 'Nửa rep (xuống chưa đủ sâu)';
+      case AntiCheatViolation.kippingSwinging:
+        return 'Lăng người / Giật chân (kéo tĩnh bằng cơ xô)';
+      case AntiCheatViolation.incompleteLockout:
+        return 'Chưa khóa thẳng tay';
       case AntiCheatViolation.missingLandmarks:
-        return 'Thiếu điểm tham chiếu';
-      case AntiCheatViolation.bodyOutOfFrame:
-        return 'Cơ thể nằm ngoài khung hình';
-      case AntiCheatViolation.suspiciousPattern:
-        return 'Phát hiện nghi vấn';
+        return 'Chưa trọn vẹn trong khung hình';
       case AntiCheatViolation.lowConfidence:
-        return 'Độ chính xác thấp';
+        return 'Độ sáng yếu hoặc góc camera bị che';
     }
   }
 }
