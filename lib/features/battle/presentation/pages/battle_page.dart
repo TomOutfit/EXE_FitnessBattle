@@ -131,7 +131,7 @@ class _BattlesTab extends ConsumerWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () => _showBattleStartDialog(context),
+              onTap: () => _showBattleStartDialog(context, ref),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
                 child: Row(
@@ -203,7 +203,7 @@ class _BattlesTab extends ConsumerWidget {
                 text: 'Xếp hạng',
                 icon: Icons.military_tech,
                 gradient: AppColors.primaryGradient,
-                onPressed: () => _showBattleStartDialog(context),
+                onPressed: () => _showBattleStartDialog(context, ref),
               ),
             ),
             const SizedBox(width: 12),
@@ -216,7 +216,7 @@ class _BattlesTab extends ConsumerWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                onPressed: () => _showBattleStartDialog(context),
+                onPressed: () => _showBattleStartDialog(context, ref),
               ),
             ),
           ],
@@ -349,9 +349,47 @@ class _BattlesTab extends ConsumerWidget {
     );
   }
 
-  void _showBattleStartDialog(BuildContext context) {
+   void _showBattleStartDialog(BuildContext context, WidgetRef ref) {
+    final user = ref.read(userProvider);
+    if (user.stamina < 10) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.bolt, color: AppColors.warning, size: 28),
+              SizedBox(width: 8),
+              Text('THIẾU THỂ LỰC', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            'Cần tối thiểu 10 Thể Lực (⚡) để vào trận đấu. Hiện tại bạn còn ${user.stamina} ⚡.\nHãy nghỉ ngơi hoặc nạp thêm tại Cửa Hàng!',
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('ĐÓNG', style: TextStyle(color: AppColors.textMuted)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.push('/shop');
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('ĐẾN SHOP'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _BattleStartSheet(
         onStartBattle: (exerciseType) {
@@ -390,6 +428,172 @@ class _BattlesTab extends ConsumerWidget {
       case BattleType.brand_spot:
         return 'ĐỐI TÁC';
     }
+  }
+}
+
+class _HistoryTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyList = ref.watch(battleHistoryProvider);
+
+    if (historyList.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          AppCard(
+            child: Column(
+              children: [
+                Icon(Icons.history, size: 48, color: AppColors.textMuted),
+                SizedBox(height: 12),
+                Text(
+                  'Chưa có trận đấu nào',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Tham gia trận đấu để xem lịch sử tại đây',
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: historyList.length,
+      itemBuilder: (context, index) {
+        final item = historyList[index];
+        final isWin = item.result == 'win' || item.result == 'opp_cheat';
+        final isDraw = item.result == 'draw';
+        final resultColor = isWin ? const Color(0xFF2ED573) : isDraw ? const Color(0xFFFFA502) : const Color(0xFFFF4757);
+        final resultText = isWin ? 'THẮNG' : isDraw ? 'HÒA' : 'THUA';
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '⚔️ ${item.battleType}',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      item.exerciseName,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: resultColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: resultColor.withValues(alpha: 0.4)),
+                      ),
+                      child: Text(
+                        resultText,
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: resultColor),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundImage: NetworkImage(item.opponentAvatar),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Đối thủ', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                                Text(
+                                  item.opponentName,
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${item.myScore}',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: resultColor),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6),
+                            child: Text('-', style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold)),
+                          ),
+                          Text(
+                            '${item.opponentScore}',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.bolt, color: AppColors.secondary, size: 14),
+                        const SizedBox(width: 2),
+                        Text('+${item.xpGained} XP', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.military_tech, color: Color(0xFF2ED573), size: 14),
+                        const SizedBox(width: 2),
+                        Text('+${item.pointsGained} Rank', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    Text(
+                      '${item.timestamp.hour.toString().padLeft(2, '0')}:${item.timestamp.minute.toString().padLeft(2, '0')} • ${item.timestamp.day}/${item.timestamp.month}',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -567,39 +771,6 @@ class _PremiumArenasTab extends StatelessWidget {
   }
 }
 
-class _HistoryTab extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        AppCard(
-          child: Column(
-            children: [
-              const Icon(Icons.history, size: 48, color: AppColors.textMuted),
-              const SizedBox(height: 12),
-              const Text(
-                'Chưa có trận đấu nào',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Tham gia trận đấu để xem lịch sử tại đây',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// Bottom sheet for selecting exercise type before starting battle
 class _BattleStartSheet extends StatelessWidget {
   final Function(ExerciseTypeEnum) onStartBattle;
@@ -609,134 +780,142 @@ class _BattleStartSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
       decoration: const BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.textMuted,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                const Text(
-                  '⚔️ CHỌN BÀI TẬP ĐẤU',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textMuted,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Chọn bài tập để bắt đầu trận đấu camera',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Exercise Options
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
-                // Push-up Option
-                _ExerciseBattleOption(
-                  exerciseType: ExerciseTypeEnum.pushup,
-                  description: 'Hít đất • Đối thủ bên phải',
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFF6b35), Color(0xFFFF8E53)],
-                  ),
-                  onTap: () => onStartBattle(ExerciseTypeEnum.pushup),
-                ),
-                const SizedBox(height: 12),
-                
-                // Pull-up Option
-                _ExerciseBattleOption(
-                  exerciseType: ExerciseTypeEnum.pullup,
-                  description: 'Kéo xà • Đối thủ bên phải',
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF5352ed), Color(0xFF7070FF)],
-                  ),
-                  onTap: () => onStartBattle(ExerciseTypeEnum.pullup),
-                ),
-                const SizedBox(height: 12),
-                
-                // Squat Option
-                _ExerciseBattleOption(
-                  exerciseType: ExerciseTypeEnum.squat,
-                  description: 'Squat • Đối thủ bên phải',
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFffa502), Color(0xFFFFBE3D)],
-                  ),
-                  onTap: () => onStartBattle(ExerciseTypeEnum.squat),
-                ),
-              ],
-            ),
-          ),
-          
-          // Info section
-          Container(
-            margin: const EdgeInsets.all(20),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Camera bên trái là bạn, bên phải là đối thủ.\nKết nối 2 thiết bị để chơi cùng nhau!',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Cancel button
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Hủy',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textMuted,
               ),
-            ),
+              
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                child: Column(
+                  children: [
+                    const Text(
+                      '⚔️ CHỌN BÀI TẬP ĐẤU',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Chọn bài tập để bắt đầu trận đấu camera',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Exercise Options
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    // Push-up Option
+                    _ExerciseBattleOption(
+                      exerciseType: ExerciseTypeEnum.pushup,
+                      description: 'Hít đất • Đối thủ bên phải',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6b35), Color(0xFFFF8E53)],
+                      ),
+                      onTap: () => onStartBattle(ExerciseTypeEnum.pushup),
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // Pull-up Option
+                    _ExerciseBattleOption(
+                      exerciseType: ExerciseTypeEnum.pullup,
+                      description: 'Kéo xà • Đối thủ bên phải',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF5352ed), Color(0xFF7070FF)],
+                      ),
+                      onTap: () => onStartBattle(ExerciseTypeEnum.pullup),
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // Squat Option
+                    _ExerciseBattleOption(
+                      exerciseType: ExerciseTypeEnum.squat,
+                      description: 'Squat • Đối thủ bên phải',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFffa502), Color(0xFFFFBE3D)],
+                      ),
+                      onTap: () => onStartBattle(ExerciseTypeEnum.squat),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Info section
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.info_outline, color: AppColors.primary, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Camera bên trái là bạn, bên phải là đối thủ.\nKết nối 2 thiết bị để chơi cùng nhau!',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Cancel button
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Hủy',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
-          const SizedBox(height: 16),
-        ],
+        ),
       ),
     );
   }

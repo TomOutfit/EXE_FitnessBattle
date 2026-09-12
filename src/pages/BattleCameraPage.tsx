@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
-import { currentUser } from '../data/mockData';
 import { useUser } from '../context/UserContext';
 
 export const BattleCameraPage: React.FC = () => {
@@ -9,7 +8,7 @@ export const BattleCameraPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const exercise = searchParams.get('exercise') || 'Hít Đất';
 
-  const { addXP, addCoins, showToast } = useUser();
+  const { user, updateBattleResult, recordExerciseSession, showToast } = useUser();
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -76,13 +75,13 @@ export const BattleCameraPage: React.FC = () => {
   const isWin = myScore >= oppScore;
 
   const handleClaimRewards = () => {
+    const exType = exercise === 'Kéo Xà' ? 'pullup' : 'pushup';
+    updateBattleResult(myScore, oppScore, isWin ? 'win' : 'lose');
+    recordExerciseSession(exType, myScore, 1, Math.round(myScore * 0.5));
+
     if (isWin) {
-      addXP(500);
-      addCoins(200);
       showToast('🎉 Nhận thưởng chiến thắng +500 XP và +200 Coins!', 'success');
     } else {
-      addXP(100);
-      addCoins(50);
       showToast('Cố gắng ở trận sau! +100 XP an ủi', 'info');
     }
     navigate('/battle');
@@ -166,13 +165,13 @@ export const BattleCameraPage: React.FC = () => {
             backdropFilter: 'blur(8px)',
           }}>
             <img
-              src={currentUser.avatar}
+              src={user.avatar}
               alt="You"
               style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid var(--primary)' }}
             />
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>Bạn (Player 1)</div>
-              <div style={{ fontSize: 10, color: 'var(--primary)' }}>Level {currentUser.level}</div>
+              <div style={{ fontSize: 10, color: 'var(--primary)' }}>Level {user.level}</div>
             </div>
           </div>
 

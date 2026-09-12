@@ -306,11 +306,16 @@ class _ChallengeList extends ConsumerWidget {
   }
 
   String _getTimeRemaining(String expiresAt) {
-    final expiry = DateTime.parse(expiresAt);
+    final expiry = DateTime.tryParse(expiresAt);
+    if (expiry == null) {
+      return expiresAt; // Already a formatted string like '5 ngày' or '12 giờ'
+    }
     final now = DateTime.now();
     final diff = expiry.difference(now);
 
-    if (diff.inDays > 0) {
+    if (diff.isNegative) {
+      return 'Hết hạn';
+    } else if (diff.inDays > 0) {
       return '${diff.inDays} ngày';
     } else if (diff.inHours > 0) {
       return '${diff.inHours} giờ';
