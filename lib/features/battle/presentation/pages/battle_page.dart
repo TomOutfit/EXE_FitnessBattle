@@ -223,16 +223,50 @@ class _BattlesTab extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
 
-        // Available Battles
-        const Text(
-          '🎮 Phòng chờ',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
+        // Available Battles Header with Live Indicator
+        Row(
+          children: [
+            const Text(
+              '🎮 Phòng Đấu Trực Tuyến',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2ED573).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF2ED573).withValues(alpha: 0.4)),
+              ),
+              child: const Row(
+                children: [
+                  CircleAvatar(radius: 3, backgroundColor: Color(0xFF2ED573)),
+                  SizedBox(width: 4),
+                  Text('Live 100%', style: TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.refresh, color: AppColors.primary, size: 20),
+              tooltip: 'Làm mới phòng',
+              onPressed: () {
+                ref.read(battlesProvider.notifier).refreshBattles();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('⚡ Đã cập nhật danh sách phòng chờ trực tuyến!'),
+                    backgroundColor: AppColors.primary,
+                  ),
+                );
+              },
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         ...battles.map((battle) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: AppCard(
@@ -257,6 +291,12 @@ class _BattlesTab extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    if (battle.spectatorCount != null && battle.spectatorCount! > 0)
+                      Text(
+                        '👁️ ${battle.spectatorCount} xem',
+                        style: const TextStyle(color: Colors.white54, fontSize: 10),
+                      ),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -267,7 +307,7 @@ class _BattlesTab extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        battle.status == BattleStatus.active ? 'ĐANG CHƠI' : 'CHỜ',
+                        battle.status == BattleStatus.active ? 'ĐANG ĐẤU 🔥' : 'CHỜ ĐỐI THỦ ⏳',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -288,32 +328,52 @@ class _BattlesTab extends ConsumerWidget {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  '🏃 ${battle.exerciseType} • ⏱️ ${battle.duration} phút',
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  '🏃 ${battle.exerciseType} • ⏱️ 60s Camera AI',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     AvatarWidget(avatarUrl: battle.players[0].avatar, size: 32),
                     const SizedBox(width: 8),
-                    Text(
-                      battle.players[0].oderName,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                    Expanded(
+                      child: Text(
+                        battle.players[0].oderName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'VS',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted),
-                    ),
-                    const SizedBox(width: 12),
-                    AvatarWidget(avatarUrl: battle.players[1].avatar, size: 32),
-                    const SizedBox(width: 8),
-                    Text(
-                      battle.players[1].oderName,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
-                    ),
+                    if (battle.status == BattleStatus.active)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          '${battle.players[0].score} - ${battle.players.length > 1 ? battle.players[1].score : 0}',
+                          style: const TextStyle(color: Color(0xFF2ED573), fontWeight: FontWeight.w900, fontSize: 16),
+                        ),
+                      )
+                    else
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          'VS',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted),
+                        ),
+                      ),
+                    if (battle.players.length > 1) ...[
+                      AvatarWidget(avatarUrl: battle.players[1].avatar, size: 32),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          battle.players[1].oderName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -331,12 +391,17 @@ class _BattlesTab extends ConsumerWidget {
                     ),
                     if (battle.status == BattleStatus.waiting)
                       GradientButton(
-                        text: 'Tham gia',
+                        text: 'Vào Đấu Ngay',
                         gradient: AppColors.primaryGradient,
                         onPressed: () {
                           final user = ref.read(userProvider);
                           ref.read(battlesProvider.notifier).joinBattle(battle.id, user);
-                          context.push('/battle-camera?type=pushup');
+                          final exType = battle.exerciseType.toLowerCase().contains('kéo') || battle.exerciseType.toLowerCase().contains('pull')
+                              ? 'pullup'
+                              : battle.exerciseType.toLowerCase().contains('squat')
+                                  ? 'squat'
+                                  : 'pushup';
+                          context.push('/battle-camera?type=$exType&room=FB-${battle.id.substring(0, 4)}&mode=room_join');
                         },
                       ),
                   ],
@@ -392,9 +457,9 @@ class _BattlesTab extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _BattleStartSheet(
-        onStartBattle: (exerciseType) {
+        onStartBattle: (exerciseType, roomCode, mode) {
           Navigator.pop(context);
-          context.push('/battle-camera?type=${exerciseType.id}');
+          context.push('/battle-camera?type=${exerciseType.id}&room=$roomCode&mode=$mode');
         },
       ),
     );
@@ -771,17 +836,31 @@ class _PremiumArenasTab extends StatelessWidget {
   }
 }
 
-/// Bottom sheet for selecting exercise type before starting battle
-class _BattleStartSheet extends StatelessWidget {
-  final Function(ExerciseTypeEnum) onStartBattle;
+/// Bottom sheet for selecting exercise type & synchronized battle mode
+class _BattleStartSheet extends StatefulWidget {
+  final Function(ExerciseTypeEnum exerciseType, String roomCode, String mode) onStartBattle;
 
   const _BattleStartSheet({required this.onStartBattle});
+
+  @override
+  State<_BattleStartSheet> createState() => _BattleStartSheetState();
+}
+
+class _BattleStartSheetState extends State<_BattleStartSheet> {
+  String _selectedMode = 'ranked'; // 'ranked' or 'custom_pin'
+  final TextEditingController _pinController = TextEditingController(text: '8842');
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       decoration: const BoxDecoration(
         color: AppColors.background,
@@ -803,14 +882,14 @@ class _BattleStartSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
+
               // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 child: Column(
                   children: [
                     const Text(
-                      '⚔️ CHỌN BÀI TẬP ĐẤU',
+                      '⚔️ ĐẤU TRƯỜNG CAMERA 1V1',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -819,16 +898,150 @@ class _BattleStartSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Chọn bài tập để bắt đầu trận đấu camera',
+                      'Đồng bộ giờ thi đấu • Hai bên cùng đếm ngược & đối đầu trực tiếp',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              
+
+              // Mode Switcher (Ranked vs Custom Room PIN)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _selectedMode = 'ranked'),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: _selectedMode == 'ranked' ? AppColors.primaryGradient : null,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '⚔️ Đấu Xếp Hạng',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: _selectedMode == 'ranked' ? Colors.white : AppColors.textMuted,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _selectedMode = 'custom_pin'),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: _selectedMode == 'custom_pin'
+                                ? const LinearGradient(
+                                    colors: [Color(0xFF5352ED), Color(0xFF7070FF)],
+                                  )
+                                : null,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '🔑 Phòng PIN Bạn Bè',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: _selectedMode == 'custom_pin' ? Colors.white : AppColors.textMuted,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Custom Room PIN Input (if selected)
+              if (_selectedMode == 'custom_pin')
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161B29),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF5352ED).withValues(alpha: 0.4)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.key, color: Color(0xFF7070FF), size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'MÃ PHÒNG ĐỒNG BỘ 1V1',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _pinController,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 3),
+                              decoration: InputDecoration(
+                                hintText: 'Nhập mã PIN 4 số',
+                                hintStyle: const TextStyle(color: Colors.white30, letterSpacing: 1),
+                                filled: true,
+                                fillColor: Colors.black26,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              final newPin = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000)).toString();
+                              _pinController.text = newPin;
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5352ED),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: const Text('Tạo PIN mới', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        '💡 Gửi mã PIN này cho bạn bè. Khi cả hai cùng vào phòng và bấm SẴN SÀNG, trận đấu sẽ bắt đầu cùng lúc!',
+                        style: TextStyle(color: Colors.white60, fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 8),
+
               // Exercise Options
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -837,38 +1050,50 @@ class _BattleStartSheet extends StatelessWidget {
                     // Push-up Option
                     _ExerciseBattleOption(
                       exerciseType: ExerciseTypeEnum.pushup,
-                      description: 'Hít đất • Đối thủ bên phải',
+                      description: 'Hít đất 60s • AI chấm góc tay ≤90°',
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFFF6b35), Color(0xFFFF8E53)],
+                        colors: [Color(0xFFFF6B35), Color(0xFFFF8E53)],
                       ),
-                      onTap: () => onStartBattle(ExerciseTypeEnum.pushup),
+                      onTap: () => widget.onStartBattle(
+                        ExerciseTypeEnum.pushup,
+                        'FB-${_pinController.text}',
+                        _selectedMode,
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    
+
                     // Pull-up Option
                     _ExerciseBattleOption(
                       exerciseType: ExerciseTypeEnum.pullup,
-                      description: 'Kéo xà • Đối thủ bên phải',
+                      description: 'Kéo xà 60s • AI chấm cằm vượt xà',
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF5352ed), Color(0xFF7070FF)],
+                        colors: [Color(0xFF5352ED), Color(0xFF7070FF)],
                       ),
-                      onTap: () => onStartBattle(ExerciseTypeEnum.pullup),
+                      onTap: () => widget.onStartBattle(
+                        ExerciseTypeEnum.pullup,
+                        'FB-${_pinController.text}',
+                        _selectedMode,
+                      ),
                     ),
                     const SizedBox(height: 10),
-                    
+
                     // Squat Option
                     _ExerciseBattleOption(
                       exerciseType: ExerciseTypeEnum.squat,
-                      description: 'Squat • Đối thủ bên phải',
+                      description: 'Squat 60s • AI chấm góc đùi song song',
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFffa502), Color(0xFFFFBE3D)],
+                        colors: [Color(0xFFFFA502), Color(0xFFFFBE3D)],
                       ),
-                      onTap: () => onStartBattle(ExerciseTypeEnum.squat),
+                      onTap: () => widget.onStartBattle(
+                        ExerciseTypeEnum.squat,
+                        'FB-${_pinController.text}',
+                        _selectedMode,
+                      ),
                     ),
                   ],
                 ),
               ),
-              
+
               // Info section
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -885,12 +1110,12 @@ class _BattleStartSheet extends StatelessWidget {
                         color: AppColors.primary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.info_outline, color: AppColors.primary, size: 18),
+                      child: const Icon(Icons.verified_user, color: AppColors.primary, size: 18),
                     ),
                     const SizedBox(width: 10),
                     const Expanded(
                       child: Text(
-                        'Camera bên trái là bạn, bên phải là đối thủ.\nKết nối 2 thiết bị để chơi cùng nhau!',
+                        'Tính năng Dual Ready Check đảm bảo 2 đấu thủ vào đúng giờ, không ai được làm trước.',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -900,7 +1125,7 @@ class _BattleStartSheet extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Cancel button
               TextButton(
                 onPressed: () => Navigator.pop(context),

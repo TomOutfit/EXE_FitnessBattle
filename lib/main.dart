@@ -10,6 +10,11 @@ import 'core/services/app_database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('[FlutterError] ${details.exception}');
+  };
   
   // Initialize Firebase Cloud Realtime Engine
   try {
@@ -21,23 +26,33 @@ void main() async {
   }
   
   // Initialize Dynamic Persistent Database Engine
-  await AppDatabase.instance.initialize();
+  try {
+    await AppDatabase.instance.initialize();
+  } catch (e) {
+    debugPrint('[AppDatabase] Initialization error: $e');
+  }
   
   // Set preferred orientations
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  try {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  } catch (e) {
+    debugPrint('[SystemChrome] Orientation error: $e');
+  }
   
   // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: AppColors.background,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
+  try {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: AppColors.background,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
+  } catch (_) {}
   
   runApp(
     const ProviderScope(

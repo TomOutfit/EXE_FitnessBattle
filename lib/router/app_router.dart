@@ -51,12 +51,16 @@ final router = GoRouter(
       path: '/battle-camera',
       builder: (context, state) {
         final exerciseTypeStr = state.uri.queryParameters['type'] ?? 'pushup';
+        final roomCode = state.uri.queryParameters['room'] ?? 'FB-8842';
+        final mode = state.uri.queryParameters['mode'] ?? 'ranked';
         final exerciseType = ExerciseTypeEnum.values.firstWhere(
           (e) => e.id == exerciseTypeStr,
           orElse: () => ExerciseTypeEnum.pushup,
         );
         return BattleCameraPage(
           exerciseType: exerciseType,
+          roomCode: roomCode,
+          battleMode: mode,
         );
       },
     ),

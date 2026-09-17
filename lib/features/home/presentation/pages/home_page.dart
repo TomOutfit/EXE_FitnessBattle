@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/models.dart';
 import '../../../../core/providers.dart';
+import '../../../../core/services/live_simulation_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 
@@ -83,7 +84,52 @@ class HomePage extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+
+            // Live Community Activity Ticker
+            ref.watch(liveTickerProvider).when(
+              data: (tickerText) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.15),
+                      AppColors.secondary.withValues(alpha: 0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2ED573),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        tickerText,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
 
             // Header User Info
             Row(
@@ -94,24 +140,45 @@ class HomePage extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Xin chào, ${user.name}! 👋',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Xin chào, ${user.name}! 👋',
+                            style: const TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceLight,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              () {
+                                final now = DateTime.now();
+                                final days = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+                                return '${days[now.weekday - 1]}, ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}';
+                              }(),
+                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.local_fire_department, color: AppColors.primary, size: 16),
+                          const Icon(Icons.local_fire_department, color: Color(0xFFFF6B35), size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${user.streak} ngày liên tiếp',
+                            '${user.streak} ngày rèn luyện liên tiếp',
                             style: const TextStyle(
                               fontSize: 13,
-                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFF8E53),
                             ),
                           ),
                         ],
@@ -206,6 +273,167 @@ class HomePage extends ConsumerWidget {
                 ),
               ],
             ),
+
+            // Hourly Golden Event Card
+            () {
+              final event = LiveSimulationService.instance.getCurrentHourlyEvent();
+              return Container(
+                margin: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF1E293B),
+                      Color(0xFF0F172A),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFF6B35).withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF6B35).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.flash_on, color: Color(0xFFFF6B35), size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                event['tag'] ?? '⚡ GIỜ VÀNG',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFFF6B35),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const Spacer(),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF6B35),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  event['multiplier'] ?? '+50% XP',
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            event['title'] ?? '',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            event['description'] ?? '',
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }(),
+
+            // Server Boss Titan Raid Live Card
+            () {
+              final boss = LiveSimulationService.instance.getServerBossRaid();
+              final hpPercent = ((boss['currentHp'] as int) / (boss['totalHp'] as int)).clamp(0.0, 1.0);
+              return Container(
+                margin: const EdgeInsets.only(top: 14),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF2C0B0E),
+                      Color(0xFF160608),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFF4757).withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          '👹 BOSS TOÀN SERVER',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFFF4757),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '👥 ${boss["participantsCount"]} dũng sĩ tham gia',
+                          style: const TextStyle(fontSize: 11, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${boss["bossName"]}',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        Text(
+                          'HP: ${boss["currentHp"]} / ${boss["totalHp"]}',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFF6B81)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: hpPercent,
+                        minHeight: 8,
+                        backgroundColor: Colors.white12,
+                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF4757)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Sát thương của bạn: ${(boss["userDamage"] ?? 0)} DMG',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF2ED573)),
+                        ),
+                        const Text(
+                          'Phần thưởng: 500 💎',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFFA502)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }(),
             const SizedBox(height: 24),
 
             // Exercise Quick Access
@@ -311,7 +539,7 @@ class HomePage extends ConsumerWidget {
                         const Icon(Icons.local_fire_department, color: Colors.white, size: 24),
                         const SizedBox(height: 4),
                         Text(
-                          '${exerciseStats.currentStreak}',
+                          '${user.streak}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,

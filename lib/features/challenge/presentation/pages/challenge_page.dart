@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models.dart';
@@ -5,12 +6,50 @@ import '../../../../core/providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 
-class ChallengePage extends ConsumerWidget {
+class ChallengePage extends ConsumerStatefulWidget {
   const ChallengePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChallengePage> createState() => _ChallengePageState();
+}
+
+class _ChallengePageState extends ConsumerState<ChallengePage> {
+  Timer? _countdownTimer;
+  String _timeUntilMidnight = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _updateCountdown();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) => _updateCountdown());
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  void _updateCountdown() {
+    final now = DateTime.now();
+    final midnight = DateTime(now.year, now.month, now.day + 1);
+    final remaining = midnight.difference(now);
+
+    final hours = remaining.inHours.toString().padLeft(2, '0');
+    final minutes = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+
+    if (mounted) {
+      setState(() {
+        _timeUntilMidnight = '$hours:$minutes:$seconds';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final challenges = ref.watch(challengesProvider);
+    final user = ref.watch(userProvider);
 
     return DefaultTabController(
       length: 3,
@@ -18,21 +57,80 @@ class ChallengePage extends ConsumerWidget {
         child: Column(
           children: [
             // Header
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  Text(
-                    '🏆 Thử thách',
+                  const Text(
+                    '🏆 Thử Thách & Nhiệm Vụ',
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
                   ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.autorenew, color: AppColors.primary),
+                    tooltip: 'Đổi thử thách mới',
+                    onPressed: () {
+                      ref.read(challengesProvider.notifier).refreshDailyChallenges(user);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('⚡ Đã cập nhật bộ thử thách mới theo ngày!'),
+                          backgroundColor: AppColors.primary,
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
+
+            // Live Countdown Ticker Banner
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFFF6B35).withValues(alpha: 0.15),
+                    const Color(0xFF5352ED).withValues(alpha: 0.15),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFF6B35).withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.timer_outlined, color: Color(0xFFFF6B35), size: 18),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Làm mới sau: ',
+                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    _timeUntilMidnight,
+                    style: const TextStyle(
+                      color: Color(0xFFFF6B35),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2ED573).withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text('Live Sync', style: TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
 
             // Tabs
             Container(
@@ -118,7 +216,7 @@ class _ChallengeList extends ConsumerWidget {
       itemBuilder: (context, index) {
         final challenge = challenges[index];
         final color = Color(int.parse(challenge.color.replaceAll('#', '0xFF')));
-        final progress = challenge.current / challenge.target;
+        final progress = (challenge.current / challenge.target).clamp(0.0, 1.0);
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
@@ -129,39 +227,42 @@ class _ChallengeList extends ConsumerWidget {
                 Row(
                   children: [
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: color.withValues(alpha: 0.4)),
                       ),
                       child: Icon(
                         _getIcon(challenge.icon),
                         color: color,
-                        size: 28,
+                        size: 26,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Text(
-                                challenge.title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
+                              Expanded(
+                                child: Text(
+                                  challenge.title,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
                               ),
                               if (challenge.completed) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 const Icon(
                                   Icons.check_circle,
                                   color: AppColors.success,
-                                  size: 20,
+                                  size: 18,
                                 ),
                               ],
                             ],
@@ -170,7 +271,7 @@ class _ChallengeList extends ConsumerWidget {
                           Text(
                             challenge.description,
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -179,7 +280,7 @@ class _ChallengeList extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(
@@ -193,7 +294,7 @@ class _ChallengeList extends ConsumerWidget {
                                 '${challenge.current}/${challenge.target} ${challenge.unit}',
                                 style: const TextStyle(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
@@ -201,7 +302,7 @@ class _ChallengeList extends ConsumerWidget {
                                 '${(progress * 100).toInt()}%',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                   color: color,
                                 ),
                               ),
@@ -211,23 +312,23 @@ class _ChallengeList extends ConsumerWidget {
                           ProgressBar(
                             progress: progress,
                             color: color,
-                            height: 10,
+                            height: 8,
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Row(
                   children: [
-                    const Icon(Icons.card_giftcard, size: 16, color: AppColors.accent),
+                    const Icon(Icons.bolt, size: 16, color: AppColors.primary),
                     const SizedBox(width: 4),
                     Text(
                       '+${challenge.reward.xp} XP',
                       style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
                         color: AppColors.primary,
                       ),
                     ),
@@ -235,13 +336,26 @@ class _ChallengeList extends ConsumerWidget {
                     const Icon(Icons.monetization_on, size: 16, color: AppColors.accent),
                     const SizedBox(width: 4),
                     Text(
-                      '+${challenge.reward.coins} Coins',
+                      '+${challenge.reward.coins}',
                       style: const TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
                         color: AppColors.accent,
                       ),
                     ),
+                    if (challenge.reward.ruby != null && challenge.reward.ruby! > 0) ...[
+                      const SizedBox(width: 12),
+                      const Text('💎', style: TextStyle(fontSize: 12)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '+${challenge.reward.ruby}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFF4757),
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     if (challenge.completed)
                       if (challenge.claimed)
@@ -276,16 +390,18 @@ class _ChallengeList extends ConsumerWidget {
                             if (challenge.reward.ruby != null && challenge.reward.ruby! > 0) {
                               ref.read(userProvider.notifier).addRuby(challenge.reward.ruby!);
                             }
+                            final updatedUser = ref.read(userProvider);
+                            ref.read(leaderboardProvider.notifier).updateUserPoints(updatedUser.id, updatedUser.totalPoints);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Đã nhận thưởng +${challenge.reward.xp} XP, +${challenge.reward.coins} Coins!'),
+                                content: Text('🎉 Nhận thưởng thành công: +${challenge.reward.xp} XP, +${challenge.reward.coins} Coins!'),
                                 backgroundColor: AppColors.success,
                               ),
                             );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.success,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                           child: const Text('Nhận thưởng', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -302,10 +418,11 @@ class _ChallengeList extends ConsumerWidget {
                             const Icon(Icons.timer, size: 14, color: AppColors.textMuted),
                             const SizedBox(width: 4),
                             Text(
-                              _getTimeRemaining(challenge.expiresAt),
+                              challenge.expiresAt,
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: AppColors.textMuted,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -333,23 +450,5 @@ class _ChallengeList extends ConsumerWidget {
         return Icons.emoji_events;
     }
   }
-
-  String _getTimeRemaining(String expiresAt) {
-    final expiry = DateTime.tryParse(expiresAt);
-    if (expiry == null) {
-      return expiresAt; // Already a formatted string like '5 ngày' or '12 giờ'
-    }
-    final now = DateTime.now();
-    final diff = expiry.difference(now);
-
-    if (diff.isNegative) {
-      return 'Hết hạn';
-    } else if (diff.inDays > 0) {
-      return '${diff.inDays} ngày';
-    } else if (diff.inHours > 0) {
-      return '${diff.inHours} giờ';
-    } else {
-      return '${diff.inMinutes} phút';
-    }
-  }
 }
+

@@ -1,20 +1,89 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-class AppCard extends StatelessWidget {
+class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final VoidCallback? onTap;
   final Color? color;
   final Gradient? gradient;
+  final double borderRadius;
+  final double blur;
+  final double opacity;
 
-  const AppCard({
+  const GlassCard({
     super.key,
     required this.child,
     this.padding,
     this.onTap,
     this.color,
     this.gradient,
+    this.borderRadius = 20,
+    this.blur = 10,
+    this.opacity = 0.1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: Container(
+            padding: padding ?? const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: gradient ??
+                  LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withValues(alpha: opacity + 0.05),
+                      Colors.white.withValues(alpha: opacity),
+                    ],
+                  ),
+              borderRadius: BorderRadius.circular(borderRadius),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  blurRadius: 30,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class NeonCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final VoidCallback? onTap;
+  final Color glowColor;
+  final double borderRadius;
+
+  const NeonCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.onTap,
+    this.glowColor = AppColors.primary,
+    this.borderRadius = 20,
   });
 
   @override
@@ -24,9 +93,95 @@ class AppCard extends StatelessWidget {
       child: Container(
         padding: padding ?? const EdgeInsets.all(16),
         decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.surface,
+              AppColors.surfaceLight.withValues(alpha: 0.8),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(
+            color: glowColor.withValues(alpha: 0.3),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: glowColor.withValues(alpha: 0.2),
+              blurRadius: 15,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+class AppCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final VoidCallback? onTap;
+  final Color? color;
+  final Gradient? gradient;
+  final double borderRadius;
+  final bool useGlass;
+
+  const AppCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.onTap,
+    this.color,
+    this.gradient,
+    this.borderRadius = 16,
+    this.useGlass = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (useGlass) {
+      return GlassCard(
+        padding: padding,
+        onTap: onTap,
+        color: color,
+        gradient: gradient,
+        borderRadius: borderRadius,
+        child: child,
+      );
+    }
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: padding ?? const EdgeInsets.all(16),
+        decoration: BoxDecoration(
           color: gradient == null ? (color ?? AppColors.surface) : null,
           gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 15,
+              offset: const Offset(0, 6),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: child,
       ),

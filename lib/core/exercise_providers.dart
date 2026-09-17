@@ -71,13 +71,14 @@ final dailyGoals = DailyExerciseGoals(
 );
 
 class DailyExerciseGoalsNotifier extends StateNotifier<DailyExerciseGoals> {
-  DailyExerciseGoalsNotifier() : super(dailyGoals);
+  DailyExerciseGoalsNotifier() : super(AppDatabase.instance.getDailyGoals());
 
   void updatePushupProgress(int completed) {
     state = state.copyWith(
       pushupCompleted: completed,
       allCompleted: completed >= state.pushupTarget && state.pullupCompleted >= state.pullupTarget,
     );
+    AppDatabase.instance.saveDailyGoals(state);
   }
 
   void updatePullupProgress(int completed) {
@@ -85,10 +86,12 @@ class DailyExerciseGoalsNotifier extends StateNotifier<DailyExerciseGoals> {
       pullupCompleted: completed,
       allCompleted: state.pushupCompleted >= state.pushupTarget && completed >= state.pullupTarget,
     );
+    AppDatabase.instance.saveDailyGoals(state);
   }
 
   void updateWalkingProgress(int completed) {
     state = state.copyWith(walkingCompleted: completed);
+    AppDatabase.instance.saveDailyGoals(state);
   }
 }
 
@@ -96,18 +99,8 @@ final dailyExerciseGoalsProvider = StateNotifierProvider<DailyExerciseGoalsNotif
   return DailyExerciseGoalsNotifier();
 });
 
-// Daily Walking Goal State
-final dailyWalkingGoal = DailyWalkingGoal(
-  oderId: 'user-1',
-  targetSteps: 10000,
-  currentSteps: 7500,
-  date: DateTime.now(),
-  completed: false,
-  bonusPoints: 0,
-);
-
 class DailyWalkingGoalNotifier extends StateNotifier<DailyWalkingGoal> {
-  DailyWalkingGoalNotifier() : super(dailyWalkingGoal);
+  DailyWalkingGoalNotifier() : super(AppDatabase.instance.getDailyWalkingGoal());
 
   void updateSteps(int currentSteps) {
     final completed = currentSteps >= state.targetSteps;
@@ -118,6 +111,7 @@ class DailyWalkingGoalNotifier extends StateNotifier<DailyWalkingGoal> {
       completed: completed,
       bonusPoints: bonusPoints,
     );
+    AppDatabase.instance.saveDailyWalkingGoal(state);
   }
 
   void addBonusSteps(int bonus) {
@@ -125,6 +119,7 @@ class DailyWalkingGoalNotifier extends StateNotifier<DailyWalkingGoal> {
       currentSteps: state.currentSteps + bonus,
       bonusSteps: bonus,
     );
+    AppDatabase.instance.saveDailyWalkingGoal(state);
   }
 }
 

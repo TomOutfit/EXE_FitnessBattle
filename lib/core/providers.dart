@@ -7,6 +7,7 @@ import 'seed_data.dart';
 import 'exercise_providers.dart';
 import 'services/step_tracking_service.dart';
 import 'services/app_database.dart';
+import 'services/live_simulation_service.dart';
 import 'firebase_sync_service.dart';
 
 // Re-export exercise providers
@@ -344,10 +345,56 @@ final stepTrackingProvider = StateNotifierProvider<StepTrackingNotifier, StepSta
 });
 
 // =============================================================
-// LEADERBOARD STATE
+// LEADERBOARD STATE (REAL-TIME LIVE SYNC & TICKER)
 // =============================================================
 class LeaderboardNotifier extends StateNotifier<List<LeaderboardEntry>> {
-  LeaderboardNotifier() : super(AppDatabase.instance.getLeaderboard());
+  Timer? _tickerTimer;
+  String _currentFilter = 'all_time';
+
+  LeaderboardNotifier() : super([]) {
+    _initLeaderboard();
+    _startLiveSimulation();
+  }
+
+  void _initLeaderboard() {
+    final user = AppDatabase.instance.getUser();
+    final saved = AppDatabase.instance.getLeaderboard();
+    if (saved.isNotEmpty && saved.length >= 10) {
+      state = saved;
+    } else {
+      state = LiveSimulationService.instance.generateDynamicLeaderboard(currentUser: user, timeFilter: _currentFilter);
+      AppDatabase.instance.saveLeaderboard(state);
+    }
+  }
+
+  void _startLiveSimulation() {
+    _tickerTimer?.cancel();
+    _tickerTimer = Timer.periodic(const Duration(seconds: 14), (timer) {
+      if (!mounted) return;
+      final rand = math.Random();
+      final user = AppDatabase.instance.getUser();
+      final updated = state.map((entry) {
+        if (entry.isCurrentUser == true) {
+          return entry.copyWith(points: user.totalPoints);
+        }
+        if (rand.nextDouble() < 0.35 && entry.rank > 2) {
+          final bump = (rand.nextInt(3) + 1) * 15;
+          return entry.copyWith(points: entry.points + bump);
+        }
+        return entry;
+      }).toList();
+
+      updated.sort((a, b) => b.points.compareTo(a.points));
+      state = updated.asMap().entries.map((e) => e.value.copyWith(rank: e.key + 1)).toList();
+      AppDatabase.instance.saveLeaderboard(state);
+    });
+  }
+
+  void setFilter(String filter, User currentUser) {
+    _currentFilter = filter;
+    state = LiveSimulationService.instance.generateDynamicLeaderboard(currentUser: currentUser, timeFilter: filter);
+    AppDatabase.instance.saveLeaderboard(state);
+  }
 
   void updateUserPoints(String userId, int newPoints) {
     final updated = state.map((entry) {
@@ -360,17 +407,88 @@ class LeaderboardNotifier extends StateNotifier<List<LeaderboardEntry>> {
     state = updated.asMap().entries.map((e) => e.value.copyWith(rank: e.key + 1)).toList();
     AppDatabase.instance.saveLeaderboard(state);
   }
+
+  @override
+  void dispose() {
+    _tickerTimer?.cancel();
+    super.dispose();
+  }
 }
 
 final leaderboardProvider = StateNotifierProvider<LeaderboardNotifier, List<LeaderboardEntry>>((ref) {
   return LeaderboardNotifier();
 });
 
+/// Live Real-time Community Ticker Feed Provider
+final liveTickerProvider = StreamProvider<String>((ref) async* {
+  yield '⚡ Cộng đồng Fitness Battle đang sôi động! Hàng ngàn đấu thủ đang trực tuyến!';
+  while (true) {
+    await Future.delayed(const Duration(seconds: 6));
+    yield LiveSimulationService.instance.generateLiveCommunityTicker();
+  }
+});
+
 // =============================================================
-// BATTLES STATE
+// BATTLES STATE (REAL-TIME LIVE FEED & DYNAMIC ROOMS)
 // =============================================================
 class BattlesNotifier extends StateNotifier<List<Battle>> {
-  BattlesNotifier() : super(initialBattlesSeed);
+  Timer? _liveFeedTimer;
+
+  BattlesNotifier() : super(LiveSimulationService.instance.generateInitialLiveBattles()) {
+    _startLiveRoomFeed();
+  }
+
+  void _startLiveRoomFeed() {
+    _liveFeedTimer?.cancel();
+    _liveFeedTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (!mounted) return;
+      final rand = math.Random();
+
+      // 1. Advance active battles reps and spectators
+      final updated = state.map((b) {
+        if (b.status == BattleStatus.active) {
+          final p1Score = b.players[0].score + (rand.nextDouble() < 0.65 ? 1 : 0);
+          final p2Score = b.players.length > 1 ? b.players[1].score + (rand.nextDouble() < 0.65 ? 1 : 0) : 0;
+          return b.copyWith(
+            players: [
+              BattlePlayer(
+                oderId: b.players[0].oderId,
+                oderName: b.players[0].oderName,
+                avatar: b.players[0].avatar,
+                score: p1Score,
+                heartRate: 135 + rand.nextInt(20),
+                duration: b.players[0].duration + 10,
+                isActive: true,
+              ),
+              if (b.players.length > 1)
+                BattlePlayer(
+                  oderId: b.players[1].oderId,
+                  oderName: b.players[1].oderName,
+                  avatar: b.players[1].avatar,
+                  score: p2Score,
+                  heartRate: 138 + rand.nextInt(20),
+                  duration: b.players[1].duration + 10,
+                  isActive: true,
+                ),
+            ],
+            spectatorCount: ((b.spectatorCount ?? 15) + rand.nextInt(5) - 2).clamp(3, 99),
+          );
+        }
+        return b;
+      }).toList();
+
+      // 2. Add dynamic waiting room
+      if (rand.nextDouble() < 0.45 && updated.length < 8) {
+        updated.insert(0, LiveSimulationService.instance.generateNewWaitingBattle());
+      }
+
+      state = updated;
+    });
+  }
+
+  void refreshBattles() {
+    state = LiveSimulationService.instance.generateInitialLiveBattles();
+  }
 
   void joinBattle(String battleId, User user) {
     state = state.map((b) {
@@ -398,6 +516,12 @@ class BattlesNotifier extends StateNotifier<List<Battle>> {
   void addBattle(Battle newBattle) {
     state = [newBattle, ...state];
   }
+
+  @override
+  void dispose() {
+    _liveFeedTimer?.cancel();
+    super.dispose();
+  }
 }
 
 final battlesProvider = StateNotifierProvider<BattlesNotifier, List<Battle>>((ref) {
@@ -405,13 +529,30 @@ final battlesProvider = StateNotifierProvider<BattlesNotifier, List<Battle>>((re
 });
 
 // =============================================================
-// CHALLENGES STATE (DAILY / WEEKLY QUESTS)
+// CHALLENGES STATE (DAILY / WEEKLY DYNAMIC QUESTS)
 // =============================================================
 class ChallengesNotifier extends StateNotifier<List<Challenge>> {
   StreamSubscription? _remoteSub;
 
-  ChallengesNotifier() : super(AppDatabase.instance.getChallenges()) {
+  ChallengesNotifier() : super([]) {
+    _initChallenges();
     _startRemoteSync();
+  }
+
+  void _initChallenges() {
+    final saved = AppDatabase.instance.getChallenges();
+    if (saved.isNotEmpty) {
+      state = saved;
+    } else {
+      final user = AppDatabase.instance.getUser();
+      state = LiveSimulationService.instance.generateDynamicChallenges(userLevel: user.level, streak: user.streak);
+      AppDatabase.instance.saveChallenges(state);
+    }
+  }
+
+  void refreshDailyChallenges(User user) {
+    state = LiveSimulationService.instance.generateDynamicChallenges(userLevel: user.level, streak: user.streak);
+    AppDatabase.instance.saveChallenges(state);
   }
 
   void _startRemoteSync() {
@@ -722,6 +863,11 @@ class WorkoutSyncService {
         ),
       ),
     );
+
+    // 5. Update Leaderboard & Deal Boss Damage
+    final updatedUser = ref.read(userProvider);
+    ref.read(leaderboardProvider.notifier).updateUserPoints(updatedUser.id, updatedUser.totalPoints);
+    LiveSimulationService.instance.dealBossDamage((validReps > 0 ? validReps : 1) * 15);
   }
 
   static void syncBattle({
@@ -805,5 +951,10 @@ class WorkoutSyncService {
         xp: xpGained,
       ),
     );
+
+    // 6. Update Leaderboard & Boss Raid
+    final updatedUser = ref.read(userProvider);
+    ref.read(leaderboardProvider.notifier).updateUserPoints(updatedUser.id, updatedUser.totalPoints);
+    LiveSimulationService.instance.dealBossDamage(myCorrectScore * 20 + (isWin ? 200 : 50));
   }
 }

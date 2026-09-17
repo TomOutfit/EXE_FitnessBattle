@@ -547,6 +547,156 @@ class AppDatabase {
   }
 
   // ============================================================
+  // DAILY GOALS & DAILY WALKING CRUD WITH AUTOMATIC DAY ROLLOVER
+  // ============================================================
+  Future<void> saveDailyGoals(DailyExerciseGoals goals) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final map = {
+      'oderId': goals.oderId,
+      'date': goals.date.toIso8601String(),
+      'pushupTarget': goals.pushupTarget,
+      'pushupCompleted': goals.pushupCompleted,
+      'pullupTarget': goals.pullupTarget,
+      'pullupCompleted': goals.pullupCompleted,
+      'walkingTarget': goals.walkingTarget,
+      'walkingCompleted': goals.walkingCompleted,
+      'allCompleted': goals.allCompleted,
+    };
+    await _prefs?.setString('fb_db_daily_goals', jsonEncode(map));
+  }
+
+  DailyExerciseGoals getDailyGoals() {
+    try {
+      final raw = _prefs?.getString('fb_db_daily_goals');
+      final now = DateTime.now();
+      if (raw == null) {
+        return DailyExerciseGoals(
+          oderId: 'user-1',
+          date: now,
+          pushupTarget: 50,
+          pushupCompleted: 0,
+          pullupTarget: 20,
+          pullupCompleted: 0,
+          walkingTarget: 10000,
+          walkingCompleted: 0,
+          allCompleted: false,
+        );
+      }
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      final savedDate = DateTime.tryParse(map['date'] ?? '') ?? now;
+      final isSameDay = savedDate.year == now.year && savedDate.month == now.month && savedDate.day == now.day;
+
+      if (!isSameDay) {
+        // Sang ngày mới: Tự động reset tiến độ về 0 cho ngày mới, lưu lại
+        final newDayGoals = DailyExerciseGoals(
+          oderId: map['oderId'] ?? 'user-1',
+          date: now,
+          pushupTarget: map['pushupTarget'] ?? 50,
+          pushupCompleted: 0,
+          pullupTarget: map['pullupTarget'] ?? 20,
+          pullupCompleted: 0,
+          walkingTarget: map['walkingTarget'] ?? 10000,
+          walkingCompleted: 0,
+          allCompleted: false,
+        );
+        saveDailyGoals(newDayGoals);
+        return newDayGoals;
+      }
+
+      return DailyExerciseGoals(
+        oderId: map['oderId'] ?? 'user-1',
+        date: savedDate,
+        pushupTarget: map['pushupTarget'] ?? 50,
+        pushupCompleted: map['pushupCompleted'] ?? 0,
+        pullupTarget: map['pullupTarget'] ?? 20,
+        pullupCompleted: map['pullupCompleted'] ?? 0,
+        walkingTarget: map['walkingTarget'] ?? 10000,
+        walkingCompleted: map['walkingCompleted'] ?? 0,
+        allCompleted: map['allCompleted'] ?? false,
+      );
+    } catch (_) {
+      return DailyExerciseGoals(
+        oderId: 'user-1',
+        date: DateTime.now(),
+        pushupTarget: 50,
+        pushupCompleted: 0,
+        pullupTarget: 20,
+        pullupCompleted: 0,
+        walkingTarget: 10000,
+        walkingCompleted: 0,
+        allCompleted: false,
+      );
+    }
+  }
+
+  Future<void> saveDailyWalkingGoal(DailyWalkingGoal goal) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final map = {
+      'oderId': goal.oderId,
+      'targetSteps': goal.targetSteps,
+      'currentSteps': goal.currentSteps,
+      'bonusSteps': goal.bonusSteps,
+      'date': goal.date.toIso8601String(),
+      'completed': goal.completed,
+      'bonusPoints': goal.bonusPoints,
+    };
+    await _prefs?.setString('fb_db_daily_walking_goal', jsonEncode(map));
+  }
+
+  DailyWalkingGoal getDailyWalkingGoal() {
+    try {
+      final raw = _prefs?.getString('fb_db_daily_walking_goal');
+      final now = DateTime.now();
+      if (raw == null) {
+        return DailyWalkingGoal(
+          oderId: 'user-1',
+          targetSteps: 10000,
+          currentSteps: 0,
+          date: now,
+          completed: false,
+          bonusPoints: 0,
+        );
+      }
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      final savedDate = DateTime.tryParse(map['date'] ?? '') ?? now;
+      final isSameDay = savedDate.year == now.year && savedDate.month == now.month && savedDate.day == now.day;
+
+      if (!isSameDay) {
+        // Sang ngày mới: Tự động reset bước chân hôm nay về 0
+        final newWalkingGoal = DailyWalkingGoal(
+          oderId: map['oderId'] ?? 'user-1',
+          targetSteps: map['targetSteps'] ?? 10000,
+          currentSteps: 0,
+          date: now,
+          completed: false,
+          bonusPoints: 0,
+        );
+        saveDailyWalkingGoal(newWalkingGoal);
+        return newWalkingGoal;
+      }
+
+      return DailyWalkingGoal(
+        oderId: map['oderId'] ?? 'user-1',
+        targetSteps: map['targetSteps'] ?? 10000,
+        currentSteps: map['currentSteps'] ?? 0,
+        bonusSteps: map['bonusSteps'] ?? 0,
+        date: savedDate,
+        completed: map['completed'] ?? false,
+        bonusPoints: map['bonusPoints'] ?? 0,
+      );
+    } catch (_) {
+      return DailyWalkingGoal(
+        oderId: 'user-1',
+        targetSteps: 10000,
+        currentSteps: 0,
+        date: DateTime.now(),
+        completed: false,
+        bonusPoints: 0,
+      );
+    }
+  }
+
+  // ============================================================
   // BATTLE HISTORY CRUD
   // ============================================================
   Future<void> _saveBattleHistoryList(List<BattleHistoryItem> items) async {
