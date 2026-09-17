@@ -301,9 +301,9 @@ export const ExerciseTrackPage: React.FC = () => {
               </span>
             </div>
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#B0B0C3', lineHeight: 1.6 }}>
-              <li>Đặt camera ngang hông hoặc chếch 45 độ.</li>
-              <li>Hạ ngực chạm vạch ảo (khuỷu tay gập dưới 90°).</li>
-              <li>Đẩy thẳng tay hoàn toàn để AI tính 1 Rep hợp lệ.</li>
+              <li>Đặt camera ngang hông hoặc chếch 45 độ để AI nhận diện rõ vai và khuỷu tay.</li>
+              <li><strong>Hạ người:</strong> Vai phải ngang bằng hoặc đi qua khuỷu tay (góc khuỷu tay ≤ 90°).</li>
+              <li><strong>Tính rep:</strong> Đẩy thẳng tay hoàn toàn để được tính 1 Rep hợp lệ. Nếu chưa hạ vai qua/bằng khuỷu tay sẽ <strong>không được tính rep</strong>.</li>
             </ul>
           </AppCard>
         </div>
@@ -447,6 +447,21 @@ export const ExerciseTrackPage: React.FC = () => {
               </div>
               <ChevronRight size={20} color="#6B6B80" />
             </div>
+          </AppCard>
+
+          {/* AI Tips Card for Pull-Up */}
+          <AppCard>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <ShieldCheck size={18} color="#5352ED" />
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#7070FF' }}>
+                Hướng dẫn AI Form Hít Xà Chuẩn
+              </span>
+            </div>
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: '#B0B0C3', lineHeight: 1.6 }}>
+              <li><strong>Check xà trước:</strong> Đứng cách camera 2–3m thấy rõ xà và toàn thân. Giơ 2 tay bám vào thanh xà và treo người thẳng tay để hệ thống quét và xác nhận vị trí xà trước khi bắt đầu.</li>
+              <li><strong>Kéo người lên:</strong> Bắt buộc phải đưa <strong>đầu (hoặc cằm) vượt qua tay/thanh xà</strong> thì AI mới ghi nhận đạt chuẩn.</li>
+              <li><strong>Tính rep:</strong> Sau khi đầu đã vượt qua tay, hạ người duỗi thẳng tay (dead hang) để được tính 1 Rep. Nếu đầu chưa vượt qua tay sẽ <strong>không được tính rep</strong>.</li>
+            </ul>
           </AppCard>
         </div>
       )}

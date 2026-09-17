@@ -27,6 +27,9 @@ class FrameAnalysis {
   final String? antiCheatAlert;
   final RepState repState;
   final List<String> formIssues;
+  final bool reachedDepth;
+  final String depthStatus; // 'ready', 'going_down', 'depth_passed'
+  final double virtualBarY;
   
   FrameAnalysis({
     required this.repCount,
@@ -38,6 +41,9 @@ class FrameAnalysis {
     this.antiCheatAlert,
     required this.repState,
     this.formIssues = const [],
+    this.reachedDepth = false,
+    this.depthStatus = 'ready',
+    this.virtualBarY = 0.0,
   });
 }
 
@@ -53,17 +59,19 @@ class ExerciseAnalyzer {
   DateTime? _bottomReachedTime;
   List<String> _currentIssues = [];
   String? _currentAntiCheatAlert;
+  bool _reachedDepth = false;
+  double _virtualBarY = 0.0;
   
   // Biomechanical Angle Thresholds (International Standard)
   // Push-up Thresholds
-  static const double pushupLockoutAngle = 155.0; // Arms extended at top
-  static const double pushupBottomAngle = 92.0;   // Deep 90-deg elbow bend
+  static const double pushupLockoutAngle = 150.0; // Arms extended at top (150 deg)
+  static const double pushupBottomAngle = 90.0;   // Vai hạ ngang hoặc qua khuỷu tay (<= 90 deg)
   static const double pushupMinHipAngle = 145.0;  // Body straight plank line (180 deg ideal)
   static const double pushupPikeHipAngle = 135.0; // Piking hips up
   
   // Pull-up Thresholds
-  static const double pullupDeadHangAngle = 155.0; // Full arms extension at bottom
-  static const double pullupTopAngle = 78.0;      // Deep pull with chin over bar
+  static const double pullupDeadHangAngle = 140.0; // Full arms extension at bottom (dead hang)
+  static const double pullupTopAngle = 85.0;      // Flexed pull
   
   // Anti-Cheat Rep Min Timers (Humanly impossible speeds)
   static const double pushupMinDurationSec = 0.70;
@@ -92,6 +100,8 @@ class ExerciseAnalyzer {
     _currentAntiCheatAlert = null;
     _lowestElbowAngleInRep = 180.0;
     _recentHipXHistory.clear();
+    _reachedDepth = false;
+    _virtualBarY = 0.0;
   }
   
   /// Process a pose and return biomechanical analysis
@@ -184,49 +194,56 @@ class ExerciseAnalyzer {
     // ── Biomechanical Push-Up Rep State Machine ──
     final now = DateTime.now();
 
+    // Kiểm tra vai hạ ngang hoặc qua khuỷu tay (trong toạ độ màn hình Y tăng dần về phía sàn)
+    final bool isShoulderPastElbow = shoulder.y >= elbow.y - 12.0;
+    final bool isDepthMet = elbowAngle <= pushupBottomAngle || isShoulderPastElbow;
+
+    if (isDepthMet && _repState == RepState.goingDown) {
+      _reachedDepth = true;
+    }
+
     switch (_repState) {
       case RepState.waiting:
-        // Ready at top lockout (elbows >= 155 deg and straight plank)
+        // Ready at top lockout (elbows >= 150 deg and straight plank)
         if (elbowAngle >= pushupLockoutAngle) {
           _repState = RepState.goingDown;
           _repStartTime = now;
           _lowestElbowAngleInRep = elbowAngle;
+          _reachedDepth = false;
           if (nose != null) _initialNoseY = nose.y;
           _initialShoulderY = shoulder.y;
         }
-        realtimeFeedback = 'Bắt đầu: Hạ ngực xuống vuông góc 90°';
+        realtimeFeedback = 'Bắt đầu: Hạ vai ngang hoặc qua khuỷu tay (≤90°)';
         break;
 
       case RepState.goingDown:
-        // Check if bottom depth (<= 92 deg) is reached
-        if (elbowAngle <= pushupBottomAngle) {
+        // Kiểm tra đạt độ sâu chuẩn
+        if (isDepthMet) {
+          _reachedDepth = true;
           _repState = RepState.goingUp;
           _bottomReachedTime = now;
-          realtimeFeedback = '✓ Đạt độ sâu! Đẩy người lên dứt khoát!';
+          realtimeFeedback = '✓ Đã đạt độ sâu (vai qua khuỷu tay)! Đẩy thẳng tay lên!';
         } else {
-          realtimeFeedback = 'Xuống sâu hơn một chút (Góc: ${elbowAngle.round()}° / 90°)';
+          realtimeFeedback = 'Hạ vai thêm một chút (Góc: ${elbowAngle.round()}° → cần ≤90°)';
         }
         break;
 
       case RepState.goingUp:
-        // Returning to top lockout (>= 155 deg)
+        // Đẩy người lên hoàn tất rep (>= 150 deg)
         if (elbowAngle >= pushupLockoutAngle) {
           final double repDuration = _repStartTime != null
               ? now.difference(_repStartTime!).inMilliseconds / 1000.0
               : 1.0;
 
-          // ── Anti-Cheat 3: Half-Rep Verification (Chưa xuống đủ sâu) ──
-          final bool reachedFullDepth = _lowestElbowAngleInRep <= pushupBottomAngle;
-          
-          // ── Anti-Cheat 4: Rep too fast (Làm quá nhanh / Giật cục) ──
+          // ── Quy tắc: Vai phải hạ ngang hoặc qua khuỷu tay mới tính 1 rep ──
           final bool isPlausibleSpeed = repDuration >= pushupMinDurationSec;
 
-          if (!reachedFullDepth) {
-            _currentAntiCheatAlert = '⚠️ NỬA REP: Bạn chưa xuống đủ sâu (cần đạt 90°)! Không tính rep.';
+          if (!_reachedDepth) {
+            _currentAntiCheatAlert = '⚠️ Không tính rep: Vai chưa hạ ngang hoặc qua khuỷu tay (đạt ${_lowestElbowAngleInRep.round()}°, cần ≤90°)!';
           } else if (!isPlausibleSpeed) {
             _currentAntiCheatAlert = '⚠️ QUÁ NHANH (${repDuration.toStringAsFixed(2)}s): Thực hiện chậm và có kiểm soát!';
           } else {
-            // Count valid rep!
+            // Rep hợp lệ!
             _repCount++;
             final bool isStrictlyCorrect = isFormValid && _currentIssues.isEmpty;
             if (isStrictlyCorrect) {
@@ -237,6 +254,7 @@ class ExerciseAnalyzer {
 
           _repState = RepState.waiting;
           _repStartTime = null;
+          _reachedDepth = false;
           _lowestElbowAngleInRep = 180.0;
         } else {
           realtimeFeedback = 'Đẩy thẳng tay khóa khớp trên (Góc: ${elbowAngle.round()}°)';
@@ -248,6 +266,10 @@ class ExerciseAnalyzer {
         break;
     }
 
+    final String depthStatus = _reachedDepth
+        ? 'depth_passed'
+        : (_repState == RepState.goingDown ? 'going_down' : 'ready');
+
     return FrameAnalysis(
       repCount: _repCount,
       correctRepCount: _correctCount,
@@ -258,6 +280,9 @@ class ExerciseAnalyzer {
       antiCheatAlert: _currentAntiCheatAlert,
       repState: _repState,
       formIssues: _currentIssues,
+      reachedDepth: _reachedDepth,
+      depthStatus: depthStatus,
+      virtualBarY: 0.0,
     );
   }
 
@@ -293,12 +318,23 @@ class ExerciseAnalyzer {
     final wrist = isLeft ? landmarks['leftWrist']! : landmarks['rightWrist']!;
     final hip = isLeft ? landmarks['leftHip'] : landmarks['rightHip'];
 
+    // Cập nhật vị trí xà đơn ảo theo cổ tay
+    double wristMidY = wrist.y;
+    if (landmarks['leftWrist'] != null && landmarks['rightWrist'] != null) {
+      wristMidY = (landmarks['leftWrist']!.y + landmarks['rightWrist']!.y) / 2.0;
+    }
+    if (_virtualBarY == 0.0) {
+      _virtualBarY = wristMidY;
+    } else {
+      _virtualBarY = _virtualBarY * 0.85 + wristMidY * 0.15;
+    }
+
     // Calculate elbow angle
     final elbowAngle = PoseUtils.calculateAngle(shoulder, elbow, wrist);
     
-    // Check if chin / nose has ascended past wrist / bar level
-    // In screen coordinates: smaller Y = higher physical position
-    final bool chinAboveBar = (nose.y <= wrist.y + 25.0);
+    // QUY TẮC: "Đầu vượt qua tay là tính hít xà"
+    // Trong hệ tọa độ Y: nhỏ hơn là ở trên cao
+    final bool headOverHands = (nose.y <= _virtualBarY + 18.0);
     
     _currentIssues = [];
     _currentAntiCheatAlert = null;
@@ -307,6 +343,10 @@ class ExerciseAnalyzer {
 
     if (elbowAngle < _lowestElbowAngleInRep) {
       _lowestElbowAngleInRep = elbowAngle;
+    }
+
+    if (headOverHands && _repState == RepState.goingUp) {
+      _reachedDepth = true;
     }
 
     // ── Anti-Cheat: Kipping & Leg Swinging Detection (Lăng người / Giật chân) ──
@@ -333,44 +373,45 @@ class ExerciseAnalyzer {
 
     switch (_repState) {
       case RepState.waiting:
-        // Starting dead-hang position: arms fully extended (>= 155 deg)
+        // Starting dead-hang position: arms extended (>= 140 deg)
         if (elbowAngle >= pullupDeadHangAngle) {
           _repState = RepState.goingUp;
           _repStartTime = now;
           _lowestElbowAngleInRep = elbowAngle;
+          _reachedDepth = false;
           _recentHipXHistory.clear();
         }
         realtimeFeedback = 'Treo người duỗi thẳng tay để bắt đầu';
         break;
 
       case RepState.goingUp:
-        // Peak of pull-up reached: Chin above bar AND elbow flexed <= 78 deg
-        if (chinAboveBar && elbowAngle <= pullupTopAngle) {
+        // Đỉnh của rep: Đầu/cằm vượt qua tay/xà
+        if (headOverHands) {
+          _reachedDepth = true;
           _repState = RepState.goingDown;
           _bottomReachedTime = now;
-          realtimeFeedback = '✓ Cằm đã vượt xà! Hạ người có kiểm soát!';
+          realtimeFeedback = '✓ ĐẦU ĐÃ VƯỢT QUA TAY! Hạ người có kiểm soát!';
         } else {
-          realtimeFeedback = 'Kéo mạnh lên: Đưa cằm vượt xà (Góc tay: ${elbowAngle.round()}°)';
+          realtimeFeedback = 'Kéo mạnh lên: Đưa đầu vượt qua tay (Góc tay: ${elbowAngle.round()}°)';
         }
         break;
 
       case RepState.goingDown:
-        // Returning down to dead hang (elbows >= 155 deg)
+        // Hạ người về dead hang (elbows >= 140 deg)
         if (elbowAngle >= pullupDeadHangAngle) {
           final double repDuration = _repStartTime != null
               ? now.difference(_repStartTime!).inMilliseconds / 1000.0
               : 1.0;
 
-          // ── Anti-Cheat: Partial Pull-up Verification (Kéo chưa tới cằm) ──
-          final bool reachedTop = _lowestElbowAngleInRep <= pullupTopAngle;
+          // ── Quy tắc: Phải kéo đầu vượt qua tay mới tính 1 rep hít xà ──
           final bool isPlausibleSpeed = repDuration >= pullupMinDurationSec;
 
-          if (!reachedTop) {
-            _currentAntiCheatAlert = '⚠️ NỬA REP: Cằm chưa qua xà! Không tính rep.';
+          if (!_reachedDepth) {
+            _currentAntiCheatAlert = '⚠️ Không tính rep: Đầu chưa vượt qua tay! Hãy kéo đầu vượt qua xà!';
           } else if (!isPlausibleSpeed) {
             _currentAntiCheatAlert = '⚠️ QUÁ NHANH (${repDuration.toStringAsFixed(2)}s): Không tính lần này!';
           } else {
-            // Valid pull-up rep!
+            // Rep hít xà hợp lệ!
             _repCount++;
             final bool isStrictlyCorrect = isFormValid && _currentIssues.isEmpty;
             if (isStrictlyCorrect) {
@@ -381,6 +422,7 @@ class ExerciseAnalyzer {
 
           _repState = RepState.waiting;
           _repStartTime = null;
+          _reachedDepth = false;
           _lowestElbowAngleInRep = 180.0;
         } else {
           realtimeFeedback = 'Hạ người hết cỡ duỗi thẳng tay (Góc: ${elbowAngle.round()}°)';
@@ -392,6 +434,10 @@ class ExerciseAnalyzer {
         break;
     }
 
+    final String depthStatus = _reachedDepth
+        ? 'depth_passed'
+        : (_repState == RepState.goingUp ? 'going_down' : 'ready');
+
     return FrameAnalysis(
       repCount: _repCount,
       correctRepCount: _correctCount,
@@ -402,6 +448,9 @@ class ExerciseAnalyzer {
       antiCheatAlert: _currentAntiCheatAlert,
       repState: _repState,
       formIssues: _currentIssues,
+      reachedDepth: _reachedDepth,
+      depthStatus: depthStatus,
+      virtualBarY: _virtualBarY,
     );
   }
 
@@ -410,4 +459,6 @@ class ExerciseAnalyzer {
   int get correctCount => _correctCount;
   RepState get repState => _repState;
   List<String> get formIssues => _currentIssues;
+  bool get reachedDepth => _reachedDepth;
+  double get virtualBarY => _virtualBarY;
 }

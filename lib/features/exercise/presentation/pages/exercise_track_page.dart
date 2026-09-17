@@ -61,9 +61,9 @@ class _ExerciseTrackPageState extends ConsumerState<ExerciseTrackPage> with Sing
                       const SizedBox(width: 4),
                       Consumer(
                         builder: (context, ref, _) {
-                          final stats = ref.watch(userExerciseStatsProvider);
+                          final user = ref.watch(userProvider);
                           return Text(
-                            '${stats.currentStreak} ngày',
+                            '${user.streak} ngày',
                             style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                           );
                         },
@@ -583,161 +583,317 @@ class _WalkingTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(userExerciseStatsProvider);
     final dailyGoal = ref.watch(dailyWalkingGoalProvider);
+    final distanceKm = (dailyGoal.currentSteps * 0.75 / 1000).toStringAsFixed(2);
+    final calories = (dailyGoal.currentSteps * 0.038).round();
+    final pointsEarned = (dailyGoal.currentSteps ~/ 10) + (dailyGoal.currentSteps ~/ 100);
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       children: [
-        // Quick Stats Card
-        AppCard(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2ed573), Color(0xFF7bed9f)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Center(
-                      child: Text('🚶', style: TextStyle(fontSize: 32)),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Đi Bộ',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          '${stats.totalWalkingSteps} bước tổng cộng',
-                          style: const TextStyle(color: Colors.white70, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _StatItem(label: 'Hôm nay', value: '${dailyGoal.currentSteps}'),
-                  Container(width: 1, height: 30, color: Colors.white24),
-                  _StatItem(label: 'Mục tiêu', value: '${dailyGoal.targetSteps}'),
-                  Container(width: 1, height: 30, color: Colors.white24),
-                  _StatItem(label: 'Điểm', value: '+${(dailyGoal.currentSteps ~/ 10) + (dailyGoal.currentSteps ~/ 100)}'),
-                ],
+        // ── 1. HERO WALKING CARD (Glassmorphic Emerald Gradient) ──
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0F9B0F), Color(0xFF10AC84), Color(0xFF2ED573)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF10AC84).withValues(alpha: 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 16),
-
-        // Daily Goal Progress
-        AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    '🎯 Mục tiêu hôm nay',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Text('🚶', style: TextStyle(fontSize: 26)),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'ĐI BỘ & CHẠY BỘ',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          Text(
+                            'Tổng tích lũy: ${stats.totalWalkingSteps} bước',
+                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.bolt, color: Color(0xFFFFD700), size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          '+$pointsEarned pts',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Text(
-                    '${dailyGoal.currentSteps}/${dailyGoal.targetSteps} bước',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Step Numbers & Circle Progress Info
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Bước chân hôm nay',
+                        style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '${dailyGoal.currentSteps}',
+                            style: const TextStyle(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          Text(
+                            ' / ${dailyGoal.targetSteps}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${(dailyGoal.progress * 100).toInt()}%',
+                      style: const TextStyle(
+                        color: Color(0xFF10AC84),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              ProgressBar(
-                progress: dailyGoal.progress,
-                color: const Color(0xFF2ed573),
-                height: 12,
-              ),
-              const SizedBox(height: 8),
-              if (dailyGoal.completed)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.check_circle, color: AppColors.success, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Hoàn thành! +30 Coins',
-                        style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
+
+              // Progress Bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: dailyGoal.progress.clamp(0.0, 1.0),
+                  minHeight: 10,
+                  backgroundColor: Colors.black.withValues(alpha: 0.2),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
+              ),
+              const SizedBox(height: 18),
+
+              // 3 Metric Grid
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _MiniWalkingStat(
+                      icon: Icons.place,
+                      label: 'Quãng đường',
+                      value: '$distanceKm km',
+                    ),
+                    Container(width: 1, height: 26, color: Colors.white24),
+                    _MiniWalkingStat(
+                      icon: Icons.local_fire_department,
+                      label: 'Năng lượng',
+                      value: '$calories kcal',
+                    ),
+                    Container(width: 1, height: 26, color: Colors.white24),
+                    _MiniWalkingStat(
+                      icon: Icons.timer,
+                      label: 'Thời gian',
+                      value: '${(dailyGoal.currentSteps / 110).round()} phút',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // ── 2. AI ANTI-CHEAT SHIELD STATUS BADGE ──
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: const Color(0xFF10AC84).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF10AC84).withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10AC84).withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.shield, color: Color(0xFF2ED573), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Hệ Thống AI Anti-Cheat 4.0 Hoạt Động',
+                      style: TextStyle(
+                        color: Color(0xFF2ED573),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Tự động khóa chống đi xe máy, xe đạp điện & lắc tay ảo',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2ED573).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Active',
+                  style: TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 16),
 
-        // Primary GPS Live Tracking Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
+        // ── 3. PRIMARY ACTION: GPS LIVE WALKING BUTTON ──
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2ED573), Color(0xFF10AC84)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2ED573).withValues(alpha: 0.4),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2ED573),
-              foregroundColor: const Color(0xFF0F0F23),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 4,
-              shadowColor: const Color(0xFF2ED573).withValues(alpha: 0.5),
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
-            icon: const Icon(Icons.directions_walk, size: 26),
-            label: const Text(
-              'BẮT ĐẦU ĐI BỘ (GPS & BƯỚC CHÂN REALTIME)',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+            onPressed: () => context.push('/gps-walking'),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0F0F23),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.play_arrow_rounded, color: Color(0xFF2ED573), size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'BẮT ĐẦU ĐI BỘ REALTIME (GPS LIVE)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F0F23),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
             ),
-            onPressed: () {
-              context.push('/gps-walking');
-            },
           ),
         ),
         const SizedBox(height: 16),
 
-        // Quick GPS & Sensor Mode Cards
+        // ── 4. TWO TRACKING MODES CARDS ──
         Row(
           children: [
             Expanded(
-              child: GestureDetector(
+              child: InkWell(
                 onTap: () => context.push('/gps-walking'),
+                borderRadius: BorderRadius.circular(18),
                 child: Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.surfaceLight),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFF2ED573).withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -746,27 +902,33 @@ class _WalkingTab extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: const Color(0xFF2ED573).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.navigation, color: Color(0xFF2ED573), size: 18),
+                            child: const Icon(Icons.near_me, color: Color(0xFF2ED573), size: 22),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
                               color: const Color(0xFF2ED573).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text('Vệ tinh', style: TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold)),
+                            child: const Text('GPS Live', style: TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      const Text('GPS Ngoài trời', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
-                      const SizedBox(height: 2),
-                      const Text('Đo quãng đường, pace & bản đồ live', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Ngoài trời (GPS)',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Vẽ lộ trình bản đồ, lọc nhiễu vệ tinh 2D Kalman & đo Pace',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.3),
+                      ),
                     ],
                   ),
                 ),
@@ -774,14 +936,15 @@ class _WalkingTab extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: GestureDetector(
+              child: InkWell(
                 onTap: () => context.push('/gps-walking'),
+                borderRadius: BorderRadius.circular(18),
                 child: Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.surfaceLight),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,27 +953,33 @@ class _WalkingTab extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.smartphone, color: AppColors.primary, size: 18),
+                            child: const Icon(Icons.directions_run, color: AppColors.primary, size: 22),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Text('Sensor', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      const Text('Pedometer Mobile', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
-                      const SizedBox(height: 2),
-                      const Text('Cảm biến gia tốc đếm bước khi cầm máy', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Trong nhà / Máy chạy',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Cảm biến bước chân sinh học, tự động hiệu chỉnh sải bước',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.3),
+                      ),
                     ],
                   ),
                 ),
@@ -820,77 +989,51 @@ class _WalkingTab extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
 
-        // Manual Step Entry
+        // ── 5. QUICK ACTIONS & SYNC ──
         AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '📱 Đồng bộ / Nhập số bước',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.directions_walk, color: AppColors.textMuted, size: 20),
-                              const SizedBox(width: 8),
-                              const Text('Bước chân hôm nay:', style: TextStyle(color: AppColors.textSecondary)),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${dailyGoal.currentSteps}',
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Tự động đồng bộ từ đồng hồ thông minh hoặc nhập thủ công',
-                          style: TextStyle(fontSize: 11, color: AppColors.textMuted),
-                        ),
-                      ],
-                    ),
+                  const Text(
+                    '⚡ Tiện ích & Đồng bộ dữ liệu',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _showSyncDialog(context),
+                    icon: const Icon(Icons.sync, size: 16, color: AppColors.primary),
+                    label: const Text('Đồng bộ', style: TextStyle(color: AppColors.primary, fontSize: 12)),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Sync from device
-                        _showSyncDialog(context);
-                      },
-                      icon: const Icon(Icons.sync),
-                      label: const Text('Đồng bộ'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: AppColors.surfaceLight),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => _showSyncDialog(context),
+                      icon: const Icon(Icons.watch, color: Color(0xFF2ED573), size: 18),
+                      label: const Text('Smartwatch', style: TextStyle(color: AppColors.textPrimary, fontSize: 12)),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Manual entry
-                        _showManualEntryDialog(context, ref);
-                      },
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Nhập tay'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: AppColors.surfaceLight),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => _showManualEntryDialog(context, ref),
+                      icon: const Icon(Icons.edit_note, color: AppColors.primary, size: 18),
+                      label: const Text('Nhập số bước', style: TextStyle(color: AppColors.textPrimary, fontSize: 12)),
                     ),
                   ),
                 ],
@@ -900,30 +1043,33 @@ class _WalkingTab extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
 
-        // Points Info
+        // ── 6. GAMIFICATION POINTS POLICY ──
         AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '💰 Cách tính điểm',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+              Row(
+                children: const [
+                  Text('💎', style: TextStyle(fontSize: 18)),
+                  SizedBox(width: 8),
+                  Text(
+                    'Cơ chế Thưởng & Tích Điểm Đi Bộ',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
-              const _PointInfoRow(icon: '👟', label: '10 bước = 1 điểm', value: '+1'),
-              const Divider(color: AppColors.surfaceLight),
-              const _PointInfoRow(icon: '📍', label: '100m = 1 điểm thưởng', value: '+1'),
-              const Divider(color: AppColors.surfaceLight),
-              const _PointInfoRow(icon: '🎯', label: 'Hoàn thành mục tiêu', value: '+30'),
-              const Divider(color: AppColors.surfaceLight),
-              const _PointInfoRow(icon: '🔥', label: 'Bonus chuỗi ngày (Premium)', value: '+25%'),
+              const _PointInfoRow(icon: '👟', label: '10 bước chân thực tế', value: '+1 Điểm Thể Lực'),
+              const Divider(color: AppColors.surfaceLight, height: 16),
+              const _PointInfoRow(icon: '📍', label: '100m quãng đường GPS', value: '+1 Điểm Thưởng'),
+              const Divider(color: AppColors.surfaceLight, height: 16),
+              const _PointInfoRow(icon: '🎯', label: 'Hoàn thành mục tiêu 10.000 bước', value: '+30 Coins & XP'),
+              const Divider(color: AppColors.surfaceLight, height: 16),
+              const _PointInfoRow(icon: '🔥', label: 'Duy trì chuỗi Streak (Hôm nay)', value: 'x1.25 Multiplier'),
             ],
           ),
         ),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -1043,6 +1189,47 @@ class _StatItem extends StatelessWidget {
           style: const TextStyle(
             fontSize: 12,
             color: Colors.white70,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniWalkingStat extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _MiniWalkingStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white70, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
           ),
         ),
       ],
