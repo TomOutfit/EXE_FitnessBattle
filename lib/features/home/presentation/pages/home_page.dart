@@ -354,83 +354,197 @@ class HomePage extends ConsumerWidget {
               );
             }(),
 
-            // Server Boss Titan Raid Live Card
+            // Server Boss Titan Raid Live Card (Tap to View Raid Details)
             () {
               final boss = LiveSimulationService.instance.getServerBossRaid();
               final hpPercent = ((boss['currentHp'] as int) / (boss['totalHp'] as int)).clamp(0.0, 1.0);
-              return Container(
-                margin: const EdgeInsets.only(top: 14),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF2C0B0E),
-                      Color(0xFF160608),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFF4757).withValues(alpha: 0.4)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          '👹 BOSS TOÀN SERVER',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFFFF4757),
-                            letterSpacing: 0.5,
+              return GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: const Color(0xFF0F172A),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    builder: (ctx) => Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF4757).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text('👹', style: TextStyle(fontSize: 28)),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${boss["bossName"]}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Mục tiêu: ${boss["targetExercise"]}',
+                                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '👥 ${boss["participantsCount"]} dũng sĩ tham gia',
-                          style: const TextStyle(fontSize: 11, color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${boss["bossName"]}',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        Text(
-                          'HP: ${boss["currentHp"]} / ${boss["totalHp"]}',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFF6B81)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: hpPercent,
-                        minHeight: 8,
-                        backgroundColor: Colors.white12,
-                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF4757)),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E293B),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.white12),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Máu Boss còn lại:', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                                    Text('${boss["currentHp"]} / ${boss["totalHp"]} HP',
+                                        style: const TextStyle(color: Color(0xFFFF4757), fontWeight: FontWeight.bold, fontSize: 13)),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: LinearProgressIndicator(
+                                    value: hpPercent,
+                                    minHeight: 10,
+                                    backgroundColor: Colors.white12,
+                                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF4757)),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Sát thương bạn đóng góp: ${(boss["userDamage"] ?? 0)} DMG',
+                                        style: const TextStyle(color: Color(0xFF2ED573), fontWeight: FontWeight.bold, fontSize: 12)),
+                                    const Text('Phần thưởng: 500 💎 + Khung VIP',
+                                        style: TextStyle(color: Color(0xFFFFA502), fontWeight: FontWeight.bold, fontSize: 12)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                context.go('/exercise');
+                              },
+                              icon: const Icon(Icons.fitness_center, color: Colors.white),
+                              label: const Text(
+                                '⚔️ TẬP LUYỆN ĐÁNH BOSS NGAY',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF4757),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Sát thương của bạn: ${(boss["userDamage"] ?? 0)} DMG',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF2ED573)),
-                        ),
-                        const Text(
-                          'Phần thưởng: 500 💎',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFFA502)),
-                        ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(top: 14),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF2C0B0E),
+                        Color(0xFF160608),
                       ],
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFF4757).withValues(alpha: 0.4)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            '👹 BOSS TOÀN SERVER (CHẠM ĐỂ XEM)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFFF4757),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '👥 ${boss["participantsCount"]} dũng sĩ tham gia',
+                            style: const TextStyle(fontSize: 11, color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${boss["bossName"]}',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          Text(
+                            'HP: ${boss["currentHp"]} / ${boss["totalHp"]}',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFF6B81)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: hpPercent,
+                          minHeight: 8,
+                          backgroundColor: Colors.white12,
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF4757)),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Sát thương của bạn: ${(boss["userDamage"] ?? 0)} DMG',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF2ED573)),
+                          ),
+                          const Text(
+                            'Phần thưởng: 500 💎',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFFA502)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               );
             }(),

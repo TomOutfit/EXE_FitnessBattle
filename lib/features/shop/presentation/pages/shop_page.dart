@@ -55,21 +55,34 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                   ),
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.diamond, color: Color(0xFFFF4757), size: 18),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${user.ruby}',
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                      ),
-                    ],
+                GestureDetector(
+                  onTap: () => _showTopUpModal(context, ref),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF4757).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFFF4757).withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.diamond, color: Color(0xFFFF4757), size: 18),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${user.ruby}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFF4757),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.add, color: Colors.white, size: 12),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -208,6 +221,171 @@ class _ShopPageState extends ConsumerState<ShopPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showTopUpModal(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF4757).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.diamond, color: Color(0xFFFF4757), size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Nạp Ruby Siêu Tốc',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _buildTopUpOption(
+              ctx,
+              ref,
+              title: 'Túi Ruby Tân Thủ',
+              rubyAmount: 100,
+              priceText: '20.000 VNĐ',
+              badge: 'Tiết kiệm',
+              badgeColor: const Color(0xFF2ED573),
+            ),
+            const SizedBox(height: 10),
+            _buildTopUpOption(
+              ctx,
+              ref,
+              title: 'Hòm Ruby Đấu Thủ',
+              rubyAmount: 550,
+              priceText: '99.000 VNĐ',
+              badge: '+50 💎 Free (HOT)',
+              badgeColor: const Color(0xFFFF4757),
+            ),
+            const SizedBox(height: 10),
+            _buildTopUpOption(
+              ctx,
+              ref,
+              title: 'Rương Titan Hoàng Gia',
+              rubyAmount: 1700,
+              priceText: '249.000 VNĐ',
+              badge: '+200 💎 Free (VIP)',
+              badgeColor: const Color(0xFFFFA502),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.lock, color: Colors.white38, size: 14),
+                SizedBox(width: 4),
+                Text(
+                  'Hỗ trợ Google Play Billing • MoMo • VNPay QR',
+                  style: TextStyle(fontSize: 11, color: Colors.white38),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopUpOption(
+    BuildContext ctx,
+    WidgetRef ref, {
+    required String title,
+    required int rubyAmount,
+    required String priceText,
+    required String badge,
+    required Color badgeColor,
+  }) {
+    return InkWell(
+      onTap: () {
+        ref.read(userProvider.notifier).addRuby(rubyAmount);
+        Navigator.pop(ctx);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎉 Nạp thành công $rubyAmount Ruby vào tài khoản!'),
+            backgroundColor: const Color(0xFF2ED573),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.diamond, color: Color(0xFFFF4757), size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: badgeColor, width: 0.8),
+                        ),
+                        child: Text(
+                          badge,
+                          style: TextStyle(color: badgeColor, fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '+$rubyAmount Ruby',
+                    style: const TextStyle(color: Color(0xFFFF6B81), fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF4757),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                priceText,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
