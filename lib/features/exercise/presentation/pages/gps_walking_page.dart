@@ -11,6 +11,67 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/providers.dart';
 
+class KmSplit {
+  final int km;
+  final int timeSeconds;
+  final int totalSeconds;
+  final String pace;
+  final double avgSpeedKmh;
+  final int cadence;
+
+  KmSplit({
+    required this.km,
+    required this.timeSeconds,
+    required this.totalSeconds,
+    required this.pace,
+    required this.avgSpeedKmh,
+    required this.cadence,
+  });
+}
+
+/// 2D Kalman Filter for Latitude/Longitude Smoothing
+class KalmanLatLong {
+  final double minAccuracy;
+  final double qMetersPerSecond;
+  double variance = -1.0;
+  double lat = 0.0;
+  double lng = 0.0;
+  int timestampMs = 0;
+
+  KalmanLatLong({this.qMetersPerSecond = 2.5, this.minAccuracy = 1.0});
+
+  void setState(double lat, double lng, double accuracy, int timestampMs) {
+    this.lat = lat;
+    this.lng = lng;
+    variance = accuracy * accuracy;
+    this.timestampMs = timestampMs;
+  }
+
+  Map<String, double> process(double latMeasurement, double lngMeasurement, double accuracy, int timestampMs) {
+    final double acc = accuracy < minAccuracy ? minAccuracy : accuracy;
+
+    if (variance < 0) {
+      setState(latMeasurement, lngMeasurement, acc, timestampMs);
+      return {'lat': lat, 'lng': lng};
+    }
+
+    final int timeDeltaMs = timestampMs - this.timestampMs;
+    if (timeDeltaMs > 0) {
+      variance += (timeDeltaMs / 1000.0) * qMetersPerSecond * qMetersPerSecond;
+      this.timestampMs = timestampMs;
+    }
+
+    final double measurementVariance = acc * acc;
+    final double k = variance / (variance + measurementVariance);
+
+    lat += k * (latMeasurement - lat);
+    lng += k * (lngMeasurement - lng);
+    variance = (1.0 - k) * variance;
+
+    return {'lat': lat, 'lng': lng};
+  }
+}
+
 class GPSCoordinatePoint {
   final double lat;
   final double lng;
@@ -40,6 +101,20 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
   bool _isStarted = false;
   bool _isPaused = false;
   bool _isCompleted = false;
+
+  // Auto-Pause & Stride Calibration
+  bool _autoPauseEnabled = true;
+  bool _isAutoPaused = false;
+  double _calibratedStride = 0.74; // meters
+  final List<KmSplit> _splits = [];
+  bool _showSplits = false;
+  double _stationaryDurationSeconds = 0.0;
+  int _lastSplitKm = 0;
+  int _lastSplitTime = 0;
+  double _lastAnnouncedKm = 0.0;
+  int _lastAnnouncedStep = 0;
+  int _lastStrideCalibSteps = 0;
+  final KalmanLatLong _kalmanFilter = KalmanLatLong(qMetersPerSecond: 2.5);
 
   // Mode: 'outdoor' (GPS + Sensor Fusion) or 'indoor' (Pedometer only)
   String _trackMode = 'outdoor';
@@ -72,7 +147,6 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
   int _consecutiveStationaryDrifts = 0;
 
   // Step detection variables
-  double _lastAccelMagnitude = 9.8;
   String _accelState = 'falling';
   DateTime _lastStepTimestamp = DateTime.now();
   final List<DateTime> _stepCandidateBuffer = [];
@@ -196,26 +270,44 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
           _stepCandidateBuffer.add(now);
           _recentStepsWindow.add(now);
 
-          // ── Anti-Cheat Layer 1: High Frequency Hand Shaking (> 215 SPM) ──
+          // ── Resume Auto-Pause on detected real footsteps ──
+          if (_isAutoPaused) {
+            setState(() {
+              _isAutoPaused = false;
+              _stationaryDurationSeconds = 0.0;
+            });
+            _speak('Tiếp tục đếm!');
+          }
+
+          // ── Anti-Cheat Layer 1: Motorbike / Vehicle Lockout (No steps accepted while on vehicle) ──
+          if (_currentSpeedKmh > 14.0 || _movementState == 'vehicle') {
+            setState(() {
+              _movementState = 'vehicle';
+              _antiCheatWarning = '🚫 PHÁT HIỆN ĐANG ĐI XE MÁY / Ô TÔ (${_currentSpeedKmh.toStringAsFixed(1)} km/h): Đóng băng không cộng bước!';
+            });
+            return; // REJECT VEHICLE ENGINE VIBRATION STEP
+          }
+
+          // ── Anti-Cheat Layer 2: High Frequency Hand Shaking (> 210 SPM) ──
           final int stepsIn8s = _recentStepsWindow.length;
           final double cadenceSpm = (stepsIn8s / 8) * 60;
-          if (cadenceSpm > 215) {
+          if (cadenceSpm > 210) {
             setState(() {
               _movementState = 'fake_shaking';
-              _antiCheatWarning = '🚫 PHÁT HIỆN LẮC TAY BẤT THƯỜNG (>215 SPM): Tạm dừng tích lũy bước chân!';
+              _antiCheatWarning = '🚫 PHÁT HIỆN LẮC TAY BẤT THƯỜNG (>210 SPM): Tạm dừng tích lũy bước chân!';
             });
             return; // REJECT FAKE SHAKE STEP
           }
 
-          // ── Anti-Cheat Layer 2: Sensor Fusion in Outdoor Mode (Standing Still & Shaking Phone) ──
+          // ── Anti-Cheat Layer 3: Sensor Fusion in Outdoor Mode (Standing Still & Shaking Phone) ──
           if (_trackMode == 'outdoor' && _gpsStatus != 'poor' && _lastAcceptedGpsPoint != null) {
             final double totalGpsDistIn8s = _recentGpsMovements.fold<double>(
               0.0,
               (sum, item) => sum + (item['distance'] as double),
             );
 
-            // User produces >= 5 steps in 8s but GPS displacement is < 2.5m and GPS speed is negligible
-            if (stepsIn8s >= 5 && totalGpsDistIn8s < 2.5 && _currentSpeedKmh < 0.9) {
+            // User produces >= 4 steps in 8s but GPS displacement is < 2.0m and GPS speed is negligible
+            if (stepsIn8s >= 4 && totalGpsDistIn8s < 2.0 && _currentSpeedKmh < 0.8) {
               setState(() {
                 _movementState = 'fake_shaking';
                 _antiCheatWarning = '🚫 PHÁT HIỆN LẮC TAY TẠI CHỖ: Người dùng đang đứng yên (GPS không di chuyển). Đã đóng băng không cộng bước!';
@@ -241,8 +333,8 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                   _movementState = 'walking';
                   _antiCheatWarning = null;
                   _steps += bufferedCount;
-                  if (_trackMode == 'indoor') {
-                    _distanceMeters += bufferedCount * 0.74;
+                  if (_trackMode == 'indoor' || _gpsStatus == 'poor') {
+                    _distanceMeters += bufferedCount * _calibratedStride;
                   }
                 });
               }
@@ -255,19 +347,17 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
             _movementState = 'walking';
             _antiCheatWarning = null;
             _steps += 1;
-            if (_trackMode == 'indoor') {
-              _distanceMeters += 0.74;
+            if (_trackMode == 'indoor' || _gpsStatus == 'poor') {
+              _distanceMeters += _calibratedStride;
             }
           });
         }
       }
-
-      _lastAccelMagnitude = magnitude;
     });
   }
 
   // -------------------------------------------------------------
-  // 3. Real Hardware Geolocation Tracking & GPS Jitter Suppressor
+  // 3. 2D Kalman Filter + Real GPS Tracking & Anti-Cheat
   // -------------------------------------------------------------
   void _startGPSLocationTracking() async {
     final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -320,10 +410,20 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
       // Discard inaccurate GPS readings (accuracy > 38m)
       if (accuracy > 38) return;
 
+      // ── 2D KALMAN FILTER: Smooth coordinates using satellite accuracy ──
+      final Map<String, double> filtered = _kalmanFilter.process(
+        latitude,
+        longitude,
+        accuracy,
+        now.millisecondsSinceEpoch,
+      );
+      final double filtLat = filtered['lat']!;
+      final double filtLng = filtered['lng']!;
+
       if (_lastAcceptedGpsPoint == null || _routePoints.isEmpty) {
         final firstPoint = GPSCoordinatePoint(
-          lat: latitude,
-          lng: longitude,
+          lat: filtLat,
+          lng: filtLng,
           speed: speed >= 0 ? speed : 0,
           accuracy: accuracy,
           timestamp: now,
@@ -336,7 +436,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
       }
 
       final last = _lastAcceptedGpsPoint!;
-      final double distDelta = _calculateDistance(last.lat, last.lng, latitude, longitude);
+      final double distDelta = _calculateDistance(last.lat, last.lng, filtLat, filtLng);
       final double timeDelta = now.difference(last.timestamp).inMilliseconds / 1000.0;
 
       if (timeDelta <= 0.2) return; // ignore redundant duplicate ticks
@@ -348,17 +448,24 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
         speedKmh = (distDelta / timeDelta) * 3.6;
       }
 
-      // ── GPS Jitter & Stationary Deadzone Filter ──
-      // Dynamic minimum physical movement threshold proportional to GPS accuracy
-      final double minPhysicalMoveThreshold = max(3.8, min(10.0, accuracy * 0.42));
+      // ── ZUPT & GPS Jitter Suppressor ──
+      final double minPhysicalMoveThreshold = max(3.2, min(8.5, accuracy * 0.38));
 
-      if (distDelta < minPhysicalMoveThreshold || speedKmh < 1.0) {
+      if (distDelta < minPhysicalMoveThreshold || speedKmh < 0.8) {
         // Confirmed stationary jitter: DO NOT ADD DISTANCE!
         _consecutiveStationaryDrifts++;
         setState(() {
           _currentSpeedKmh = 0.0;
           if (_recentStepsWindow.isEmpty) {
             _movementState = 'stationary';
+            _stationaryDurationSeconds += timeDelta;
+
+            // Auto-pause when stationary for > 3.5 seconds
+            if (_autoPauseEnabled && _stationaryDurationSeconds >= 3.5 && !_isAutoPaused) {
+              _isAutoPaused = true;
+              _speak('Tự động tạm dừng');
+            }
+
             if (_consecutiveStationaryDrifts >= 4) {
               _antiCheatWarning = null;
             }
@@ -367,34 +474,83 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
         return; // Return without accumulating fake distance!
       }
 
-      // ── Anti-Cheat: High Speed Vehicle Filter (> 24 km/h) ──
-      if (speedKmh > 24.0) {
+      // ── Anti-Cheat Layer 1: Absolute Vehicle Speed Threshold (> 14.5 km/h) ──
+      if (speedKmh > 14.5) {
         setState(() {
           _movementState = 'vehicle';
-          _antiCheatWarning = '⚠️ TỐC ĐỘ QUÁ NHANH (>24km/h): Đã tạm dừng tính quãng đường do nghi vấn đi xe máy/ô tô!';
+          _currentSpeedKmh = speedKmh;
+          _antiCheatWarning = '🚫 PHÁT HIỆN ĐI XE MÁY / Ô TÔ (${speedKmh.toStringAsFixed(1)} km/h): Tốc độ vượt giới hạn đi bộ sinh học!';
         });
         return; // REJECT VEHICLE
       }
 
-      // ── Anti-Cheat: Passive Transport (GPS moves fast but ZERO steps over 12s) ──
-      final int stepsInLast10s = _recentStepsWindow.length;
-      if (speedKmh > 11.0 && stepsInLast10s == 0 && timeDelta > 3) {
+      // ── Anti-Cheat Layer 2: Passive Transport (GPS moves fast but ZERO human steps in last 6s) ──
+      final int stepsInLast8s = _recentStepsWindow.length;
+      if (speedKmh > 7.5 && stepsInLast8s == 0 && timeDelta > 2.0) {
         setState(() {
           _movementState = 'vehicle';
-          _antiCheatWarning = '🚗 PHÁT HIỆN ĐANG ĐI XE: Toạ độ GPS di chuyển nhưng không có bước chân người!';
+          _currentSpeedKmh = speedKmh;
+          _antiCheatWarning = '🚗 PHÁT HIỆN ĐANG ĐI XE: Toạ độ GPS di chuyển (${speedKmh.toStringAsFixed(1)} km/h) nhưng không có bước chân người!';
         });
         return; // REJECT PASSIVE TRANSPORT
       }
 
+      // ── Anti-Cheat Layer 3: Speed-to-Cadence Anomaly (Moving at 9-14 km/h with low cadence < 125 SPM) ──
+      final double currentCadence = (stepsInLast8s / 8.0) * 60;
+      if (speedKmh >= 9.0 && currentCadence < 125) {
+        setState(() {
+          _movementState = 'vehicle';
+          _currentSpeedKmh = speedKmh;
+          _antiCheatWarning = '⚠️ PHÁT HIỆN ĐI XE CHẬM / XE ĐẠP ĐIỆN: Tốc độ ${speedKmh.toStringAsFixed(1)} km/h không khớp nhịp bước chân (${currentCadence.toStringAsFixed(0)} SPM)!';
+        });
+        return; // REJECT SLOW VEHICLE
+      }
+
+      // ── Anti-Cheat Layer 4: Unnatural Virtual Stride Length (> 1.6m / step) ──
+      if (stepsInLast8s > 0 && distDelta > 3.0) {
+        final double strideEstimate = distDelta / max(1, stepsInLast8s);
+        if (strideEstimate > 1.6 && speedKmh > 8.0) {
+          setState(() {
+            _movementState = 'vehicle';
+            _currentSpeedKmh = speedKmh;
+            _antiCheatWarning = '🚫 PHÁT HIỆN SẢI BƯỚC BẤT THƯỜNG (${strideEstimate.toStringAsFixed(1)}m/bước): Rung động xe không phải bước chân thật!';
+          });
+          return; // REJECT STRIDE DISCREPANCY
+        }
+      }
+
       // ── Valid Physical Walking Movement Detected! ──
       _consecutiveStationaryDrifts = 0;
+      _stationaryDurationSeconds = 0.0;
+
+      if (_isAutoPaused) {
+        setState(() {
+          _isAutoPaused = false;
+        });
+        _speak('Tiếp tục');
+      }
+
       final double validSpeedKmh = min(20.0, max(1.2, double.parse(speedKmh.toStringAsFixed(1))));
 
       _recentGpsMovements.add({'timestamp': now, 'distance': distDelta});
 
+      // Dynamic Stride Calibration when GPS accuracy is high (<= 7m)
+      if (_trackMode == 'outdoor') {
+        if (accuracy <= 7.0 && validSpeedKmh >= 2.5 && validSpeedKmh <= 7.0) {
+          final int deltaSteps = _steps - _lastStrideCalibSteps;
+          if (deltaSteps >= 10 && distDelta > 6.0) {
+            final double currentStepLength = distDelta / deltaSteps;
+            if (currentStepLength >= 0.55 && currentStepLength <= 0.95) {
+              _calibratedStride = double.parse((_calibratedStride * 0.75 + currentStepLength * 0.25).toStringAsFixed(2));
+            }
+            _lastStrideCalibSteps = _steps;
+          }
+        }
+      }
+
       final validPoint = GPSCoordinatePoint(
-        lat: latitude,
-        lng: longitude,
+        lat: filtLat,
+        lng: filtLng,
         speed: validSpeedKmh / 3.6,
         accuracy: accuracy,
         timestamp: now,
@@ -421,6 +577,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
     setState(() {
       _isStarted = true;
       _isPaused = false;
+      _isAutoPaused = false;
       _isCompleted = false;
       _antiCheatWarning = null;
       _movementState = 'stationary';
@@ -430,10 +587,18 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
       _isStepTrainConfirmed = false;
       _lastAcceptedGpsPoint = null;
       _consecutiveStationaryDrifts = 0;
+      _stationaryDurationSeconds = 0.0;
+      _splits.clear();
+      _lastSplitKm = 0;
+      _lastSplitTime = 0;
+      _lastAnnouncedKm = 0.0;
+      _lastAnnouncedStep = 0;
+      _lastStrideCalibSteps = 0;
+      _kalmanFilter.variance = -1.0;
       _sensorsReady = true;
     });
 
-    _speak('Bắt đầu theo dõi buổi đi bộ. Cảm biến và định vị GPS thực tế đã kích hoạt!');
+    _speak('Bắt đầu theo dõi buổi đi bộ. Bộ lọc Kalman 2D và khóa chống trôi GPS đã kích hoạt!');
     _startAccelerometerTracking();
     if (_trackMode == 'outdoor') {
       _startGPSLocationTracking();
@@ -445,15 +610,15 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
   void _startMetricsTimer() {
     _metricsTimer?.cancel();
     _metricsTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!_isStarted || _isPaused || _isCompleted) return;
+      if (!_isStarted || _isPaused || _isAutoPaused || _isCompleted) return;
 
       setState(() {
         _elapsedSeconds++;
 
         // ── Calculate Pace (min/km) ──
         if (_distanceMeters > 30) {
-          final double totalKm = _distanceMeters / 1000;
-          final double paceMinutes = (_elapsedSeconds / 60) / totalKm;
+          final double totalKm = _distanceMeters / 1000.0;
+          final double paceMinutes = (_elapsedSeconds / 60.0) / totalKm;
           final int pMin = paceMinutes.floor();
           final int pSec = ((paceMinutes - pMin) * 60).floor();
           if (pMin < 60) {
@@ -462,11 +627,11 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
             _currentPace = '>60\'00"';
           }
 
-          _avgSpeedKmh = double.parse((totalKm / (_elapsedSeconds / 3600)).toStringAsFixed(1));
+          _avgSpeedKmh = double.parse((totalKm / (_elapsedSeconds / 3600.0)).toStringAsFixed(1));
         }
 
         // ── Calories: ~0.043 kcal per step + MET factor ──
-        _calories = (_steps * 0.043 + (_distanceMeters / 1000) * 22).round();
+        _calories = (_steps * 0.043 + (_distanceMeters / 1000.0) * 22).round();
 
         // ── Cadence (SPM) ──
         if (_elapsedSeconds > 4) {
@@ -475,6 +640,46 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
 
         // ── Dynamic Heart Rate ──
         _heartRate = min(155, max(76, (78 + _currentSpeedKmh * 8.2).round()));
+
+        // ── GHI NHẬN KILOMETER SPLITS (TỪNG KM CHUẨN STRAVA) ──
+        final int currentKmIndex = (_distanceMeters / 1000.0).floor();
+        if (currentKmIndex > 0 && currentKmIndex > _lastSplitKm) {
+          final int splitDuration = _elapsedSeconds - _lastSplitTime;
+          final double splitPaceMinutes = splitDuration / 60.0;
+          final int sMin = splitPaceMinutes.floor();
+          final int sSec = ((splitPaceMinutes - sMin) * 60).floor();
+          final String splitPaceStr = '${sMin.toString().padLeft(2, '0')}\'${sSec.toString().padLeft(2, '0')}"';
+          final double splitAvgSpeed = splitDuration > 0 ? double.parse((1.0 / (splitDuration / 3600.0)).toStringAsFixed(1)) : 0.0;
+
+          final newSplit = KmSplit(
+            km: currentKmIndex,
+            timeSeconds: splitDuration,
+            totalSeconds: _elapsedSeconds,
+            pace: splitPaceStr,
+            avgSpeedKmh: splitAvgSpeed,
+            cadence: _cadence > 0 ? _cadence : 110,
+          );
+
+          _splits.add(newSplit);
+          _lastSplitKm = currentKmIndex;
+          _lastSplitTime = _elapsedSeconds;
+
+          _speak('Kilômét $currentKmIndex: $sMin phút $sSec giây. Nhịp bước rất tốt!');
+        }
+
+        // Thông báo mỗi 500m
+        final double current500m = (_distanceMeters / 500.0).floor() * 0.5;
+        if (current500m > 0 && current500m > _lastAnnouncedKm && current500m != currentKmIndex.toDouble()) {
+          _lastAnnouncedKm = current500m;
+          _speak('Đã đi được $current500m kilômét.');
+        }
+
+        // Thông báo mỗi 1000 bước
+        final int currentStepMilestone = (_steps ~/ 1000) * 1000;
+        if (currentStepMilestone > 0 && currentStepMilestone > _lastAnnouncedStep) {
+          _lastAnnouncedStep = currentStepMilestone;
+          _speak('Chúc mừng! Đạt mốc $currentStepMilestone bước chân!');
+        }
       });
     });
   }
@@ -489,6 +694,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
   void _resumeTracking() {
     setState(() {
       _isPaused = false;
+      _isAutoPaused = false;
     });
     _speak('Tiếp tục luyện tập');
   }
@@ -497,6 +703,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
     setState(() {
       _isStarted = false;
       _isPaused = false;
+      _isAutoPaused = false;
       _isCompleted = true;
     });
 
@@ -504,9 +711,9 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
     _metricsTimer?.cancel();
 
     // Update Riverpod Providers & Sync to All Features
-    final finalSteps = max(_steps, (_distanceMeters / 0.74).round());
-    final durationMin = max(1, (_elapsedSeconds / 60).ceil());
-    final cal = _calories > 0 ? _calories : (finalSteps * 0.04).round();
+    final int finalSteps = max(_steps, (_distanceMeters / _calibratedStride).round());
+    final int durationMin = max(1, (_elapsedSeconds / 60.0).ceil());
+    final int cal = _calories > 0 ? _calories : (finalSteps * 0.04).round();
 
     WorkoutSyncService.syncWorkout(
       ref: ref,
@@ -711,6 +918,21 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
         centerTitle: true,
         actions: [
           IconButton(
+            tooltip: _autoPauseEnabled ? 'Auto-Pause: BẬT' : 'Auto-Pause: TẮT',
+            icon: Icon(
+              _autoPauseEnabled ? Icons.motion_photos_auto : Icons.motion_photos_off,
+              color: _autoPauseEnabled ? const Color(0xFF2ED573) : AppColors.textMuted,
+            ),
+            onPressed: () {
+              setState(() {
+                _autoPauseEnabled = !_autoPauseEnabled;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(_autoPauseEnabled ? 'Tự động dừng khi đứng yên: BẬT' : 'Tự động dừng khi đứng yên: TẮT')),
+              );
+            },
+          ),
+          IconButton(
             icon: Icon(_voiceGuidance ? Icons.volume_up : Icons.volume_off, color: _voiceGuidance ? const Color(0xFF2ED573) : AppColors.textMuted),
             onPressed: () {
               setState(() {
@@ -761,9 +983,9 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                       const SizedBox(width: 8),
                       Text(
                         _gpsStatus == 'good'
-                            ? 'GPS Độ chính xác cao (±${_gpsAccuracy.toStringAsFixed(0)}m)'
+                            ? 'GPS Kalman 2D (±${_gpsAccuracy.toStringAsFixed(0)}m)'
                             : _gpsStatus == 'medium'
-                            ? 'GPS Trung bình (Khử nhiễu ON)'
+                            ? 'GPS Trung bình (Lọc Kalman ON)'
                             : 'Đang kết nối GPS vệ tinh...',
                         style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
                       ),
@@ -777,9 +999,12 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.shield, color: _sensorsReady ? const Color(0xFF2ED573) : AppColors.textMuted, size: 12),
+                        const Icon(Icons.tune, color: Color(0xFF2ED573), size: 12),
                         const SizedBox(width: 4),
-                        const Text('Anti-Cheat AI', style: TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Sải: ${_calibratedStride.toStringAsFixed(2)}m',
+                          style: const TextStyle(color: Color(0xFF2ED573), fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
                       ],
                     ),
                   ),
@@ -837,7 +1062,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                             ? '🚫 Lắc tay tại chỗ bị chặn (Không tính)'
                             : _movementState == 'vehicle'
                             ? '🚗 Phát hiện đi xe (Tạm ngưng tính km)'
-                            : '⏸️ Đang đứng yên (Chống trôi GPS - Dừng cộng)',
+                            : '⏸️ Đang đứng yên (Chống trôi ZUPT - Dừng cộng)',
                         style: TextStyle(
                           color: _movementState == 'walking'
                               ? const Color(0xFF2ED573)
@@ -860,6 +1085,30 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
               ),
             ),
             const SizedBox(height: 10),
+
+            // Auto-Pause Notification Banner
+            if (_isAutoPaused)
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFA502).withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFFA502)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.pause_circle_filled, color: Color(0xFFFFA502), size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '⏸️ TỰ ĐỘNG TẠM DỪNG: Bạn đang dừng chân > 3.5s. Hệ thống sẽ tự động đếm tiếp khi bạn bước đi!',
+                        style: TextStyle(color: Color(0xFFFFA502), fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             // Anti-Cheat Alert
             if (_antiCheatWarning != null)
@@ -1031,6 +1280,130 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
             ),
             const SizedBox(height: 16),
 
+            // Kilometer Splits Card (Strava Standard)
+            AppCard(
+              child: Column(
+                children: [
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _showSplits = !_showSplits;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.splitscreen, color: Color(0xFF2ED573), size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'BẢNG THÀNH TÍCH TỪNG KM (${_splits.length} KM)',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                _splits.isEmpty ? 'Chưa có km' : '${_splits.length} split',
+                                style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _showSplits ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                color: AppColors.textMuted,
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_showSplits) ...[
+                    const SizedBox(height: 10),
+                    const Divider(color: AppColors.surfaceLight),
+                    const SizedBox(height: 6),
+                    if (_splits.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        child: Text(
+                          'Chưa hoàn thành km nào. Tiếp tục đi để ghi nhận km đầu tiên!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                        ),
+                      )
+                    else ...[
+                      // Table header
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('KM', style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+                            Text('THỜI GIAN', style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+                            Text('PACE', style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+                            Text('TB', style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const Divider(color: AppColors.surfaceLight, height: 1),
+                      ..._splits.map(
+                        (split) => Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                          decoration: BoxDecoration(
+                            border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.04))),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2ED573).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'Km ${split.km}',
+                                  style: const TextStyle(
+                                    color: Color(0xFF2ED573),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                _formatTime(split.timeSeconds),
+                                style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                              Text(
+                                split.pace,
+                                style: const TextStyle(color: Color(0xFFFFA502), fontSize: 12, fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                '${split.avgSpeedKmh} km/h',
+                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
             // Controls
             if (!_isStarted && !_isCompleted)
               SizedBox(
@@ -1077,7 +1450,7 @@ class _GPSWalkingPageState extends ConsumerState<GPSWalkingPage>
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
                       icon: const Icon(Icons.stop),
-                      label: const Text('KẾT THÚC', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      label: const Text('KẾT THÚC', style: TextStyle(fontWeight: FontWeight.bold)),
                       onPressed: () {
                         showDialog(
                           context: context,
