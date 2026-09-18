@@ -30,6 +30,8 @@ android {
             keyPassword = keystoreProperties.getProperty("keyPassword") ?: "fitnessbattle2026"
             storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) } ?: file("upload-keystore.jks")
             storePassword = keystoreProperties.getProperty("storePassword") ?: "fitnessbattle2026"
+            enableV1Signing = true
+            enableV2Signing = true
         }
     }
 
@@ -38,8 +40,8 @@ android {
         applicationId = "com.fitnessbattle.fitness_battle"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 29
-        targetSdk = flutter.targetSdkVersion
+        minSdk = flutter.minSdkVersion
+        targetSdk = 34
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
         // You can force using the value of versionCode by specifying the `-P force-version-code-ignoring-abi=true`
