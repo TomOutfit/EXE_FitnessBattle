@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/models.dart';
@@ -1002,10 +1003,20 @@ class _BattleStartSheetState extends State<_BattleStartSheet> {
                           Expanded(
                             child: TextField(
                               controller: _pinController,
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 3),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(6),
+                              ],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 4,
+                                fontSize: 16,
+                              ),
                               decoration: InputDecoration(
-                                hintText: 'Nhập mã PIN 4 số',
-                                hintStyle: const TextStyle(color: Colors.white30, letterSpacing: 1),
+                                hintText: 'Nhập mã PIN 4-6 số',
+                                hintStyle: const TextStyle(color: Colors.white30, letterSpacing: 1, fontSize: 13),
                                 filled: true,
                                 fillColor: Colors.black26,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1054,11 +1065,17 @@ class _BattleStartSheetState extends State<_BattleStartSheet> {
                       gradient: const LinearGradient(
                         colors: [Color(0xFFFF6B35), Color(0xFFFF8E53)],
                       ),
-                      onTap: () => widget.onStartBattle(
-                        ExerciseTypeEnum.pushup,
-                        'FB-${_pinController.text}',
-                        _selectedMode,
-                      ),
+                      onTap: () {
+                        final pin = _pinController.text.trim();
+                        final roomCode = _selectedMode == 'custom_pin'
+                            ? 'FB-${pin.isEmpty ? "8842" : pin}'
+                            : 'FB-RANKED-${DateTime.now().millisecondsSinceEpoch % 10000}';
+                        widget.onStartBattle(
+                          ExerciseTypeEnum.pushup,
+                          roomCode,
+                          _selectedMode,
+                        );
+                      },
                     ),
                     const SizedBox(height: 10),
 
@@ -1069,11 +1086,17 @@ class _BattleStartSheetState extends State<_BattleStartSheet> {
                       gradient: const LinearGradient(
                         colors: [Color(0xFF5352ED), Color(0xFF7070FF)],
                       ),
-                      onTap: () => widget.onStartBattle(
-                        ExerciseTypeEnum.pullup,
-                        'FB-${_pinController.text}',
-                        _selectedMode,
-                      ),
+                      onTap: () {
+                        final pin = _pinController.text.trim();
+                        final roomCode = _selectedMode == 'custom_pin'
+                            ? 'FB-${pin.isEmpty ? "8842" : pin}'
+                            : 'FB-RANKED-${DateTime.now().millisecondsSinceEpoch % 10000}';
+                        widget.onStartBattle(
+                          ExerciseTypeEnum.pullup,
+                          roomCode,
+                          _selectedMode,
+                        );
+                      },
                     ),
                     const SizedBox(height: 10),
 
@@ -1084,11 +1107,17 @@ class _BattleStartSheetState extends State<_BattleStartSheet> {
                       gradient: const LinearGradient(
                         colors: [Color(0xFFFFA502), Color(0xFFFFBE3D)],
                       ),
-                      onTap: () => widget.onStartBattle(
-                        ExerciseTypeEnum.squat,
-                        'FB-${_pinController.text}',
-                        _selectedMode,
-                      ),
+                      onTap: () {
+                        final pin = _pinController.text.trim();
+                        final roomCode = _selectedMode == 'custom_pin'
+                            ? 'FB-${pin.isEmpty ? "8842" : pin}'
+                            : 'FB-RANKED-${DateTime.now().millisecondsSinceEpoch % 10000}';
+                        widget.onStartBattle(
+                          ExerciseTypeEnum.squat,
+                          roomCode,
+                          _selectedMode,
+                        );
+                      },
                     ),
                   ],
                 ),

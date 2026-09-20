@@ -15,6 +15,7 @@ import { RankingPage } from './pages/RankingPage';
 import { ExerciseLeaderboardPage } from './pages/ExerciseLeaderboardPage';
 import { ShopPage } from './pages/ShopPage';
 import { MembershipPage } from './pages/MembershipPage';
+import { DeleteAccountPage } from './pages/DeleteAccountPage';
 import { BottomNav } from './components/navigation/BottomNav';
 import { ToastContainer } from './components/ui';
 
@@ -53,6 +54,7 @@ const AppShell: React.FC = () => {
         <Route path="/membership" element={<MembershipPage />} />
         <Route path="/battle-pass" element={<BattlePassPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/delete-account" element={<DeleteAccountPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {isOnboarded && <BottomNav />}
