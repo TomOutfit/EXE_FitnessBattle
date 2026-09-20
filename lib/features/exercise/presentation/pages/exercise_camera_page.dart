@@ -73,13 +73,14 @@ class _ExerciseCameraPageState extends ConsumerState<ExerciseCameraPage> with Wi
   String _scanDetails = 'Đang quét tư thế...';
   
   // Pose visualization
-  Map<String, Offset> _landmarks = {};
-  Map<String, double> _visibility = {};
+  Pose? _currentPose;
+  Size? _cameraImageSize;
+  bool _isFrontCamera = true;
   
   // Debug state
   int _debugLandmarkCount = 0;
   String _debugPoseStatus = 'Initializing...';
-  bool _showDebugPanel = true; // Set to true for debugging
+  bool _showDebugPanel = false; // Clean production view
   
   @override
   void initState() {
@@ -352,41 +353,100 @@ class _ExerciseCameraPageState extends ConsumerState<ExerciseCameraPage> with Wi
     }
   }
   
-  /// Convert CameraImage to InputImage
+  /// Convert CameraImage to InputImage with full support for Android YUV_420_888 (NV21 conversion)
   InputImage? _convertCameraImage(CameraImage image) {
     try {
-      // Get camera orientation
       final camera = _cameraDescription;
       final int sensorOrientation = camera?.sensorOrientation ?? 0;
       final InputImageRotation rotation = InputImageRotationValue.fromRawValue(sensorOrientation) ??
           InputImageRotation.rotation0deg;
 
-      // Determine format
-      final format = InputImageFormatValue.fromRawValue(image.format.raw) ??
-          (image.format.group == ImageFormatGroup.yuv420
-              ? InputImageFormat.nv21
-              : InputImageFormat.yuv420);
-
-      // Concatenate all planes
-      final WriteBuffer allBytes = WriteBuffer();
-      for (final Plane plane in image.planes) {
-        allBytes.putUint8List(plane.bytes);
+      // For single plane (iOS BGRA or single plane formats)
+      if (image.planes.length == 1) {
+        final format = InputImageFormatValue.fromRawValue(image.format.raw) ?? InputImageFormat.nv21;
+        return InputImage.fromBytes(
+          bytes: image.planes.first.bytes,
+          metadata: InputImageMetadata(
+            size: Size(image.width.toDouble(), image.height.toDouble()),
+            rotation: rotation,
+            format: format,
+            bytesPerRow: image.planes.first.bytesPerRow,
+          ),
+        );
       }
-      final bytes = allBytes.done().buffer.asUint8List();
+
+      // Multi-plane YUV420 on Android (Realme, Xiaomi, Samsung, MediaTek, Snapdragon):
+      // Convert YUV_420_888 to standard contiguous NV21 byte buffer
+      final Uint8List bytes = _convertYUV420ToNV21(image);
 
       return InputImage.fromBytes(
         bytes: bytes,
         metadata: InputImageMetadata(
           size: Size(image.width.toDouble(), image.height.toDouble()),
           rotation: rotation,
-          format: format,
-          bytesPerRow: image.planes.first.bytesPerRow,
+          format: InputImageFormat.nv21,
+          bytesPerRow: image.width,
         ),
       );
     } catch (e) {
       debugPrint('Error converting camera image: $e');
       return null;
     }
+  }
+
+  /// Converts Android YUV_420_888 CameraImage into clean NV21 byte array
+  static Uint8List _convertYUV420ToNV21(CameraImage image) {
+    final int width = image.width;
+    final int height = image.height;
+    
+    final Plane yPlane = image.planes[0];
+    final Plane uPlane = image.planes[1];
+    final Plane vPlane = image.planes[2];
+
+    final int ySize = width * height;
+    final int uvSize = width * (height ~/ 2);
+    final Uint8List nv21 = Uint8List(ySize + uvSize);
+
+    // 1. Copy Y Plane (handling rowStride padding)
+    final Uint8List yBuffer = yPlane.bytes;
+    final int yRowStride = yPlane.bytesPerRow;
+    int nv21Index = 0;
+
+    if (yRowStride == width) {
+      nv21.setRange(0, ySize, yBuffer);
+      nv21Index = ySize;
+    } else {
+      for (int row = 0; row < height; row++) {
+        final int srcOffset = row * yRowStride;
+        nv21.setRange(nv21Index, nv21Index + width, yBuffer, srcOffset);
+        nv21Index += width;
+      }
+    }
+
+    // 2. Interleave V and U into NV21 (VU VU VU...)
+    final Uint8List uBuffer = uPlane.bytes;
+    final Uint8List vBuffer = vPlane.bytes;
+    final int uRowStride = uPlane.bytesPerRow;
+    final int vRowStride = vPlane.bytesPerRow;
+    final int uPixelStride = uPlane.bytesPerPixel ?? 1;
+    final int vPixelStride = vPlane.bytesPerPixel ?? 1;
+
+    final int uvHeight = height ~/ 2;
+    final int uvWidth = width ~/ 2;
+
+    for (int row = 0; row < uvHeight; row++) {
+      final int uRowOffset = row * uRowStride;
+      final int vRowOffset = row * vRowStride;
+      for (int col = 0; col < uvWidth; col++) {
+        final int vIndex = vRowOffset + col * vPixelStride;
+        final int uIndex = uRowOffset + col * uPixelStride;
+
+        nv21[nv21Index++] = vIndex < vBuffer.length ? vBuffer[vIndex] : 128;
+        nv21[nv21Index++] = uIndex < uBuffer.length ? uBuffer[uIndex] : 128;
+      }
+    }
+
+    return nv21;
   }
   
   /// Handle camera errors
@@ -412,38 +472,11 @@ class _ExerciseCameraPageState extends ConsumerState<ExerciseCameraPage> with Wi
     final double imgWidth = isRotated ? image.height.toDouble() : image.width.toDouble();
     final double imgHeight = isRotated ? image.width.toDouble() : image.height.toDouble();
 
-    final screenSize = MediaQuery.of(context).size;
-    final landmarks = <String, Offset>{};
-    final visMap = <String, double>{};
-
-    // Get all landmarks from pose
-    final poseLandmarks = pose.landmarks;
-    
-    for (final entry in poseLandmarks.entries) {
-      final name = entry.key.name;
-      final landmark = entry.value;
-      
-      double screenX, screenY;
-      if (_cameraDescription?.lensDirection == CameraLensDirection.front) {
-        screenX = screenSize.width - (landmark.x / imgWidth * screenSize.width);
-      } else {
-        screenX = landmark.x / imgWidth * screenSize.width;
-      }
-      
-      screenY = landmark.y / imgHeight * screenSize.height;
-      
-      landmarks[name] = Offset(screenX, screenY);
-      visMap[name] = landmark.likelihood;
-    }
-
-    // Update state
-    _landmarks = landmarks;
-    _visibility = visMap;
-    _debugLandmarkCount = landmarks.length;
-    _debugPoseStatus = 'Pose Detected ✓ (${landmarks.length} pts)';
-    
-    // Debug output
-    debugPrint('✅ Updated skeleton: $_debugLandmarkCount points detected');
+    _currentPose = pose;
+    _cameraImageSize = Size(imgWidth, imgHeight);
+    _isFrontCamera = _cameraDescription?.lensDirection == CameraLensDirection.front;
+    _debugLandmarkCount = pose.landmarks.length;
+    _debugPoseStatus = 'Pose Detected ✓ (${pose.landmarks.length} pts)';
   }
   
   /// Start exercise session
@@ -640,12 +673,29 @@ class _ExerciseCameraPageState extends ConsumerState<ExerciseCameraPage> with Wi
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Camera Preview
-          if (_isCameraInitialized && _camera != null)
+          // Camera Preview - FULLSCREEN COVER
+          if (_isCameraInitialized && _camera != null && _camera!.value.isInitialized)
             Positioned.fill(
-              child: AspectRatio(
-                aspectRatio: _camera!.value.aspectRatio,
-                child: CameraPreview(_camera!),
+              child: ClipRect(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final previewSize = _camera!.value.previewSize!;
+                    final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+                    final pWidth = isPortrait ? previewSize.height : previewSize.width;
+                    final pHeight = isPortrait ? previewSize.width : previewSize.height;
+
+                    return SizedBox.expand(
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: pWidth,
+                          height: pHeight,
+                          child: CameraPreview(_camera!),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             )
           else if (_cameraError != null)
@@ -683,18 +733,20 @@ class _ExerciseCameraPageState extends ConsumerState<ExerciseCameraPage> with Wi
               ),
             ),
           
-          // Skeleton Overlay - COVERS FULL SCREEN
-          if (_landmarks.isNotEmpty)
+          // Skeleton Overlay - COVERS FULL SCREEN (Pixel-perfect alignment)
+          if (_currentPose != null && _cameraImageSize != null)
             Positioned.fill(
               child: CustomPaint(
                 size: Size.infinite,
                 painter: SkeletonPainter(
-                  landmarks: _landmarks,
-                  visibility: _visibility,
+                  pose: _currentPose,
+                  imageSize: _cameraImageSize,
+                  isFrontCamera: _isFrontCamera,
                   isCorrectForm: _isCorrectForm,
                   isPullup: widget.exerciseType == ExerciseTypeEnum.pullup,
                   virtualBarY: _virtualBarY,
                   reachedDepth: _reachedDepth,
+                  warningMessage: _antiCheatWarning,
                 ),
               ),
             ),
@@ -1073,12 +1125,12 @@ class _ExerciseCameraPageState extends ConsumerState<ExerciseCameraPage> with Wi
                             _ScanChip(
                               label: 'Người thật',
                               icon: Icons.person,
-                              isOk: _landmarks.isNotEmpty,
+                              isOk: _currentPose != null && _currentPose!.landmarks.isNotEmpty,
                             ),
                             _ScanChip(
                               label: widget.exerciseType == ExerciseTypeEnum.pullup ? 'Thấy xà' : 'Toàn thân',
                               icon: Icons.visibility,
-                              isOk: _landmarks.length >= 6,
+                              isOk: (_currentPose?.landmarks.length ?? 0) >= 6,
                             ),
                             _ScanChip(
                               label: widget.exerciseType == ExerciseTypeEnum.pullup ? 'Bám xà' : 'Phẳng sàn',
@@ -1448,9 +1500,11 @@ class _ResultItem extends StatelessWidget {
 
 /// Skeleton painter for pose visualization - WEB-STYLE VERSION
 /// Mobile-optimized with lower thresholds and brighter rendering
+/// Skeleton painter for pose visualization with pixel-perfect coordinate mapping matching BoxFit.cover
 class SkeletonPainter extends CustomPainter {
-  final Map<String, Offset> landmarks;
-  final Map<String, double> visibility;
+  final Pose? pose;
+  final Size? imageSize;
+  final bool isFrontCamera;
   final bool isCorrectForm;
   final bool isPullup;
   final double virtualBarY;
@@ -1458,8 +1512,9 @@ class SkeletonPainter extends CustomPainter {
   final String? warningMessage;
   
   SkeletonPainter({
-    required this.landmarks,
-    required this.visibility,
+    required this.pose,
+    required this.imageSize,
+    this.isFrontCamera = true,
     required this.isCorrectForm,
     this.isPullup = false,
     this.virtualBarY = 0.0,
@@ -1467,92 +1522,132 @@ class SkeletonPainter extends CustomPainter {
     this.warningMessage,
   });
   
-  // Full body connections matching frontend web
-  static const connections = [
+  // Full body bone connections
+  static const bodyConnections = [
     // Torso
-    ['leftShoulder', 'rightShoulder'],
-    ['leftShoulder', 'leftHip'],
-    ['rightShoulder', 'rightHip'],
-    ['leftHip', 'rightHip'],
+    [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+    [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
+    [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
+    [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+    
     // Left arm
-    ['leftShoulder', 'leftElbow'],
-    ['leftElbow', 'leftWrist'],
+    [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
+    [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
+    [PoseLandmarkType.leftWrist, PoseLandmarkType.leftThumb],
+    [PoseLandmarkType.leftWrist, PoseLandmarkType.leftIndex],
+    [PoseLandmarkType.leftWrist, PoseLandmarkType.leftPinky],
+    
     // Right arm
-    ['rightShoulder', 'rightElbow'],
-    ['rightElbow', 'rightWrist'],
+    [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
+    [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
+    [PoseLandmarkType.rightWrist, PoseLandmarkType.rightThumb],
+    [PoseLandmarkType.rightWrist, PoseLandmarkType.rightIndex],
+    [PoseLandmarkType.rightWrist, PoseLandmarkType.rightPinky],
+    
     // Left leg
-    ['leftHip', 'leftKnee'],
-    ['leftKnee', 'leftAnkle'],
+    [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
+    [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
+    [PoseLandmarkType.leftAnkle, PoseLandmarkType.leftHeel],
+    [PoseLandmarkType.leftHeel, PoseLandmarkType.leftFootIndex],
+    [PoseLandmarkType.leftAnkle, PoseLandmarkType.leftFootIndex],
+    
     // Right leg
-    ['rightHip', 'rightKnee'],
-    ['rightKnee', 'rightAnkle'],
+    [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
+    [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
+    [PoseLandmarkType.rightAnkle, PoseLandmarkType.rightHeel],
+    [PoseLandmarkType.rightHeel, PoseLandmarkType.rightFootIndex],
+    [PoseLandmarkType.rightAnkle, PoseLandmarkType.rightFootIndex],
   ];
   
-  // Face connections (head/face)
+  // Face & head connections
   static const faceConnections = [
-    ['nose', 'leftEye'],
-    ['nose', 'rightEye'],
-    ['leftEye', 'leftEar'],
-    ['rightEye', 'rightEar'],
+    [PoseLandmarkType.leftEar, PoseLandmarkType.leftEyeOuter],
+    [PoseLandmarkType.leftEyeOuter, PoseLandmarkType.leftEye],
+    [PoseLandmarkType.leftEye, PoseLandmarkType.leftEyeInner],
+    [PoseLandmarkType.leftEyeInner, PoseLandmarkType.nose],
+    [PoseLandmarkType.nose, PoseLandmarkType.rightEyeInner],
+    [PoseLandmarkType.rightEyeInner, PoseLandmarkType.rightEye],
+    [PoseLandmarkType.rightEye, PoseLandmarkType.rightEyeOuter],
+    [PoseLandmarkType.rightEyeOuter, PoseLandmarkType.rightEar],
+    [PoseLandmarkType.leftMouth, PoseLandmarkType.rightMouth],
+    [PoseLandmarkType.nose, PoseLandmarkType.leftMouth],
+    [PoseLandmarkType.nose, PoseLandmarkType.rightMouth],
   ];
   
-  // Key joint points to highlight
-  static const keyJoints = [
-    'leftShoulder', 'rightShoulder',
-    'leftElbow', 'rightElbow',
-    'leftWrist', 'rightWrist',
-    'leftHip', 'rightHip',
-    'leftKnee', 'rightKnee',
-    'nose',
+  // Key major joint types
+  static const keyJointTypes = [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.rightShoulder,
+    PoseLandmarkType.leftElbow,
+    PoseLandmarkType.rightElbow,
+    PoseLandmarkType.leftWrist,
+    PoseLandmarkType.rightWrist,
+    PoseLandmarkType.leftHip,
+    PoseLandmarkType.rightHip,
+    PoseLandmarkType.leftKnee,
+    PoseLandmarkType.rightKnee,
+    PoseLandmarkType.leftAnkle,
+    PoseLandmarkType.rightAnkle,
   ];
   
-  // Very low visibility threshold for mobile - show more points
-  static const double VISIBILITY_THRESHOLD = 0.15;
+  static const double VISIBILITY_THRESHOLD = 0.25;
   
   @override
   void paint(Canvas canvas, Size size) {
-    // Debug: log how many landmarks we have
-    debugPrint('🔍 SkeletonPainter: ${landmarks.length} landmarks detected');
-    
-    // If no landmarks, don't draw anything
-    if (landmarks.isEmpty) {
-      debugPrint('⚠️ SkeletonPainter: No landmarks to draw!');
+    if (pose == null || imageSize == null || imageSize!.width <= 0 || imageSize!.height <= 0) {
       return;
     }
     
-    // ── Vẽ thanh xà ảo khi hít xà ──
+    final double imgWidth = imageSize!.width;
+    final double imgHeight = imageSize!.height;
+    
+    // Calculate BoxFit.cover scale & offset for pixel-perfect match with CameraPreview
+    final double scaleX = size.width / imgWidth;
+    final double scaleY = size.height / imgHeight;
+    final double scale = math.max(scaleX, scaleY);
+    
+    final double offsetX = (size.width - imgWidth * scale) / 2.0;
+    final double offsetY = (size.height - imgHeight * scale) / 2.0;
+    
+    Offset mapPoint(PoseLandmark lm) {
+      final double xInImg = isFrontCamera ? (imgWidth - lm.x) : lm.x;
+      return Offset(
+        xInImg * scale + offsetX,
+        lm.y * scale + offsetY,
+      );
+    }
+    
+    // ── 1. Virtual Pull-up Bar ──
     if (isPullup && virtualBarY > 0) {
+      final double mappedBarY = virtualBarY * scale + offsetY;
       final barColor = reachedDepth ? const Color(0xFF2ED573) : const Color(0xFFFFD700);
       
-      // Glow effect - BRIGHTER
       final glowPaint = Paint()
         ..color = barColor.withValues(alpha: 0.6)
-        ..strokeWidth = 20
+        ..strokeWidth = 16
         ..style = PaintingStyle.stroke
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
       canvas.drawLine(
-        Offset(20, virtualBarY),
-        Offset(size.width - 20, virtualBarY),
+        Offset(16, mappedBarY),
+        Offset(size.width - 16, mappedBarY),
         glowPaint,
       );
       
-      // Main bar - THICKER
       final barPaint = Paint()
         ..color = barColor
-        ..strokeWidth = 8.0
+        ..strokeWidth = 6.0
         ..style = PaintingStyle.stroke;
       canvas.drawLine(
-        Offset(20, virtualBarY),
-        Offset(size.width - 20, virtualBarY),
+        Offset(16, mappedBarY),
+        Offset(size.width - 16, mappedBarY),
         barPaint,
       );
 
-      // Badge text - LARGER
       final textSpan = TextSpan(
         text: reachedDepth ? '✨ ĐÃ VƯỢT XÀ' : '🎯 VỊ TRÍ XÀ',
         style: const TextStyle(
           color: Color(0xFFFFD700),
-          fontSize: 16,
+          fontSize: 14,
           fontWeight: FontWeight.bold,
         ),
       );
@@ -1562,150 +1657,111 @@ class SkeletonPainter extends CustomPainter {
       )..layout();
 
       final badgeRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(24, math.max(10.0, virtualBarY - 40.0), textPainter.width + 32, 36),
-        const Radius.circular(12),
+        Rect.fromLTWH(20, math.max(10.0, mappedBarY - 36.0), textPainter.width + 24, 30),
+        const Radius.circular(8),
       );
-      canvas.drawRRect(badgeRect, Paint()..color = const Color(0xFF1E293B).withValues(alpha: 0.95));
-      canvas.drawRRect(badgeRect, Paint()..color = barColor..strokeWidth = 3..style = PaintingStyle.stroke);
-      textPainter.paint(canvas, Offset(40, math.max(10.0, virtualBarY - 40.0) + 10));
+      canvas.drawRRect(badgeRect, Paint()..color = const Color(0xFF1E293B).withValues(alpha: 0.9));
+      canvas.drawRRect(badgeRect, Paint()..color = barColor..strokeWidth = 2..style = PaintingStyle.stroke);
+      textPainter.paint(canvas, Offset(32, math.max(10.0, mappedBarY - 36.0) + 7));
     }
     
-    // ── Cảnh báo form sai ──
+    // ── 2. Form Warning Badge ──
     if (warningMessage != null && !isCorrectForm) {
       _drawWarningBadge(canvas, size, warningMessage!);
     }
 
-    // ── Xác định màu sắc theo form - BRIGHT COLORS ──
-    Color primaryColor;
-    if (isCorrectForm) {
-      primaryColor = const Color(0xFF00FF88); // BRIGHT GREEN
-    } else {
-      primaryColor = const Color(0xFFFF4444); // BRIGHT RED
-    }
+    // ── 3. Color Theme ──
+    final Color primaryColor = isCorrectForm ? const Color(0xFF00FF88) : const Color(0xFFFF4757);
     
-    // ── Draw skeleton with multiple layers for better visibility ──
-    
-    // Layer 1: Thick glow (outermost)
-    final glowPaint = Paint()
-      ..color = primaryColor.withValues(alpha: 0.5)
-      ..strokeWidth = 30
+    // ── 4. Paint Styles ──
+    final boneGlowPaint = Paint()
+      ..color = primaryColor.withValues(alpha: 0.45)
+      ..strokeWidth = 12
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     
-    // Layer 2: Black outline for contrast
-    final outlinePaint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 16
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    
-    // Layer 3: Main colored line
-    final paint = Paint()
-      ..color = primaryColor
-      ..strokeWidth = 10
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    
-    // Layer 4: Inner highlight
-    final highlightPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.6)
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    
-    // ── Draw body connections ──
-    int drawnConnections = 0;
-    for (final connection in connections) {
-      for (int i = 0; i < connection.length - 1; i++) {
-        final startName = connection[i];
-        final endName = connection[i + 1];
-        final start = landmarks[startName];
-        final end = landmarks[endName];
-        
-        if (start != null && end != null) {
-          // Check visibility
-          final startVis = visibility[startName] ?? 0.5;
-          final endVis = visibility[endName] ?? 0.5;
-          
-          // Draw if visibility is above threshold
-          if (startVis > VISIBILITY_THRESHOLD && endVis > VISIBILITY_THRESHOLD) {
-            drawnConnections++;
-            
-            // Draw all layers
-            canvas.drawLine(start, end, glowPaint);
-            canvas.drawLine(start, end, outlinePaint);
-            canvas.drawLine(start, end, paint);
-            canvas.drawLine(start, end, highlightPaint);
-          }
-        }
-      }
-    }
-    
-    debugPrint('📍 SkeletonPainter: drew $drawnConnections connections');
-    
-    // ── Draw face connections ──
-    final facePaint = Paint()
-      ..color = primaryColor.withValues(alpha: 0.9)
+    final boneOutlinePaint = Paint()
+      ..color = Colors.black87
       ..strokeWidth = 6
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
     
-    for (final connection in faceConnections) {
-      final start = landmarks[connection[0]];
-      final end = landmarks[connection[1]];
-      if (start != null && end != null) {
-        final startVis = visibility[connection[0]] ?? 0.5;
-        final endVis = visibility[connection[1]] ?? 0.5;
-        if (startVis > VISIBILITY_THRESHOLD && endVis > VISIBILITY_THRESHOLD) {
-          canvas.drawLine(start, end, facePaint);
-        }
+    final boneLinePaint = Paint()
+      ..color = primaryColor
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    
+    final faceLinePaint = Paint()
+      ..color = primaryColor.withValues(alpha: 0.85)
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final landmarks = pose!.landmarks;
+    
+    // ── 5. Draw Body Bones ──
+    for (final pair in bodyConnections) {
+      final lm1 = landmarks[pair[0]];
+      final lm2 = landmarks[pair[1]];
+      if (lm1 != null && lm2 != null && lm1.likelihood > VISIBILITY_THRESHOLD && lm2.likelihood > VISIBILITY_THRESHOLD) {
+        final p1 = mapPoint(lm1);
+        final p2 = mapPoint(lm2);
+        canvas.drawLine(p1, p2, boneGlowPaint);
+        canvas.drawLine(p1, p2, boneOutlinePaint);
+        canvas.drawLine(p1, p2, boneLinePaint);
       }
     }
     
-    // ── Draw joint points ──
-    final pointGlowPaint = Paint()
+    // ── 6. Draw Face Bones ──
+    for (final pair in faceConnections) {
+      final lm1 = landmarks[pair[0]];
+      final lm2 = landmarks[pair[1]];
+      if (lm1 != null && lm2 != null && lm1.likelihood > VISIBILITY_THRESHOLD && lm2.likelihood > VISIBILITY_THRESHOLD) {
+        final p1 = mapPoint(lm1);
+        final p2 = mapPoint(lm2);
+        canvas.drawLine(p1, p2, faceLinePaint);
+      }
+    }
+    
+    // ── 7. Draw Joint Points ──
+    final jointGlowPaint = Paint()
       ..color = primaryColor.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     
-    final pointPaint = Paint()
+    final jointFillPaint = Paint()
       ..color = primaryColor
       ..style = PaintingStyle.fill;
     
-    final corePaint = Paint()
+    final jointCorePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
     
-    final pointOutlinePaint = Paint()
+    final jointBorderPaint = Paint()
       ..color = Colors.black
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 5;
+      ..strokeWidth = 1.5;
     
     for (final entry in landmarks.entries) {
-      final name = entry.key;
-      final pos = entry.value;
-      final vis = visibility[name] ?? 0.5;
-      
-      // Only draw if visibility is above threshold
-      if (vis > VISIBILITY_THRESHOLD) {
-        final isKeyJoint = keyJoints.contains(name);
-        final radius = isKeyJoint ? 22.0 : 14.0;
+      final type = entry.key;
+      final lm = entry.value;
+      if (lm.likelihood > VISIBILITY_THRESHOLD) {
+        final pos = mapPoint(lm);
+        final isMajorJoint = keyJointTypes.contains(type);
         
-        // Draw glow
-        canvas.drawCircle(pos, radius + 12, pointGlowPaint);
-        // Draw main circle
-        canvas.drawCircle(pos, radius, pointPaint);
-        // Draw white core
-        canvas.drawCircle(pos, radius * 0.5, corePaint);
-        // Draw outline
-        canvas.drawCircle(pos, radius, pointOutlinePaint);
-        
-        debugPrint('  🦴 Drew point: $name at ${pos.dx.toStringAsFixed(0)},${pos.dy.toStringAsFixed(0)} (vis: ${vis.toStringAsFixed(2)})');
+        if (isMajorJoint) {
+          canvas.drawCircle(pos, 10.0, jointGlowPaint);
+          canvas.drawCircle(pos, 6.0, jointFillPaint);
+          canvas.drawCircle(pos, 2.5, jointCorePaint);
+          canvas.drawCircle(pos, 6.0, jointBorderPaint);
+        } else {
+          canvas.drawCircle(pos, 3.5, jointFillPaint);
+          canvas.drawCircle(pos, 1.5, jointCorePaint);
+        }
       }
     }
-    
-    debugPrint('✅ SkeletonPainter paint complete');
   }
   
   void _drawWarningBadge(Canvas canvas, Size size, String message) {
@@ -1713,7 +1769,7 @@ class SkeletonPainter extends CustomPainter {
       text: '⚠️ $message',
       style: const TextStyle(
         color: Colors.orange,
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: FontWeight.bold,
       ),
     );
@@ -1724,16 +1780,16 @@ class SkeletonPainter extends CustomPainter {
 
     final badgeRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(
-        (size.width - textPainter.width - 32) / 2,
-        size.height * 0.15,
-        textPainter.width + 32,
-        36,
+        (size.width - textPainter.width - 24) / 2,
+        size.height * 0.12,
+        textPainter.width + 24,
+        32,
       ),
-      const Radius.circular(12),
+      const Radius.circular(8),
     );
     canvas.drawRRect(badgeRect, Paint()..color = const Color(0xFF1E293B).withValues(alpha: 0.95));
-    canvas.drawRRect(badgeRect, Paint()..color = Colors.orange..strokeWidth = 2..style = PaintingStyle.stroke);
-    textPainter.paint(canvas, Offset((size.width - textPainter.width) / 2, size.height * 0.15 + 10));
+    canvas.drawRRect(badgeRect, Paint()..color = Colors.orange..strokeWidth = 1.5..style = PaintingStyle.stroke);
+    textPainter.paint(canvas, Offset((size.width - textPainter.width) / 2, size.height * 0.12 + 8));
   }
   
   @override

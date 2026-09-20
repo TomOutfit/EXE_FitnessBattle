@@ -79,7 +79,8 @@ class _BattleCameraPageState extends ConsumerState<BattleCameraPage> with Widget
   late AnimationController _pulseController;
 
   // Skeleton points
-  Map<String, Offset> _myLandmarks = {};
+  Pose? _myPose;
+  Size? _myCameraImageSize;
   Map<String, Offset> _opponentLandmarks = {};
 
   // Opponent Biometrics
@@ -234,20 +235,10 @@ class _BattleCameraPageState extends ConsumerState<BattleCameraPage> with Widget
           final double imgWidth = isRotated ? image.height.toDouble() : image.width.toDouble();
           final double imgHeight = isRotated ? image.width.toDouble() : image.height.toDouble();
 
-          if (!mounted) return;
-          final landmarks = <String, Offset>{};
-          final previewW = MediaQuery.of(context).size.width * 0.5;
-          final previewH = MediaQuery.of(context).size.height * 0.65;
-          for (final entry in pose.landmarks.entries) {
-            landmarks[entry.key.name] = Offset(
-              previewW - (entry.value.x / imgWidth * previewW),
-              entry.value.y / imgHeight * previewH,
-            );
-          }
-
           if (mounted) {
             setState(() {
-              _myLandmarks = landmarks;
+              _myPose = pose;
+              _myCameraImageSize = Size(imgWidth, imgHeight);
               _myCount = analysis.repCount;
               _myCorrectCount = analysis.correctRepCount;
               _currentAngle = analysis.currentAngle;
@@ -276,28 +267,85 @@ class _BattleCameraPageState extends ConsumerState<BattleCameraPage> with Widget
       final rotation = InputImageRotationValue.fromRawValue(sensorOrientation) ??
           InputImageRotation.rotation0deg;
 
-      final imageFormat = image.format.group == ImageFormatGroup.yuv420
-          ? InputImageFormat.yuv420
-          : InputImageFormat.nv21;
-
-      final WriteBuffer allBytes = WriteBuffer();
-      for (final Plane plane in image.planes) {
-        allBytes.putUint8List(plane.bytes);
+      if (image.planes.length == 1) {
+        final format = InputImageFormatValue.fromRawValue(image.format.raw) ?? InputImageFormat.nv21;
+        return InputImage.fromBytes(
+          bytes: image.planes.first.bytes,
+          metadata: InputImageMetadata(
+            size: Size(image.width.toDouble(), image.height.toDouble()),
+            rotation: rotation,
+            format: format,
+            bytesPerRow: image.planes.first.bytesPerRow,
+          ),
+        );
       }
-      final bytes = allBytes.done().buffer.asUint8List();
+
+      final Uint8List bytes = _convertYUV420ToNV21(image);
 
       return InputImage.fromBytes(
         bytes: bytes,
         metadata: InputImageMetadata(
           size: Size(image.width.toDouble(), image.height.toDouble()),
           rotation: rotation,
-          format: imageFormat,
-          bytesPerRow: image.planes.first.bytesPerRow,
+          format: InputImageFormat.nv21,
+          bytesPerRow: image.width,
         ),
       );
     } catch (e) {
       return null;
     }
+  }
+
+  static Uint8List _convertYUV420ToNV21(CameraImage image) {
+    final int width = image.width;
+    final int height = image.height;
+    
+    final Plane yPlane = image.planes[0];
+    final Plane uPlane = image.planes[1];
+    final Plane vPlane = image.planes[2];
+
+    final int ySize = width * height;
+    final int uvSize = width * (height ~/ 2);
+    final Uint8List nv21 = Uint8List(ySize + uvSize);
+
+    final Uint8List yBuffer = yPlane.bytes;
+    final int yRowStride = yPlane.bytesPerRow;
+    int nv21Index = 0;
+
+    if (yRowStride == width) {
+      nv21.setRange(0, ySize, yBuffer);
+      nv21Index = ySize;
+    } else {
+      for (int row = 0; row < height; row++) {
+        final int srcOffset = row * yRowStride;
+        nv21.setRange(nv21Index, nv21Index + width, yBuffer, srcOffset);
+        nv21Index += width;
+      }
+    }
+
+    final Uint8List uBuffer = uPlane.bytes;
+    final Uint8List vBuffer = vPlane.bytes;
+    final int uRowStride = uPlane.bytesPerRow;
+    final int vRowStride = vPlane.bytesPerRow;
+    final int uPixelStride = uPlane.bytesPerPixel ?? 1;
+    final int vPixelStride = vPlane.bytesPerPixel ?? 1;
+
+    final int uvHeight = height ~/ 2;
+    final int uvWidth = width ~/ 2;
+
+    for (int row = 0; row < uvHeight; row++) {
+      final int uRowOffset = row * uRowStride;
+      final int vRowOffset = row * vRowStride;
+      for (int col = 0; col < uvWidth; col++) {
+        final int vIndex = vRowOffset + col * vPixelStride;
+        final int uIndex = uRowOffset + col * uPixelStride;
+
+        nv21[nv21Index++] = vIndex < vBuffer.length ? vBuffer[vIndex] : 128;
+        nv21[nv21Index++] = uIndex < uBuffer.length ? uBuffer[uIndex] : 128;
+      }
+    }
+
+    return nv21;
   }
 
   // ── PHASE 1: READY LOCK-IN ──
@@ -1024,7 +1072,6 @@ class _BattleCameraPageState extends ConsumerState<BattleCameraPage> with Widget
                     label: 'BẠN',
                     count: _myCount,
                     correctCount: _myCorrectCount,
-                    landmarks: _myLandmarks,
                     color: const Color(0xFF2ED573),
                     isMe: true,
                     currentAngle: _currentAngle,
@@ -1043,7 +1090,6 @@ class _BattleCameraPageState extends ConsumerState<BattleCameraPage> with Widget
                     label: 'ĐỐI THỦ',
                     count: _opponentCount,
                     correctCount: null,
-                    landmarks: _opponentLandmarks,
                     color: const Color(0xFF5352ED),
                     isMe: false,
                   ),
@@ -1121,7 +1167,6 @@ class _BattleCameraPageState extends ConsumerState<BattleCameraPage> with Widget
     required String label,
     required int count,
     int? correctCount,
-    required Map<String, Offset> landmarks,
     required Color color,
     required bool isMe,
     double? currentAngle,
@@ -1131,7 +1176,27 @@ class _BattleCameraPageState extends ConsumerState<BattleCameraPage> with Widget
       children: [
         // Camera Preview
         if (_isInitialized && _frontCamera != null && isMe)
-          CameraPreview(_frontCamera!)
+          ClipRect(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final previewSize = _frontCamera!.value.previewSize!;
+                final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+                final pWidth = isPortrait ? previewSize.height : previewSize.width;
+                final pHeight = isPortrait ? previewSize.width : previewSize.height;
+
+                return SizedBox.expand(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: pWidth,
+                      height: pHeight,
+                      child: CameraPreview(_frontCamera!),
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
         else if (!isMe)
           Container(
             color: const Color(0xFF141624),
@@ -1173,12 +1238,22 @@ class _BattleCameraPageState extends ConsumerState<BattleCameraPage> with Widget
           ),
 
         // Skeleton Overlay
-        if (landmarks.isNotEmpty && isMe)
+        if (isMe && _myPose != null && _myCameraImageSize != null)
           CustomPaint(
             size: Size.infinite,
             painter: BattleSkeletonPainter(
-              landmarks: landmarks,
+              pose: _myPose,
+              imageSize: _myCameraImageSize,
+              isFrontCamera: _frontCamera?.description.lensDirection == CameraLensDirection.front,
               color: _isCorrectForm ? const Color(0xFF2ED573) : Colors.red,
+            ),
+          )
+        else if (!isMe && _opponentLandmarks.isNotEmpty)
+          CustomPaint(
+            size: Size.infinite,
+            painter: BattleSkeletonPainter(
+              rawLandmarks: _opponentLandmarks,
+              color: color,
             ),
           ),
 
@@ -1440,44 +1515,84 @@ class _BattleCameraPageState extends ConsumerState<BattleCameraPage> with Widget
   }
 }
 
-/// Skeleton painter for battle mode - HIGH VISIBILITY NEON
+/// Skeleton painter for battle mode - HIGH VISIBILITY NEON with BoxFit.cover alignment
 class BattleSkeletonPainter extends CustomPainter {
-  final Map<String, Offset> landmarks;
+  final Pose? pose;
+  final Size? imageSize;
+  final bool isFrontCamera;
+  final Map<String, Offset>? rawLandmarks;
   final Color color;
 
   BattleSkeletonPainter({
-    required this.landmarks,
+    this.pose,
+    this.imageSize,
+    this.isFrontCamera = true,
+    this.rawLandmarks,
     required this.color,
   });
 
-  static const connections = [
-    ['leftShoulder', 'leftElbow', 'leftWrist'],
-    ['rightShoulder', 'rightElbow', 'rightWrist'],
-    ['leftShoulder', 'rightShoulder'],
-    ['leftShoulder', 'leftHip'],
-    ['rightShoulder', 'rightHip'],
-    ['leftHip', 'rightHip'],
+  static const bodyConnections = [
+    [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
+    [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip],
+    [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightHip],
+    [PoseLandmarkType.leftHip, PoseLandmarkType.rightHip],
+    [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
+    [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
+    [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
+    [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
+    [PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee],
+    [PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle],
+    [PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee],
+    [PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle],
   ];
+
+  static const faceConnections = [
+    [PoseLandmarkType.leftEar, PoseLandmarkType.leftEyeOuter],
+    [PoseLandmarkType.leftEyeOuter, PoseLandmarkType.leftEye],
+    [PoseLandmarkType.leftEye, PoseLandmarkType.nose],
+    [PoseLandmarkType.nose, PoseLandmarkType.rightEye],
+    [PoseLandmarkType.rightEye, PoseLandmarkType.rightEyeOuter],
+    [PoseLandmarkType.rightEyeOuter, PoseLandmarkType.rightEar],
+    [PoseLandmarkType.nose, PoseLandmarkType.leftMouth],
+    [PoseLandmarkType.nose, PoseLandmarkType.rightMouth],
+  ];
+
+  static const keyJointTypes = [
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.rightShoulder,
+    PoseLandmarkType.leftElbow,
+    PoseLandmarkType.rightElbow,
+    PoseLandmarkType.leftWrist,
+    PoseLandmarkType.rightWrist,
+    PoseLandmarkType.leftHip,
+    PoseLandmarkType.rightHip,
+    PoseLandmarkType.leftKnee,
+    PoseLandmarkType.rightKnee,
+    PoseLandmarkType.leftAnkle,
+    PoseLandmarkType.rightAnkle,
+  ];
+
+  static const double VISIBILITY_THRESHOLD = 0.25;
 
   @override
   void paint(Canvas canvas, Size size) {
     final glowPaint = Paint()
       ..color = color.withValues(alpha: 0.5)
-      ..strokeWidth = 16
+      ..strokeWidth = 10
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
-    final paint = Paint()
+    final linePaint = Paint()
       ..color = color
-      ..strokeWidth = 6
+      ..strokeWidth = 3.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     final pointGlowPaint = Paint()
       ..color = color.withValues(alpha: 0.6)
       ..style = PaintingStyle.fill
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     final pointPaint = Paint()
       ..color = color
@@ -1487,27 +1602,97 @@ class BattleSkeletonPainter extends CustomPainter {
       ..color = Colors.white
       ..style = PaintingStyle.fill;
 
-    for (final connection in connections) {
-      for (int i = 0; i < connection.length - 1; i++) {
-        final start = landmarks[connection[i]];
-        final end = landmarks[connection[i + 1]];
-
-        if (start != null && end != null) {
-          canvas.drawLine(start, end, glowPaint);
-          canvas.drawLine(start, end, paint);
+    if (rawLandmarks != null && rawLandmarks!.isNotEmpty) {
+      // Opponent simulated landmarks
+      final rawConns = [
+        ['leftShoulder', 'leftElbow', 'leftWrist'],
+        ['rightShoulder', 'rightElbow', 'rightWrist'],
+        ['leftShoulder', 'rightShoulder'],
+        ['leftShoulder', 'leftHip'],
+        ['rightShoulder', 'rightHip'],
+        ['leftHip', 'rightHip'],
+      ];
+      for (final conn in rawConns) {
+        for (int i = 0; i < conn.length - 1; i++) {
+          final p1 = rawLandmarks![conn[i]];
+          final p2 = rawLandmarks![conn[i + 1]];
+          if (p1 != null && p2 != null) {
+            canvas.drawLine(p1, p2, glowPaint);
+            canvas.drawLine(p1, p2, linePaint);
+          }
         }
+      }
+      for (final pt in rawLandmarks!.values) {
+        canvas.drawCircle(pt, 8, pointGlowPaint);
+        canvas.drawCircle(pt, 5, pointPaint);
+        canvas.drawCircle(pt, 2, corePaint);
+      }
+      return;
+    }
+
+    if (pose == null || imageSize == null || imageSize!.width <= 0 || imageSize!.height <= 0) {
+      return;
+    }
+
+    final double imgWidth = imageSize!.width;
+    final double imgHeight = imageSize!.height;
+
+    final double scaleX = size.width / imgWidth;
+    final double scaleY = size.height / imgHeight;
+    final double scale = math.max(scaleX, scaleY);
+
+    final double offsetX = (size.width - imgWidth * scale) / 2.0;
+    final double offsetY = (size.height - imgHeight * scale) / 2.0;
+
+    Offset mapPoint(PoseLandmark lm) {
+      final double xInImg = isFrontCamera ? (imgWidth - lm.x) : lm.x;
+      return Offset(
+        xInImg * scale + offsetX,
+        lm.y * scale + offsetY,
+      );
+    }
+
+    final landmarks = pose!.landmarks;
+
+    for (final pair in bodyConnections) {
+      final lm1 = landmarks[pair[0]];
+      final lm2 = landmarks[pair[1]];
+      if (lm1 != null && lm2 != null && lm1.likelihood > VISIBILITY_THRESHOLD && lm2.likelihood > VISIBILITY_THRESHOLD) {
+        final p1 = mapPoint(lm1);
+        final p2 = mapPoint(lm2);
+        canvas.drawLine(p1, p2, glowPaint);
+        canvas.drawLine(p1, p2, linePaint);
       }
     }
 
-    for (final landmark in landmarks.values) {
-      canvas.drawCircle(landmark, 14, pointGlowPaint);
-      canvas.drawCircle(landmark, 10, pointPaint);
-      canvas.drawCircle(landmark, 5, corePaint);
+    for (final pair in faceConnections) {
+      final lm1 = landmarks[pair[0]];
+      final lm2 = landmarks[pair[1]];
+      if (lm1 != null && lm2 != null && lm1.likelihood > VISIBILITY_THRESHOLD && lm2.likelihood > VISIBILITY_THRESHOLD) {
+        final p1 = mapPoint(lm1);
+        final p2 = mapPoint(lm2);
+        canvas.drawLine(p1, p2, linePaint);
+      }
+    }
+
+    for (final entry in landmarks.entries) {
+      final type = entry.key;
+      final lm = entry.value;
+      if (lm.likelihood > VISIBILITY_THRESHOLD) {
+        final pos = mapPoint(lm);
+        final isMajor = keyJointTypes.contains(type);
+        if (isMajor) {
+          canvas.drawCircle(pos, 9.0, pointGlowPaint);
+          canvas.drawCircle(pos, 5.5, pointPaint);
+          canvas.drawCircle(pos, 2.5, corePaint);
+        } else {
+          canvas.drawCircle(pos, 3.0, pointPaint);
+          canvas.drawCircle(pos, 1.5, corePaint);
+        }
+      }
     }
   }
 
   @override
-  bool shouldRepaint(BattleSkeletonPainter oldDelegate) {
-    return landmarks != oldDelegate.landmarks || color != oldDelegate.color;
-  }
+  bool shouldRepaint(BattleSkeletonPainter oldDelegate) => true;
 }

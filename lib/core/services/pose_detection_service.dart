@@ -129,7 +129,7 @@ class PoseDetectionService {
     });
   }
   
-  /// Convert CameraImage to InputImage for ML Kit
+  /// Convert CameraImage to InputImage for ML Kit with full support for Android YUV_420_888
   InputImage? _convertCameraImage(CameraImage image) {
     try {
       final camera = _cameraDescription;
@@ -137,33 +137,86 @@ class PoseDetectionService {
       final rotation = InputImageRotationValue.fromRawValue(sensorOrientation) ??
           InputImageRotation.rotation0deg;
 
-      final format = InputImageFormatValue.fromRawValue(image.format.raw) ??
-          (image.format.group == ImageFormatGroup.yuv420
-              ? InputImageFormat.nv21
-              : InputImageFormat.yuv420);
-
-      // Concatenate all planes for YUV420
-      final WriteBuffer allBytes = WriteBuffer();
-      for (final Plane plane in image.planes) {
-        allBytes.putUint8List(plane.bytes);
+      if (image.planes.length == 1) {
+        final format = InputImageFormatValue.fromRawValue(image.format.raw) ?? InputImageFormat.nv21;
+        return InputImage.fromBytes(
+          bytes: image.planes.first.bytes,
+          metadata: InputImageMetadata(
+            size: Size(image.width.toDouble(), image.height.toDouble()),
+            rotation: rotation,
+            format: format,
+            bytesPerRow: image.planes.first.bytesPerRow,
+          ),
+        );
       }
-      final bytes = allBytes.done().buffer.asUint8List();
 
-      final inputImage = InputImage.fromBytes(
+      final Uint8List bytes = _convertYUV420ToNV21(image);
+
+      return InputImage.fromBytes(
         bytes: bytes,
         metadata: InputImageMetadata(
           size: Size(image.width.toDouble(), image.height.toDouble()),
           rotation: rotation,
-          format: format,
-          bytesPerRow: image.planes.first.bytesPerRow,
+          format: InputImageFormat.nv21,
+          bytesPerRow: image.width,
         ),
       );
-      
-      return inputImage;
     } catch (e) {
       debugPrint('Error converting camera image: $e');
       return null;
     }
+  }
+
+  static Uint8List _convertYUV420ToNV21(CameraImage image) {
+    final int width = image.width;
+    final int height = image.height;
+    
+    final Plane yPlane = image.planes[0];
+    final Plane uPlane = image.planes[1];
+    final Plane vPlane = image.planes[2];
+
+    final int ySize = width * height;
+    final int uvSize = width * (height ~/ 2);
+    final Uint8List nv21 = Uint8List(ySize + uvSize);
+
+    final Uint8List yBuffer = yPlane.bytes;
+    final int yRowStride = yPlane.bytesPerRow;
+    int nv21Index = 0;
+
+    if (yRowStride == width) {
+      nv21.setRange(0, ySize, yBuffer);
+      nv21Index = ySize;
+    } else {
+      for (int row = 0; row < height; row++) {
+        final int srcOffset = row * yRowStride;
+        nv21.setRange(nv21Index, nv21Index + width, yBuffer, srcOffset);
+        nv21Index += width;
+      }
+    }
+
+    final Uint8List uBuffer = uPlane.bytes;
+    final Uint8List vBuffer = vPlane.bytes;
+    final int uRowStride = uPlane.bytesPerRow;
+    final int vRowStride = vPlane.bytesPerRow;
+    final int uPixelStride = uPlane.bytesPerPixel ?? 1;
+    final int vPixelStride = vPlane.bytesPerPixel ?? 1;
+
+    final int uvHeight = height ~/ 2;
+    final int uvWidth = width ~/ 2;
+
+    for (int row = 0; row < uvHeight; row++) {
+      final int uRowOffset = row * uRowStride;
+      final int vRowOffset = row * vRowStride;
+      for (int col = 0; col < uvWidth; col++) {
+        final int vIndex = vRowOffset + col * vPixelStride;
+        final int uIndex = uRowOffset + col * uPixelStride;
+
+        nv21[nv21Index++] = vIndex < vBuffer.length ? vBuffer[vIndex] : 128;
+        nv21[nv21Index++] = uIndex < uBuffer.length ? uBuffer[uIndex] : 128;
+      }
+    }
+
+    return nv21;
   }
   
   /// Get camera preview size
