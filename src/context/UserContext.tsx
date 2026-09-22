@@ -309,7 +309,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
-  const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(ONBOARDED_KEY);
+      return saved !== 'false';
+    } catch {
+      return true;
+    }
+  });
   const [toasts, setToasts] = useState<ToastData[]>([]);
 
   // Toast
@@ -325,8 +332,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sync to LocalStorage
   useEffect(() => {
-    const onboarded = localStorage.getItem(ONBOARDED_KEY);
-    setIsOnboarded(onboarded !== 'false');
+    try {
+      localStorage.setItem(ONBOARDED_KEY, 'true');
+    } catch {}
   }, []);
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { UserProvider, useUser } from './context/UserContext';
 import { HomePage } from './pages/HomePage';
 import { BattlePassPage } from './pages/BattlePassPage';
@@ -65,10 +65,10 @@ const AppShell: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <UserProvider>
         <AppShell />
       </UserProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
