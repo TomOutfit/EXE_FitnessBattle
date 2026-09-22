@@ -731,18 +731,27 @@ export const ExerciseCameraPage: React.FC = () => {
 
   // Initialize camera
   useEffect(() => {
+    let stream: MediaStream | null = null;
     const initCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: 'user',
             width: { ideal: 640 },
             height: { ideal: 480 },
           },
+          audio: false,
         });
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.onloadeddata = () => {
+            setIsCameraReady(true);
+          };
+          try {
+            await videoRef.current.play();
+          } catch {}
+          setIsCameraReady(true);
         }
         setCameraError('');
       } catch (err) {
@@ -760,27 +769,30 @@ export const ExerciseCameraPage: React.FC = () => {
     };
   }, []);
 
-  // Pose detection loop – starts only when BOTH model and camera are ready
+  // Pose detection loop – starts when video element is ready
   useEffect(() => {
-    if (!isModelReady || !isCameraReady) return;
+    if (!isCameraReady) return;
     const video = videoRef.current;
     if (!video) return;
 
+    let isRunning = true;
     const detectFrame = () => {
-      if (video.readyState >= 2) {
+      if (!isRunning) return;
+      if (video && video.readyState >= 2) {
         detectPose(video);
       }
       animationFrameRef.current = requestAnimationFrame(detectFrame);
     };
 
-    detectFrame();
+    animationFrameRef.current = requestAnimationFrame(detectFrame);
 
     return () => {
+      isRunning = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isModelReady, isCameraReady, detectPose]);
+  }, [isCameraReady, detectPose]);
 
   // Transition loading → waiting_pose once model is ready
   useEffect(() => {

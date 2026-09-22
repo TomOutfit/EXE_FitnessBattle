@@ -776,7 +776,7 @@ export function drawPose(
 ) {
   const {
     color = '#2ED573',
-    lineWidth = 3,
+    lineWidth = 4,
     pointRadius = 5,
     mirror = true,
   } = options;
@@ -786,18 +786,21 @@ export function drawPose(
 
   if (!landmarks || landmarks.length === 0) return;
 
+  ctx.save();
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.lineWidth = lineWidth;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
 
   // Draw connections
   POSE_CONNECTIONS.forEach(([startIdx, endIdx]) => {
     const start = landmarks[startIdx];
     const end = landmarks[endIdx];
 
-    if (start && end && start.visibility > 0.5 && end.visibility > 0.5) {
+    if (start && end && (start.visibility ?? 1) >= 0.25 && (end.visibility ?? 1) >= 0.25) {
       ctx.beginPath();
       const startX = (mirror ? 1 - start.x : start.x) * ctx.canvas.width;
       const startY = start.y * ctx.canvas.height;
@@ -812,11 +815,12 @@ export function drawPose(
 
   // Draw landmark points
   landmarks.forEach((landmark) => {
-    if (landmark.visibility > 0.5) {
+    if ((landmark.visibility ?? 1) >= 0.25) {
       const x = mirror ? 1 - landmark.x : landmark.x;
       ctx.beginPath();
       ctx.arc(x * ctx.canvas.width, landmark.y * ctx.canvas.height, pointRadius, 0, 2 * Math.PI);
       ctx.fill();
     }
   });
+  ctx.restore();
 }

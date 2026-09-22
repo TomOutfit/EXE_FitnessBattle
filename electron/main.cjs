@@ -1,6 +1,9 @@
 const { app, BrowserWindow, session, Menu } = require('electron');
 const path = require('path');
 
+// Auto grant media permissions at Chromium level
+app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
+
 let mainWindow = null;
 
 function createWindow() {
@@ -15,17 +18,18 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false, // Allows local camera & media streaming smoothly
+      webSecurity: false,
+      allowRunningInsecureContent: true,
     },
   });
 
   // Automatically grant camera and microphone permissions for Pose Detection
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    if (permission === 'media' || permission === 'camera' || permission === 'microphone' || permission === 'geolocation') {
-      callback(true);
-    } else {
-      callback(true);
-    }
+    callback(true);
+  });
+
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, origin) => {
+    return true;
   });
 
   // Load the built dist index.html

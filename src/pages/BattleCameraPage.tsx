@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useUser } from '../context/UserContext';
+import { usePoseDetection, drawPose } from '../hooks/usePoseDetection';
+import type { Results } from '../hooks/usePoseDetection';
 
 export const BattleCameraPage: React.FC = () => {
   const navigate = useNavigate();
@@ -11,6 +13,7 @@ export const BattleCameraPage: React.FC = () => {
   const { user, updateBattleResult, recordExerciseSession, showToast } = useUser();
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [timeLeft, setTimeLeft] = useState(60);
   const [myScore, setMyScore] = useState(0);
@@ -23,14 +26,45 @@ export const BattleCameraPage: React.FC = () => {
     rank: '#2',
   };
 
+  // AI Pose Detection for Battle
+  const handleResults = useCallback((results: Results) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const video = videoRef.current;
+    if (video) {
+      canvas.width = video.videoWidth || 480;
+      canvas.height = video.videoHeight || 480;
+    }
+
+    if (results.poseLandmarks) {
+      drawPose(ctx, results, {
+        color: '#00E5FF',
+        lineWidth: 4,
+        pointRadius: 6,
+        mirror: true,
+      });
+    }
+  }, []);
+
+  const { detectPose } = usePoseDetection({
+    onResults: handleResults,
+    enableSmoothing: true,
+  });
+
   // Setup video stream
   useEffect(() => {
     let stream: MediaStream | null = null;
-    navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'user' } })
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
       .then((s) => {
         stream = s;
         if (videoRef.current) {
           videoRef.current.srcObject = s;
+          videoRef.current.play().catch(() => {});
         }
       })
       .catch(() => {});
@@ -39,6 +73,23 @@ export const BattleCameraPage: React.FC = () => {
       if (stream) stream.getTracks().forEach((t) => t.stop());
     };
   }, []);
+
+  // Frame detection loop
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let animId: number;
+    const loop = () => {
+      if (video.readyState >= 2) {
+        detectPose(video);
+      }
+      animId = requestAnimationFrame(loop);
+    };
+    animId = requestAnimationFrame(loop);
+
+    return () => cancelAnimationFrame(animId);
+  }, [detectPose]);
 
   // Match countdown loop & Simulated scoring
   useEffect(() => {
@@ -154,6 +205,19 @@ export const BattleCameraPage: React.FC = () => {
             style={{
               width: '100%', height: '100%', objectFit: 'cover',
               transform: 'scaleX(-1)',
+            }}
+          />
+
+          {/* Player 1 AI Pose Skeleton Overlay */}
+          <canvas
+            ref={canvasRef}
+            width={480}
+            height={480}
+            style={{
+              position: 'absolute',
+              top: 0, left: 0,
+              width: '100%', height: '100%',
+              pointerEvents: 'none',
             }}
           />
 
