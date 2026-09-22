@@ -15,6 +15,9 @@ migrate_working_dir/
 # Node / Web (if any)
 node_modules/
 dist/
+build_staging/
+release/
+FitnessBattle_Windows/
 *.local
 fitness_battle/
 
