@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Coins, Crown, Gift } from 'lucide-react';
+import { Interactive3DCard } from '../components/3d/Interactive3DCard';
 
 export const BusinessModelPage: React.FC = () => {
   const navigate = useNavigate();
@@ -39,11 +40,11 @@ export const BusinessModelPage: React.FC = () => {
           </p>
         </div>
 
-        {/* 3 Revenue Channels Grid */}
+        {/* 3 Revenue Channels Grid with 3D Cards */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: 24,
+          gap: 28,
           marginBottom: 60,
         }}>
           {[
@@ -71,28 +72,34 @@ export const BusinessModelPage: React.FC = () => {
           ].map((item, i) => {
             const Icon = item.icon;
             return (
-              <div
-                key={i}
-                style={{
-                  background: 'linear-gradient(145deg, #1A1A35, #121225)',
-                  borderRadius: 22,
-                  padding: '36px 28px',
-                  border: `1px solid ${item.color}40`,
-                  boxShadow: `0 10px 30px ${item.color}15`,
-                }}
-              >
-                <div style={{
-                  width: 48, height: 48, borderRadius: 12,
-                  background: `${item.color}20`, border: `1px solid ${item.color}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: 20,
-                }}>
-                  <Icon size={24} color={item.color} />
+              <Interactive3DCard key={i} glowColor={item.color} depth={22} style={{ borderRadius: 24 }}>
+                <div
+                  style={{
+                    background: 'linear-gradient(145deg, #1A1A35, #121225)',
+                    borderRadius: 24,
+                    padding: '38px 30px',
+                    border: `1px solid ${item.color}45`,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{
+                      width: 50, height: 50, borderRadius: 14,
+                      background: `${item.color}20`, border: `1px solid ${item.color}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      marginBottom: 22,
+                    }}>
+                      <Icon size={26} color={item.color} />
+                    </div>
+                    <h3 style={{ fontSize: 19, fontWeight: 900, color: '#fff', marginBottom: 8 }}>{item.title}</h3>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: item.color, marginBottom: 14 }}>{item.pricing}</div>
+                    <p style={{ fontSize: 13.5, lineHeight: 1.6, color: '#B0B0C3' }}>{item.desc}</p>
+                  </div>
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 8 }}>{item.title}</h3>
-                <div style={{ fontSize: 15, fontWeight: 800, color: item.color, marginBottom: 14 }}>{item.pricing}</div>
-                <p style={{ fontSize: 13.5, lineHeight: 1.6, color: '#B0B0C3' }}>{item.desc}</p>
-              </div>
+              </Interactive3DCard>
             );
           })}
         </div>

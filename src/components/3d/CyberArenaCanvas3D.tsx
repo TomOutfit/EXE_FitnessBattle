@@ -4,11 +4,13 @@ import * as THREE from 'three';
 interface CyberArenaCanvas3DProps {
   interactive?: boolean;
   intensity?: number;
+  showFloatingObjects?: boolean;
 }
 
 export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
   interactive = true,
   intensity = 1.0,
+  showFloatingObjects = true,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -18,16 +20,16 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x090a14, 0.035);
+    scene.fog = new THREE.FogExp2(0x090a14, 0.025);
 
     const camera = new THREE.PerspectiveCamera(
-      60,
+      55,
       container.clientWidth / container.clientHeight,
       0.1,
       1000
     );
-    camera.position.set(0, 4, 18);
-    camera.lookAt(0, 1, 0);
+    camera.position.set(0, 5, 20);
+    camera.lookAt(0, 2, 0);
 
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -37,114 +39,163 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.toneMappingExposure = 1.35;
     container.appendChild(renderer.domElement);
 
-    // 2. Cyber Grid Ground
-    const gridHelper = new THREE.GridHelper(60, 60, 0xff6b35, 0x25253d);
-    gridHelper.position.y = -2;
+    // 2. Cyber Grid Ground with Glowing Grid Lines
+    const gridHelper = new THREE.GridHelper(80, 80, 0xff6b35, 0x1e1e38);
+    gridHelper.position.y = -3;
     scene.add(gridHelper);
 
-    // 3. Floating 3D Glowing Arena Rings (Torus)
-    const ringGeo = new THREE.TorusGeometry(8, 0.08, 16, 100);
-    const ringMat1 = new THREE.MeshBasicMaterial({
-      color: 0xff6b35,
-      transparent: true,
-      opacity: 0.6 * intensity,
-      wireframe: true,
-    });
-    const ring1 = new THREE.Mesh(ringGeo, ringMat1);
-    ring1.rotation.x = Math.PI / 2.2;
-    scene.add(ring1);
+    // 3. Multi-Tiered Holographic Arena Rings
+    const ringGroup = new THREE.Group();
+    scene.add(ringGroup);
 
-    const ringMat2 = new THREE.MeshBasicMaterial({
-      color: 0x5352ed,
-      transparent: true,
-      opacity: 0.5 * intensity,
-      wireframe: true,
-    });
-    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(12, 0.06, 16, 100), ringMat2);
-    ring2.rotation.x = Math.PI / 1.9;
-    ring2.rotation.y = Math.PI / 6;
-    scene.add(ring2);
+    const createRing = (radius: number, tube: number, colorHex: number, tiltX: number, tiltY: number) => {
+      const geo = new THREE.TorusGeometry(radius, tube, 16, 120);
+      const mat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0.55 * intensity,
+        wireframe: true,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.rotation.x = tiltX;
+      mesh.rotation.y = tiltY;
+      ringGroup.add(mesh);
+      return mesh;
+    };
 
-    // 4. Center 3D Floating Ruby Crystal (Icosahedron)
-    const crystalGeo = new THREE.IcosahedronGeometry(2, 0);
-    const crystalMat = new THREE.MeshStandardMaterial({
+    const ring1 = createRing(9, 0.08, 0xff6b35, Math.PI / 2.3, 0);
+    const ring2 = createRing(13, 0.06, 0x5352ed, Math.PI / 1.9, Math.PI / 5);
+    const ring3 = createRing(17, 0.05, 0x00e5ff, Math.PI / 2.1, -Math.PI / 4);
+
+    // 4. Center 3D Floating Cyber Gem
+    const gemGeo = new THREE.OctahedronGeometry(2.5, 0);
+    const gemMat = new THREE.MeshStandardMaterial({
       color: 0xff4757,
       emissive: 0xff6b35,
-      emissiveIntensity: 0.8,
-      metalness: 0.9,
-      roughness: 0.1,
+      emissiveIntensity: 0.9,
+      metalness: 0.85,
+      roughness: 0.15,
       wireframe: true,
     });
-    const crystal = new THREE.Mesh(crystalGeo, crystalMat);
-    crystal.position.set(0, 3, 0);
-    scene.add(crystal);
+    const gem = new THREE.Mesh(gemGeo, gemMat);
+    gem.position.set(0, 3.5, 0);
+    scene.add(gem);
 
-    // Inner glowing sphere
-    const innerGeo = new THREE.SphereGeometry(1.2, 16, 16);
-    const innerMat = new THREE.MeshBasicMaterial({
-      color: 0xff6b35,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.4,
-    });
-    const innerSphere = new THREE.Mesh(innerGeo, innerMat);
-    crystal.add(innerSphere);
+    // 5. Floating 3D Fitness Artifacts (Dumbbell & Shield)
+    const floatingObjects: THREE.Group[] = [];
 
-    // 5. 3D Floating Particle Field
-    const particleCount = 450;
+    if (showFloatingObjects) {
+      // Create 3D Holographic Dumbbell
+      const createDumbbell = (x: number, y: number, z: number, colorHex: number) => {
+        const dumbbell = new THREE.Group();
+        const barGeo = new THREE.CylinderGeometry(0.1, 0.1, 2.2, 12);
+        const weightGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.35, 16);
+        const mat = new THREE.MeshStandardMaterial({
+          color: colorHex,
+          emissive: colorHex,
+          emissiveIntensity: 0.5,
+          wireframe: true,
+        });
+
+        const bar = new THREE.Mesh(barGeo, mat);
+        bar.rotation.z = Math.PI / 2;
+        dumbbell.add(bar);
+
+        const weight1 = new THREE.Mesh(weightGeo, mat);
+        weight1.rotation.z = Math.PI / 2;
+        weight1.position.x = -1;
+        dumbbell.add(weight1);
+
+        const weight2 = new THREE.Mesh(weightGeo, mat);
+        weight2.rotation.z = Math.PI / 2;
+        weight2.position.x = 1;
+        dumbbell.add(weight2);
+
+        dumbbell.position.set(x, y, z);
+        scene.add(dumbbell);
+        floatingObjects.push(dumbbell);
+        return dumbbell;
+      };
+
+      createDumbbell(-8, 5, -4, 0xff6b35);
+      createDumbbell(8, 4, -2, 0x00e5ff);
+
+      // Create 3D Holographic Shield
+      const shieldGeo = new THREE.ConeGeometry(1.4, 2, 4);
+      const shieldMat = new THREE.MeshStandardMaterial({
+        color: 0x5352ed,
+        emissive: 0x5352ed,
+        emissiveIntensity: 0.6,
+        wireframe: true,
+      });
+      const shield = new THREE.Mesh(shieldGeo, shieldMat);
+      shield.rotation.x = Math.PI;
+      const shieldGroup = new THREE.Group();
+      shieldGroup.add(shield);
+      shieldGroup.position.set(-6, 2, 4);
+      scene.add(shieldGroup);
+      floatingObjects.push(shieldGroup);
+    }
+
+    // 6. Upward Flowing 3D Particle Energy Vortex
+    const particleCount = 600;
     const particleGeo = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
+    const speeds = new Float32Array(particleCount);
     const colors = new Float32Array(particleCount * 3);
 
-    const color1 = new THREE.Color(0xff6b35); // Orange
-    const color2 = new THREE.Color(0x5352ed); // Purple
-    const color3 = new THREE.Color(0x00e5ff); // Cyan
+    const cOrange = new THREE.Color(0xff6b35);
+    const cPurple = new THREE.Color(0x5352ed);
+    const cCyan = new THREE.Color(0x00e5ff);
+    const cGold = new THREE.Color(0xffa502);
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
-      positions[i3] = (Math.random() - 0.5) * 50;
-      positions[i3 + 1] = (Math.random() - 0.5) * 30 + 5;
-      positions[i3 + 2] = (Math.random() - 0.5) * 50;
+      positions[i3] = (Math.random() - 0.5) * 55;
+      positions[i3 + 1] = Math.random() * 30 - 2;
+      positions[i3 + 2] = (Math.random() - 0.5) * 55;
+      speeds[i] = Math.random() * 0.04 + 0.015;
 
-      const mixedColor = Math.random() > 0.6 ? color1 : Math.random() > 0.3 ? color2 : color3;
-      colors[i3] = mixedColor.r;
-      colors[i3 + 1] = mixedColor.g;
-      colors[i3 + 2] = mixedColor.b;
+      const pick = Math.random();
+      const col = pick > 0.65 ? cOrange : pick > 0.4 ? cPurple : pick > 0.2 ? cCyan : cGold;
+      colors[i3] = col.r;
+      colors[i3 + 1] = col.g;
+      colors[i3 + 2] = col.b;
     }
 
     particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const particleMat = new THREE.PointsMaterial({
-      size: 0.25,
+      size: 0.3,
       vertexColors: true,
       transparent: true,
       opacity: 0.85,
     });
 
-    const particleSystem = new THREE.Points(particleGeo, particleMat);
-    scene.add(particleSystem);
+    const particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
 
-    // 6. Volumetric Lighting
-    const ambientLight = new THREE.AmbientLight(0x25253d, 1.5);
+    // 7. Volumetric Cyber Lights
+    const ambientLight = new THREE.AmbientLight(0x14142b, 2.0);
     scene.add(ambientLight);
 
-    const orangeLight = new THREE.PointLight(0xff6b35, 4, 30);
-    orangeLight.position.set(-6, 8, 5);
+    const orangeLight = new THREE.PointLight(0xff6b35, 5, 40);
+    orangeLight.position.set(-8, 10, 8);
     scene.add(orangeLight);
 
-    const purpleLight = new THREE.PointLight(0x5352ed, 4, 30);
-    purpleLight.position.set(6, 8, 5);
+    const purpleLight = new THREE.PointLight(0x5352ed, 5, 40);
+    purpleLight.position.set(8, 10, 8);
     scene.add(purpleLight);
 
-    const cyanLight = new THREE.PointLight(0x00e5ff, 3, 25);
-    cyanLight.position.set(0, -1, 4);
+    const cyanLight = new THREE.PointLight(0x00e5ff, 4, 30);
+    cyanLight.position.set(0, -1, 6);
     scene.add(cyanLight);
 
-    // Mouse Parallax
+    // Mouse Interaction
     let targetMouseX = 0;
     let targetMouseY = 0;
     let currentMouseX = 0;
@@ -158,7 +209,6 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
 
     window.addEventListener('mousemove', handleMouseMove);
 
-    // Resize Handler
     const handleResize = () => {
       if (!container) return;
       camera.aspect = container.clientWidth / container.clientHeight;
@@ -168,36 +218,54 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
 
     window.addEventListener('resize', handleResize);
 
-    // 7. Animation Loop
+    // 8. Main Render Loop
     let animId: number;
-    let clock = new THREE.Clock();
+    const clock = new THREE.Clock();
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
-      const elapsedTime = clock.getElapsedTime();
+      const elapsed = clock.getElapsedTime();
 
-      // Smooth mouse follow
-      currentMouseX += (targetMouseX - currentMouseX) * 0.05;
-      currentMouseY += (targetMouseY - currentMouseY) * 0.05;
+      // Smooth camera mouse parallax
+      currentMouseX += (targetMouseX - currentMouseX) * 0.04;
+      currentMouseY += (targetMouseY - currentMouseY) * 0.04;
 
-      camera.position.x = currentMouseX * 3;
-      camera.position.y = 4 - currentMouseY * 2;
-      camera.lookAt(0, 1, 0);
+      camera.position.x = currentMouseX * 4;
+      camera.position.y = 5 - currentMouseY * 2.5;
+      camera.lookAt(0, 2, 0);
 
-      // Rotate Crystal
-      crystal.rotation.x = elapsedTime * 0.4;
-      crystal.rotation.y = elapsedTime * 0.6;
-      crystal.position.y = 3 + Math.sin(elapsedTime * 1.5) * 0.4;
+      // Rotate Center Gem
+      gem.rotation.x = elapsed * 0.5;
+      gem.rotation.y = elapsed * 0.7;
+      gem.position.y = 3.5 + Math.sin(elapsed * 1.8) * 0.45;
 
-      // Rotate Rings
-      ring1.rotation.z = elapsedTime * 0.2;
-      ring2.rotation.z = -elapsedTime * 0.15;
+      // Rotate Holographic Rings
+      ring1.rotation.z = elapsed * 0.25;
+      ring2.rotation.z = -elapsed * 0.2;
+      ring3.rotation.z = elapsed * 0.15;
 
-      // Grid wave animation
-      gridHelper.position.z = (elapsedTime * 2) % 2;
+      // Float other 3D artifacts
+      floatingObjects.forEach((obj, idx) => {
+        obj.rotation.x = elapsed * (0.3 + idx * 0.1);
+        obj.rotation.y = elapsed * (0.4 + idx * 0.1);
+        obj.position.y += Math.sin(elapsed * 2 + idx) * 0.008;
+      });
 
-      // Particles float
-      particleSystem.rotation.y = elapsedTime * 0.04;
+      // Upward particle flow
+      const posAttr = particleGeo.attributes.position as THREE.BufferAttribute;
+      const arr = posAttr.array as Float32Array;
+      for (let i = 0; i < particleCount; i++) {
+        const i3 = i * 3 + 1;
+        arr[i3] += speeds[i];
+        if (arr[i3] > 28) {
+          arr[i3] = -2;
+        }
+      }
+      posAttr.needsUpdate = true;
+      particles.rotation.y = elapsed * 0.03;
+
+      // Grid wave
+      gridHelper.position.z = (elapsed * 2.5) % 2.5;
 
       renderer.render(scene, camera);
     };
@@ -213,7 +281,7 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
       }
       renderer.dispose();
     };
-  }, [interactive, intensity]);
+  }, [interactive, intensity, showFloatingObjects]);
 
   return (
     <div

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Cpu, ShieldCheck, Eye, Zap } from 'lucide-react';
 import { PoseSkeletonCanvas3D } from '../components/3d/PoseSkeletonCanvas3D';
+import { Interactive3DCard } from '../components/3d/Interactive3DCard';
 
 export const AITechnologyPage: React.FC = () => {
   const navigate = useNavigate();
@@ -48,20 +49,21 @@ export const AITechnologyPage: React.FC = () => {
           marginBottom: 60,
           alignItems: 'center',
         }}>
-          {/* 3D Skeleton Visualizer */}
-          <div style={{
-            background: 'linear-gradient(145deg, #14142B, #0E0E1F)',
-            borderRadius: 24,
-            padding: 24,
-            border: '1px solid rgba(0, 229, 255, 0.3)',
-            boxShadow: '0 20px 60px rgba(0, 229, 255, 0.12)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#00E5FF' }}>3D BIOMECHANICAL SKELETON</div>
-              <div style={{ fontSize: 11, color: '#8E94A5' }}>Xoay mô hình 3D</div>
+          {/* 3D Skeleton Visualizer in 3D Card */}
+          <Interactive3DCard glowColor="#00E5FF" depth={22} style={{ borderRadius: 24 }}>
+            <div style={{
+              background: 'linear-gradient(145deg, #14142B, #0E0E1F)',
+              borderRadius: 24,
+              padding: 24,
+              border: '1px solid rgba(0, 229, 255, 0.35)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#00E5FF' }}>3D BIOMECHANICAL SKELETON</div>
+                <div style={{ fontSize: 11, color: '#8E94A5' }}>Kéo chuột xoay mô hình 3D</div>
+              </div>
+              <PoseSkeletonCanvas3D />
             </div>
-            <PoseSkeletonCanvas3D />
-          </div>
+          </Interactive3DCard>
 
           {/* Core Algorithms List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -87,30 +89,31 @@ export const AITechnologyPage: React.FC = () => {
             ].map((alg, i) => {
               const Icon = alg.icon;
               return (
-                <div
-                  key={i}
-                  style={{
-                    background: 'rgba(20, 20, 40, 0.7)',
-                    border: `1px solid ${alg.color}30`,
-                    borderRadius: 18,
-                    padding: '22px 20px',
-                    display: 'flex',
-                    gap: 16,
-                  }}
-                >
-                  <div style={{
-                    width: 40, height: 40, borderRadius: 10,
-                    background: `${alg.color}20`, border: `1px solid ${alg.color}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <Icon size={20} color={alg.color} />
+                <Interactive3DCard key={i} glowColor={alg.color} depth={16} style={{ borderRadius: 18 }}>
+                  <div
+                    style={{
+                      background: 'rgba(20, 20, 40, 0.85)',
+                      border: `1px solid ${alg.color}35`,
+                      borderRadius: 18,
+                      padding: '22px 20px',
+                      display: 'flex',
+                      gap: 16,
+                    }}
+                  >
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 10,
+                      background: `${alg.color}20`, border: `1px solid ${alg.color}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Icon size={20} color={alg.color} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 6 }}>{alg.title}</h3>
+                      <p style={{ fontSize: 13, lineHeight: 1.6, color: '#B0B0C3' }}>{alg.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 6 }}>{alg.title}</h3>
-                    <p style={{ fontSize: 13, lineHeight: 1.6, color: '#B0B0C3' }}>{alg.desc}</p>
-                  </div>
-                </div>
+                </Interactive3DCard>
               );
             })}
           </div>

@@ -6,9 +6,13 @@ import {
   Download,
   Sparkles,
   Target,
+  Crown,
+  Coins,
+  Gift,
 } from 'lucide-react';
 import { CyberArenaCanvas3D } from '../components/3d/CyberArenaCanvas3D';
 import { PoseSkeletonCanvas3D } from '../components/3d/PoseSkeletonCanvas3D';
+import { Interactive3DCard } from '../components/3d/Interactive3DCard';
 
 export const StartupShowcasePage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,15 +28,15 @@ export const StartupShowcasePage: React.FC = () => {
       {/* ── 1. 3D HERO SECTION ────────────────────────────────────────────── */}
       <section style={{
         position: 'relative',
-        minHeight: '90vh',
+        minHeight: '92vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '80px 24px 60px',
         overflow: 'hidden',
       }}>
-        {/* 3D WebGL Background */}
-        <CyberArenaCanvas3D intensity={1.2} />
+        {/* 3D WebGL Arena Canvas */}
+        <CyberArenaCanvas3D intensity={1.3} showFloatingObjects={true} />
 
         <div style={{
           maxWidth: 1200,
@@ -46,15 +50,16 @@ export const StartupShowcasePage: React.FC = () => {
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
-            padding: '6px 16px',
+            padding: '7px 18px',
             borderRadius: 30,
-            background: 'rgba(255, 107, 53, 0.15)',
-            border: '1px solid rgba(255, 107, 53, 0.4)',
+            background: 'rgba(255, 107, 53, 0.18)',
+            border: '1px solid rgba(255, 107, 53, 0.45)',
             color: '#FF8E53',
             fontSize: 12.5,
             fontWeight: 800,
             marginBottom: 24,
-            boxShadow: '0 0 20px rgba(255, 107, 53, 0.3)',
+            boxShadow: '0 0 25px rgba(255, 107, 53, 0.35)',
+            backdropFilter: 'blur(12px)',
           }}>
             <Sparkles size={16} />
             <span>DỰ ÁN KHỞI NGHIỆP SÁNG TẠO (EXE101) — ĐẠI HỌC FPT</span>
@@ -62,9 +67,9 @@ export const StartupShowcasePage: React.FC = () => {
 
           {/* Main Hero Hook */}
           <h1 style={{
-            fontSize: 'clamp(32px, 5.5vw, 64px)',
+            fontSize: 'clamp(34px, 5.8vw, 68px)',
             fontWeight: 900,
-            lineHeight: 1.15,
+            lineHeight: 1.12,
             letterSpacing: '-1.5px',
             marginBottom: 24,
             textTransform: 'uppercase',
@@ -74,7 +79,7 @@ export const StartupShowcasePage: React.FC = () => {
               background: 'linear-gradient(135deg, #FF6B35 0%, #FF4757 50%, #FFA502 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              filter: 'drop-shadow(0 0 30px rgba(255, 107, 53, 0.6))',
+              filter: 'drop-shadow(0 0 35px rgba(255, 107, 53, 0.65))',
             }}>
               Đấu Trường Fitness AI 1v1
             </span>
@@ -87,7 +92,7 @@ export const StartupShowcasePage: React.FC = () => {
             margin: '0 auto 40px',
             lineHeight: 1.6,
           }}>
-            Nền tảng Gamified Fitness đầu tiên ứng dụng <strong>Trọng tài Thị giác Máy tính (AI Vision)</strong> chấm điểm thời gian thực, chống gian lận sinh trắc học và hệ sinh thái Battle Pass săn quà thương hiệu.
+            Nền tảng Gamified Fitness đầu tiên ứng dụng <strong>Trọng tài Thị giác Máy tính 3D (AI Vision)</strong> chấm điểm thời gian thực, chống gian lận sinh trắc học và hệ sinh thái Battle Pass săn quà thương hiệu.
           </p>
 
           {/* CTA Buttons Row */}
@@ -118,7 +123,7 @@ export const StartupShowcasePage: React.FC = () => {
               }}
             >
               <Smartphone size={20} />
-              <span>Trải Nghiệm Trực Tuyến Ngay</span>
+              <span>Trải Nghiệm Trực Tuyến 3D 📱</span>
             </button>
 
             <button
@@ -143,40 +148,39 @@ export const StartupShowcasePage: React.FC = () => {
             </button>
           </div>
 
-          {/* Traction Stats Ribbon */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 16,
-            maxWidth: 960,
-            margin: '0 auto',
-            background: 'rgba(20, 20, 40, 0.75)',
-            backdropFilter: 'blur(16px)',
-            padding: '20px 24px',
-            borderRadius: 20,
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.6)',
-          }}>
-            {[
-              { val: '98.4%', label: 'Độ chính xác AI Pose Tracking', color: '#2ED573' },
-              { val: '3.2x', label: 'Tỷ lệ duy trì Streak so với app thường', color: '#FF8E53' },
-              { val: '60 Giây', label: 'Thời lượng 1 trận đấu PvP 1v1', color: '#00E5FF' },
-              { val: '30 Cấp', label: 'Mùa giải Battle Pass đổi Voucher', color: '#FFA502' },
-            ].map((stat, idx) => (
-              <div key={idx} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 26, fontWeight: 900, color: stat.color, marginBottom: 4 }}>
-                  {stat.val}
+          {/* Traction Stats Ribbon in 3D Card */}
+          <Interactive3DCard glowColor="#FF6B35" depth={15} style={{ maxWidth: 960, margin: '0 auto', borderRadius: 22 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 16,
+              background: 'rgba(20, 20, 42, 0.85)',
+              backdropFilter: 'blur(18px)',
+              padding: '24px 28px',
+              borderRadius: 22,
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+            }}>
+              {[
+                { val: '98.4%', label: 'Độ chính xác AI Pose Tracking', color: '#2ED573' },
+                { val: '3.2x', label: 'Tỷ lệ duy trì Streak so với app thường', color: '#FF8E53' },
+                { val: '60 Giây', label: 'Thời lượng 1 trận đấu PvP 1v1', color: '#00E5FF' },
+                { val: '30 Cấp', label: 'Mùa giải Battle Pass đổi Voucher', color: '#FFA502' },
+              ].map((stat, idx) => (
+                <div key={idx} style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: stat.color, marginBottom: 4 }}>
+                    {stat.val}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: '#8E94A5', fontWeight: 600 }}>
+                    {stat.label}
+                  </div>
                 </div>
-                <div style={{ fontSize: 11.5, color: '#8E94A5', fontWeight: 600 }}>
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Interactive3DCard>
         </div>
       </section>
 
-      {/* ── 2. THE BIG PROBLEM & THE DISRUPTIVE SOLUTION ─────────────────── */}
+      {/* ── 2. THE BIG PROBLEM & THE DISRUPTIVE SOLUTION (3D CARDS) ───────── */}
       <section style={{
         padding: '100px 24px',
         maxWidth: 1280,
@@ -195,68 +199,82 @@ export const StartupShowcasePage: React.FC = () => {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
           gap: 30,
         }}>
-          {/* Card 1: The Problem */}
-          <div style={{
-            background: 'linear-gradient(145deg, #18141E, #141018)',
-            border: '1px solid rgba(255, 71, 87, 0.3)',
-            borderRadius: 24,
-            padding: '36px 30px',
-            position: 'relative',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-          }}>
+          {/* 3D Card 1: The Problem */}
+          <Interactive3DCard glowColor="#FF4757" depth={24} style={{ borderRadius: 24 }}>
             <div style={{
-              width: 50, height: 50, borderRadius: 14,
-              background: 'rgba(255, 71, 87, 0.15)', border: '1px solid #FF4757',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              marginBottom: 20,
+              background: 'linear-gradient(145deg, #1A1420, #120E18)',
+              border: '1px solid rgba(255, 71, 87, 0.35)',
+              borderRadius: 24,
+              padding: '38px 32px',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
             }}>
-              <Target size={26} color="#FF4757" />
+              <div>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 14,
+                  background: 'rgba(255, 71, 87, 0.15)', border: '1px solid #FF4757',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 22,
+                  boxShadow: '0 0 20px rgba(255, 71, 87, 0.3)',
+                }}>
+                  <Target size={28} color="#FF4757" />
+                </div>
+                <h3 style={{ fontSize: 21, fontWeight: 900, color: '#FF6B81', marginBottom: 16 }}>
+                  Cái Bẫy 30 Ngày Của Người Tập (The 80% Drop-off)
+                </h3>
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14, color: '#B0B0C3', lineHeight: 1.55 }}>
+                  <li>❌ <strong>Nhàm chán & Cô độc:</strong> Tập một mình không có áp lực cạnh tranh dẫn đến nhanh bỏ cuộc sau 2-3 tuần.</li>
+                  <li>❌ <strong>Gian lận & Ảo tưởng:</strong> Không ai giám sát tư thế chuẩn, tập sai form không hiệu quả và dễ gây chấn thương khớp.</li>
+                  <li>❌ <strong>App hiện tại thụ động:</strong> Chỉ dừng lại ở việc đếm calo, ghi chép chay, thiếu hoàn toàn cảm xúc phấn khích (Dopamine).</li>
+                </ul>
+              </div>
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 900, color: '#FF6B81', marginBottom: 14 }}>
-              Cái Bẫy 30 Ngày Của Người Tập (The 80% Drop-off)
-            </h3>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, color: '#B0B0C3', lineHeight: 1.5 }}>
-              <li>❌ <strong>Nhàm chán & Cô độc:</strong> Tập một mình không có áp lực cạnh tranh dẫn đến nhanh bỏ cuộc.</li>
-              <li>❌ <strong>Gian lận & Ảo tưởng:</strong> Không ai giám sát tư thế chuẩn, tập sai form gây chấn thương.</li>
-              <li>❌ <strong>App hiện tại thụ động:</strong> Chỉ dừng lại ở việc đếm calo, nhập tay số liệu khô khan, thiếu dopamine.</li>
-            </ul>
-          </div>
+          </Interactive3DCard>
 
-          {/* Card 2: The Solution */}
-          <div style={{
-            background: 'linear-gradient(145deg, #141A28, #0E1420)',
-            border: '1px solid rgba(46, 213, 115, 0.35)',
-            borderRadius: 24,
-            padding: '36px 30px',
-            position: 'relative',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-          }}>
+          {/* 3D Card 2: The Solution */}
+          <Interactive3DCard glowColor="#2ED573" depth={24} style={{ borderRadius: 24 }}>
             <div style={{
-              width: 50, height: 50, borderRadius: 14,
-              background: 'rgba(46, 213, 115, 0.15)', border: '1px solid #2ED573',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              marginBottom: 20,
+              background: 'linear-gradient(145deg, #141E28, #0E1620)',
+              border: '1px solid rgba(46, 213, 115, 0.4)',
+              borderRadius: 24,
+              padding: '38px 32px',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
             }}>
-              <Zap size={26} color="#2ED573" />
+              <div>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 14,
+                  background: 'rgba(46, 213, 115, 0.15)', border: '1px solid #2ED573',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 22,
+                  boxShadow: '0 0 20px rgba(46, 213, 115, 0.3)',
+                }}>
+                  <Zap size={28} color="#2ED573" />
+                </div>
+                <h3 style={{ fontSize: 21, fontWeight: 900, color: '#2ED573', marginBottom: 16 }}>
+                  Giải Pháp: Đấu Trường PvP 1v1 + Trọng Tài AI 3D
+                </h3>
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14, fontSize: 14, color: '#B0B0C3', lineHeight: 1.55 }}>
+                  <li>✅ <strong>PvP Cạnh Tranh 60s:</strong> Ghép trận 1v1 trực tiếp, thi đấu tính điểm kịch tính như game Esports.</li>
+                  <li>✅ <strong>AI Pose Referee 3D:</strong> Thị giác máy tính nhận diện góc khớp chuẩn xác, loại bỏ hoàn toàn gian lận.</li>
+                  <li>✅ <strong>Phần Thưởng Thực Tế:</strong> Tích lũy Ruby và hoàn thành Battle Pass để nhận Voucher Phúc Long, Nike, Gym.</li>
+                </ul>
+              </div>
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 900, color: '#2ED573', marginBottom: 14 }}>
-              Giải Pháp: Đấu Trường PvP 1v1 + Trọng Tài AI
-            </h3>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, color: '#B0B0C3', lineHeight: 1.5 }}>
-              <li>✅ <strong>PvP Cạnh Tranh 60s:</strong> Ghép trận 1v1 trực tiếp, thi đấu tính điểm kịch tính như game Esports.</li>
-              <li>✅ <strong>AI Pose Referee:</strong> Thị giác máy tính nhận diện góc khớp chuẩn xác, loại bỏ hoàn toàn gian lận.</li>
-              <li>✅ <strong>Phần Thưởng Thực Tế:</strong> Tích lũy Ruby và hoàn thành Battle Pass để nhận Voucher Phúc Long, Nike, Gym.</li>
-            </ul>
-          </div>
+          </Interactive3DCard>
         </div>
       </section>
 
       {/* ── 3. 3D AI DEEP TECH MOAT ──────────────────────────────────────── */}
       <section style={{
-        background: 'linear-gradient(180deg, #090A14 0%, #101222 50%, #090A14 100%)',
+        background: 'linear-gradient(180deg, #090A14 0%, #111326 50%, #090A14 100%)',
         padding: '100px 24px',
         borderTop: '1px solid rgba(255, 107, 53, 0.15)',
         borderBottom: '1px solid rgba(255, 107, 53, 0.15)',
@@ -270,19 +288,20 @@ export const StartupShowcasePage: React.FC = () => {
             alignItems: 'center',
           }}>
             {/* Left Col: 3D Holographic Skeleton */}
-            <div style={{
-              background: 'rgba(15, 15, 35, 0.9)',
-              borderRadius: 24,
-              padding: 24,
-              border: '1px solid rgba(0, 229, 255, 0.3)',
-              boxShadow: '0 20px 60px rgba(0, 229, 255, 0.15)',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#00E5FF' }}>3D BIOMECHANICAL VISUALIZER</div>
-                <div style={{ fontSize: 11, color: '#8E94A5' }}>Kéo chuột để xoay 3D</div>
+            <Interactive3DCard glowColor="#00E5FF" depth={20} style={{ borderRadius: 24 }}>
+              <div style={{
+                background: 'rgba(15, 15, 35, 0.92)',
+                borderRadius: 24,
+                padding: 24,
+                border: '1px solid rgba(0, 229, 255, 0.35)',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#00E5FF' }}>3D BIOMECHANICAL SKELETON ENGINE</div>
+                  <div style={{ fontSize: 11, color: '#8E94A5' }}>Kéo chuột để xoay 3D</div>
+                </div>
+                <PoseSkeletonCanvas3D />
               </div>
-              <PoseSkeletonCanvas3D />
-            </div>
+            </Interactive3DCard>
 
             {/* Right Col: Tech Explanation */}
             <div>
@@ -323,7 +342,7 @@ export const StartupShowcasePage: React.FC = () => {
         </div>
       </section>
 
-      {/* ── 4. MONETIZATION ENGINE ────────────────────────────────────────── */}
+      {/* ── 4. MONETIZATION ENGINE (3D CARDS) ─────────────────────────────── */}
       <section style={{
         padding: '100px 24px',
         maxWidth: 1280,
@@ -341,10 +360,11 @@ export const StartupShowcasePage: React.FC = () => {
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: 24,
+          gap: 26,
         }}>
           {[
             {
+              icon: Crown,
               title: '1. Battle Pass Mùa Giải (B2C Sub)',
               price: '29.000đ - 99.000đ / mùa',
               desc: 'Người dùng mua Battle Pass VIP để mở khóa skin avatar độc quyền, hiệu ứng pháo hoa và nhận voucher quà tặng giá trị cao.',
@@ -352,6 +372,7 @@ export const StartupShowcasePage: React.FC = () => {
               color: '#FF6B35',
             },
             {
+              icon: Coins,
               title: '2. Nền Kinh Tế Ruby & Vé Đấu (IAP)',
               price: '10.000đ - 200.000đ / gói',
               desc: 'Ruby là đơn vị tiền tệ để tham gia Đấu Trường Titan, Giải Đua Sức Bền. Thắng trận nhận Ruby và phần thưởng hiện vật.',
@@ -359,56 +380,70 @@ export const StartupShowcasePage: React.FC = () => {
               color: '#FF4757',
             },
             {
+              icon: Gift,
               title: '3. Tài Trợ Thương Hiệu & B2B',
               price: 'Hợp tác B2B & Voucher',
               desc: 'Các nhãn hàng (Phúc Long, Gym Chain, Đồ thể thao) đặt voucher quà tặng trong app để tiếp cận tệp khách hàng trẻ năng động.',
               badge: 'B2B Brand Sponsor',
               color: '#FFA502',
             },
-          ].map((card, i) => (
-            <div
-              key={i}
-              style={{
-                background: 'linear-gradient(145deg, #1A1A35, #121225)',
-                borderRadius: 20,
-                padding: '32px 26px',
-                border: `1px solid ${card.color}40`,
-                boxShadow: `0 10px 30px ${card.color}15`,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div>
-                <div style={{
-                  display: 'inline-block',
-                  padding: '4px 10px',
-                  borderRadius: 6,
-                  background: `${card.color}20`,
-                  color: card.color,
-                  fontSize: 11,
-                  fontWeight: 800,
-                  marginBottom: 16,
-                }}>
-                  {card.badge}
+          ].map((card, i) => {
+            const Icon = card.icon;
+            return (
+              <Interactive3DCard key={i} glowColor={card.color} depth={22} style={{ borderRadius: 22 }}>
+                <div
+                  style={{
+                    background: 'linear-gradient(145deg, #1A1A35, #121225)',
+                    borderRadius: 22,
+                    padding: '34px 28px',
+                    border: `1px solid ${card.color}45`,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 12,
+                        background: `${card.color}20`, border: `1px solid ${card.color}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Icon size={22} color={card.color} />
+                      </div>
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        background: `${card.color}20`,
+                        color: card.color,
+                        fontSize: 11,
+                        fontWeight: 800,
+                      }}>
+                        {card.badge}
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: 19, fontWeight: 900, color: '#fff', marginBottom: 8 }}>{card.title}</h3>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: card.color, marginBottom: 14 }}>{card.price}</div>
+                    <p style={{ fontSize: 13.5, lineHeight: 1.6, color: '#B0B0C3' }}>{card.desc}</p>
+                  </div>
                 </div>
-                <h3 style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 8 }}>{card.title}</h3>
-                <div style={{ fontSize: 16, fontWeight: 800, color: card.color, marginBottom: 14 }}>{card.price}</div>
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: '#B0B0C3' }}>{card.desc}</p>
-              </div>
-            </div>
-          ))}
+              </Interactive3DCard>
+            );
+          })}
         </div>
       </section>
 
       {/* ── 5. FINAL CALL TO ACTION ──────────────────────────────────────── */}
       <section style={{
-        padding: '80px 24px',
+        padding: '90px 24px',
         textAlign: 'center',
-        background: 'radial-gradient(ellipse at center, rgba(255, 107, 53, 0.2) 0%, #090A14 70%)',
+        background: 'radial-gradient(ellipse at center, rgba(255, 107, 53, 0.25) 0%, #090A14 70%)',
+        position: 'relative',
+        zIndex: 10,
       }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, marginBottom: 16 }}>
+          <h2 style={{ fontSize: 'clamp(28px, 4vw, 46px)', fontWeight: 900, marginBottom: 16 }}>
             Trải Nghiệm Toàn Bộ Ứng Dụng Ngay Bây Giờ
           </h2>
           <p style={{ fontSize: 16, color: '#B0B0C3', marginBottom: 36 }}>
