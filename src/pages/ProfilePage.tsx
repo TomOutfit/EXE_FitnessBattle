@@ -19,7 +19,8 @@ import {
   Mail,
   Database,
   UserCheck,
-  LogOut
+  LogOut,
+  Activity
 } from 'lucide-react';
 import { AppCard, AvatarWidget, XpProgressBar, StatRow, MenuItem } from '../components/ui';
 import { SwitchAccountModal } from '../components/modals/SwitchAccountModal';
@@ -27,11 +28,12 @@ import { DatabaseManagerModal } from '../components/modals/DatabaseManagerModal'
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, buyRuby, resetOnboarding, showToast } = useUser();
+  const { user, buyRuby, resetOnboarding, updateFitnessLevel, showToast } = useUser();
 
   const [showBuyRubyModal, setShowBuyRubyModal] = useState(false);
   const [showSwitchAccountModal, setShowSwitchAccountModal] = useState(false);
   const [showDatabaseManagerModal, setShowDatabaseManagerModal] = useState(false);
+  const [showFitnessLevelModal, setShowFitnessLevelModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const getBadgeIcon = (icon: string, color: string) => {
@@ -113,6 +115,45 @@ export const ProfilePage: React.FC = () => {
                 {user.equippedTitle}
               </div>
             )}
+
+            {/* Fitness Level Badge */}
+            <div style={{ marginTop: 5 }}>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 10.5,
+                  fontWeight: 800,
+                  padding: '3px 9px',
+                  borderRadius: 20,
+                  background: user.fitnessLevel === 'advanced'
+                    ? 'rgba(255, 215, 0, 0.25)'
+                    : user.fitnessLevel === 'intermediate'
+                    ? 'rgba(255, 255, 255, 0.22)'
+                    : 'rgba(46, 213, 115, 0.25)',
+                  border: user.fitnessLevel === 'advanced'
+                    ? '1px solid #FFD700'
+                    : user.fitnessLevel === 'intermediate'
+                    ? '1px solid rgba(255, 255, 255, 0.5)'
+                    : '1px solid #2ED573',
+                  color: user.fitnessLevel === 'advanced'
+                    ? '#FFF275'
+                    : user.fitnessLevel === 'intermediate'
+                    ? '#FFFFFF'
+                    : '#D1F7C4',
+                }}
+              >
+                <span>{user.fitnessLevel === 'advanced' ? '👑' : user.fitnessLevel === 'intermediate' ? '⚡' : '🌱'}</span>
+                <span>
+                  {user.fitnessLevel === 'advanced'
+                    ? 'Đã Tập Lâu Năm / Pro'
+                    : user.fitnessLevel === 'intermediate'
+                    ? 'Đã Tập Một Thời Gian'
+                    : 'Mới Bắt Đầu / Tân Thủ'}
+                </span>
+              </span>
+            </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, fontSize: 11, color: 'rgba(255, 255, 255, 0.8)' }}>
               <Mail size={12} />
@@ -290,6 +331,15 @@ export const ProfilePage: React.FC = () => {
         />
         <div style={{ height: 1, background: '#25253D' }} />
 
+        {/* Fitness Level Manager */}
+        <MenuItem
+          icon={<Activity size={22} color="#00E5FF" />}
+          title="Trình Độ Thể Lực"
+          subtitle={user.fitnessLevel === 'advanced' ? '👑 Đã tập lâu năm / Vận động viên' : user.fitnessLevel === 'intermediate' ? '⚡ Đã tập một thời gian' : '🌱 Mới bắt đầu / Tân thủ'}
+          onTap={() => setShowFitnessLevelModal(true)}
+        />
+        <div style={{ height: 1, background: '#25253D' }} />
+
         {/* Database Manager */}
         <MenuItem
           icon={<Database size={22} color="#2ED573" />}
@@ -347,6 +397,107 @@ export const ProfilePage: React.FC = () => {
           Mua
         </button>
       </AppCard>
+
+      {/* Fitness Level Modal */}
+      {showFitnessLevelModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16
+          }}
+          onClick={() => setShowFitnessLevelModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              background: '#1A1A2E',
+              borderRadius: 20,
+              padding: 24,
+              border: '1px solid rgba(0, 229, 255, 0.35)',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.8)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Activity size={22} color="#00E5FF" />
+                <span style={{ fontSize: 17, fontWeight: 800, color: '#FFFFFF' }}>Điều Chỉnh Trình Độ Thể Lực</span>
+              </div>
+              <button
+                onClick={() => setShowFitnessLevelModal(false)}
+                style={{ background: 'transparent', border: 'none', color: '#6B6B80', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: 12.5, color: '#B0B0C3', lineHeight: 1.5, marginBottom: 16 }}>
+              Chọn cấp độ phù hợp để AI gợi ý bài tập chuẩn xác và tối ưu thuật toán ghép trận PvP:
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+              {[
+                { id: 'beginner', emoji: '🌱', label: 'Chưa Từng Tập / Mới Bắt Đầu', desc: 'Bài tập nhẹ nhàng, AI hướng dẫn kỹ thuật chi tiết.', color: '#2ED573' },
+                { id: 'intermediate', emoji: '⚡', label: 'Đã Tập Một Thời Gian', desc: 'Tư thế vững, sẵn sàng thi đấu 1v1 PvP 60s.', color: '#FF6B35' },
+                { id: 'advanced', emoji: '👑', label: 'Đã Tập Lâu Năm / Vận Động Viên', desc: 'Thể lực dồi dào, leo bảng xếp hạng Titan Boss.', color: '#FFD700' },
+              ].map(lvl => {
+                const isCur = (user.fitnessLevel || 'beginner') === lvl.id;
+                return (
+                  <div
+                    key={lvl.id}
+                    onClick={() => {
+                      updateFitnessLevel(lvl.id as any);
+                      setShowFitnessLevelModal(false);
+                    }}
+                    style={{
+                      padding: 14,
+                      borderRadius: 14,
+                      background: isCur ? `${lvl.color}18` : '#25253D',
+                      border: isCur ? `2px solid ${lvl.color}` : '1px solid #2B2D4F',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <span style={{ fontSize: 24 }}>{lvl.emoji}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 800, color: isCur ? lvl.color : '#FFFFFF' }}>{lvl.label}</div>
+                      <div style={{ fontSize: 11.5, color: '#8E94A5', marginTop: 2 }}>{lvl.desc}</div>
+                    </div>
+                    {isCur && <span style={{ color: lvl.color, fontWeight: 900, fontSize: 12 }}>ĐANG CHỌN</span>}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setShowFitnessLevelModal(false)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 12,
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: 'pointer'
+              }}
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Buy Ruby Modal */}
       {showBuyRubyModal && (
