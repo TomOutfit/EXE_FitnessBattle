@@ -62,7 +62,7 @@ export const StartupShowcasePage: React.FC = () => {
             backdropFilter: 'blur(12px)',
           }}>
             <Sparkles size={16} />
-            <span>DỰ ÁN KHỞI NGHIỆP SÁNG TẠO (EXE101) — ĐẠI HỌC FPT</span>
+            <span>DỰ ÁN KHỞI NGHIỆP SÁNG TẠO (EXE) — ĐẠI HỌC FPT</span>
           </div>
 
           {/* Main Hero Hook */}
@@ -288,7 +288,7 @@ export const StartupShowcasePage: React.FC = () => {
             alignItems: 'center',
           }}>
             {/* Left Col: 3D Holographic Skeleton */}
-            <Interactive3DCard glowColor="#00E5FF" depth={20} style={{ borderRadius: 24 }}>
+            <Interactive3DCard glowColor="#00E5FF" depth={0} disabled={true} style={{ borderRadius: 24 }}>
               <div style={{
                 background: 'rgba(15, 15, 35, 0.92)',
                 borderRadius: 24,

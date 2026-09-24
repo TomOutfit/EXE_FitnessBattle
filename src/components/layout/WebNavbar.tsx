@@ -95,7 +95,7 @@ export const WebNavbar: React.FC = () => {
                 border: '1px solid rgba(255, 107, 53, 0.5)',
                 color: '#FF8E53',
               }}>
-                EXE101
+                EXE
               </span>
             </div>
             <div style={{ fontSize: 11, color: '#8E94A5', fontWeight: 500 }}>

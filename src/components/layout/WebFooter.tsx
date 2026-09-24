@@ -33,7 +33,7 @@ export const WebFooter: React.FC = () => {
             <span style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>FITNESS BATTLE</span>
           </div>
           <p style={{ fontSize: 13, lineHeight: 1.6, color: '#8E94A5', marginBottom: 20 }}>
-            Dự án Khởi nghiệp Sáng tạo (EXE101). Tiên phong ứng dụng AI thị giác máy tính và cơ chế Game hóa PvP để thúc đẩy thói quen tập luyện thể thao của thế hệ trẻ.
+            Dự án Khởi nghiệp Sáng tạo (EXE). Tiên phong ứng dụng AI thị giác máy tính và cơ chế Game hóa PvP để thúc đẩy thói quen tập luyện thể thao của thế hệ trẻ.
           </p>
           <div style={{ display: 'flex', gap: 10 }}>
             <a
@@ -114,7 +114,7 @@ export const WebFooter: React.FC = () => {
         <div>
           <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 16 }}>Hội Đồng & Nhà Đầu Tư</div>
           <p style={{ fontSize: 13, lineHeight: 1.6, color: '#8E94A5', marginBottom: 12 }}>
-            Sản phẩm phát triển cho môn học Khởi nghiệp <strong>EXE101</strong> — Trường Đại học FPT.
+            Sản phẩm phát triển cho môn học Khởi nghiệp <strong>EXE</strong> — Trường Đại học FPT.
           </p>
           <div style={{
             padding: '10px 14px',
@@ -147,7 +147,7 @@ export const WebFooter: React.FC = () => {
         fontSize: 12,
         color: '#6B6B80',
       }}>
-        <div>© 2026 Fitness Battle (EXE101 Project). All rights reserved.</div>
+        <div>© 2026 Fitness Battle (EXE Project). All rights reserved.</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span>Crafted with</span>
           <Heart size={14} color="#FF4757" fill="#FF4757" />

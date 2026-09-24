@@ -373,31 +373,41 @@ export const PhoneSimulator: React.FC<PhoneSimulatorProps> = ({ children }) => {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {[
-                  { label: '🏠 Trang Chủ', path: '/' },
-                  { label: '⚔️ Đấu Trường 1v1', path: '/battle' },
-                  { label: '👁️ Camera AI Pose', path: '/exercise-camera?type=pushup' },
-                  { label: '⚡ Battle Pass', path: '/battle-pass' },
-                  { label: '💎 Cửa Hàng Ruby', path: '/shop' },
-                  { label: '📊 Bảng Xếp Hạng', path: '/ranking' },
-                ].map(item => (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: 10,
-                      background: location.pathname === item.path ? 'rgba(0, 229, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                      border: location.pathname === item.path ? '1px solid #00E5FF' : '1px solid rgba(255,255,255,0.08)',
-                      color: location.pathname === item.path ? '#00E5FF' : '#fff',
-                      fontSize: 12,
-                      fontWeight: 700,
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                ))}
+                  { label: '🏠 Trang Chủ', subpath: '/' },
+                  { label: '⚔️ Đấu Trường 1v1', subpath: '/battle' },
+                  { label: '👁️ Camera AI Pose', subpath: '/exercise-camera?type=pushup' },
+                  { label: '⚡ Battle Pass', subpath: '/battle-pass' },
+                  { label: '💎 Cửa Hàng Ruby', subpath: '/shop' },
+                  { label: '📊 Bảng Xếp Hạng', subpath: '/ranking' },
+                ].map(item => {
+                  const isDemoMode = location.pathname.startsWith('/demo');
+                  const targetUrl = isDemoMode
+                    ? (item.subpath === '/' ? '/demo' : `/demo${item.subpath}`)
+                    : item.subpath;
+                  const isActive = isDemoMode
+                    ? (item.subpath === '/' ? (location.pathname === '/demo' || location.pathname === '/demo/') : location.pathname.includes(item.subpath.split('?')[0]))
+                    : location.pathname === item.subpath;
+
+                  return (
+                    <button
+                      key={item.subpath}
+                      onClick={() => navigate(targetUrl)}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 10,
+                        background: isActive ? 'rgba(0, 229, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                        border: isActive ? '1px solid #00E5FF' : '1px solid rgba(255,255,255,0.08)',
+                        color: isActive ? '#00E5FF' : '#fff',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </Interactive3DCard>
