@@ -206,6 +206,7 @@ class AppDatabase {
     required String name,
     required String email,
     required String password,
+    String fitnessLevel = 'beginner',
   }) async {
     _prefs ??= await SharedPreferences.getInstance();
     final cleanEmail = email.trim().toLowerCase();
@@ -237,6 +238,7 @@ class AppDatabase {
       id: newId,
       name: name.trim(),
       email: cleanEmail,
+      fitnessLevel: fitnessLevel,
     );
     await saveUser(newUser);
 

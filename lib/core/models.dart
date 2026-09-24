@@ -29,6 +29,7 @@ class User {
   final String? equippedSkinFrame;
   final String? equippedTitle;
   final DateTime? lastStaminaRefillAt;
+  final String fitnessLevel;
 
   User({
     required this.id,
@@ -60,6 +61,7 @@ class User {
     this.equippedSkinFrame,
     this.equippedTitle,
     this.lastStaminaRefillAt,
+    this.fitnessLevel = 'beginner',
   });
 
   /// Automatically computes and restores stamina based on real elapsed time
@@ -117,6 +119,7 @@ class User {
     String? equippedSkinFrame,
     String? equippedTitle,
     DateTime? lastStaminaRefillAt,
+    String? fitnessLevel,
   }) {
     return User(
       id: id ?? this.id,
@@ -148,6 +151,7 @@ class User {
       equippedSkinFrame: equippedSkinFrame ?? this.equippedSkinFrame,
       equippedTitle: equippedTitle ?? this.equippedTitle,
       lastStaminaRefillAt: lastStaminaRefillAt ?? this.lastStaminaRefillAt,
+      fitnessLevel: fitnessLevel ?? this.fitnessLevel,
     );
   }
 }
