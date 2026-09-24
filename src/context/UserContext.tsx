@@ -25,6 +25,7 @@ export interface OnboardingData {
   avatarEmoji: string;
   email?: string;
   password?: string;
+  fitnessLevel?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export interface StoredAccount {
@@ -34,6 +35,7 @@ export interface StoredAccount {
   avatarSeed?: string;
   avatarColor?: string;
   avatarEmoji?: string;
+  fitnessLevel?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export interface UserMembershipData {
@@ -77,7 +79,8 @@ interface UserContextValue {
   completeOnboarding: (data: OnboardingData) => void;
   updateBattleResult: (myScore: number, oppScore: number, result: 'win' | 'lose' | 'cheat' | 'opp_cheat') => void;
   login: (email: string, password: string) => { success: boolean; error?: string };
-  register: (name: string, email: string, password: string) => { success: boolean; error?: string };
+  register: (name: string, email: string, password: string, fitnessLevel?: 'beginner' | 'intermediate' | 'advanced') => { success: boolean; error?: string };
+  updateFitnessLevel: (level: 'beginner' | 'intermediate' | 'advanced') => void;
   resetOnboarding: () => void;
   upgradeToVIP: () => void;
   deductStamina: (amount: number) => boolean;
@@ -117,6 +120,7 @@ const DEFAULT_PRESET_ACCOUNTS: Record<string, StoredAccount> = {
     avatarSeed: 'TomOutfit',
     avatarColor: 'b6e3f4',
     avatarEmoji: '⚡',
+    fitnessLevel: 'intermediate',
     user: {
       ...defaultUser,
       id: 'user-tomoutfit',
@@ -134,6 +138,7 @@ const DEFAULT_PRESET_ACCOUNTS: Record<string, StoredAccount> = {
       maxStamina: 200,
       coins: 5800,
       isVIP: false,
+      fitnessLevel: 'intermediate',
     }
   },
   'demo@fitnessbattle.vn': {
@@ -142,23 +147,25 @@ const DEFAULT_PRESET_ACCOUNTS: Record<string, StoredAccount> = {
     avatarSeed: 'TomOutfit',
     avatarColor: 'b6e3f4',
     avatarEmoji: '🏃',
+    fitnessLevel: 'beginner',
     user: {
       ...defaultUser,
-      id: 'user-tomoutfit',
-      name: 'TomOutfit',
+      id: 'user-demo',
+      name: 'Demo Tân Thủ',
       email: 'demo@fitnessbattle.vn',
-      avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=TomOutfit&backgroundColor=b6e3f4',
-      level: 15,
-      xp: 4250,
-      xpToNextLevel: 6000,
-      streak: 18,
-      totalPoints: 6850,
-      rank: 28,
-      ruby: 350,
-      stamina: 200,
-      maxStamina: 200,
-      coins: 5800,
+      avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=DemoUser&backgroundColor=b6e3f4',
+      level: 1,
+      xp: 150,
+      xpToNextLevel: 500,
+      streak: 2,
+      totalPoints: 320,
+      rank: 480,
+      ruby: 40,
+      stamina: 100,
+      maxStamina: 100,
+      coins: 450,
       isVIP: false,
+      fitnessLevel: 'beginner',
     }
   },
   'vip@fitnessbattle.vn': {
@@ -167,6 +174,7 @@ const DEFAULT_PRESET_ACCOUNTS: Record<string, StoredAccount> = {
     avatarSeed: 'Champion',
     avatarColor: 'ffd5dc',
     avatarEmoji: '👑',
+    fitnessLevel: 'advanced',
     user: {
       ...defaultUser,
       id: 'vip_pro_user',
@@ -186,6 +194,34 @@ const DEFAULT_PRESET_ACCOUNTS: Record<string, StoredAccount> = {
       isVIP: true,
       equippedSkinFrame: '🐉 Rồng Lửa Frame VIP',
       equippedTitle: '👑 VIP Battle Master',
+      fitnessLevel: 'advanced',
+    }
+  },
+  'newbie@fitnessbattle.vn': {
+    email: 'newbie@fitnessbattle.vn',
+    password: 'newbie123456',
+    avatarSeed: 'NewbieHero',
+    avatarColor: 'd1f7c4',
+    avatarEmoji: '🌱',
+    fitnessLevel: 'beginner',
+    user: {
+      ...defaultUser,
+      id: 'user-newbie',
+      name: 'Bạn Mới Bắt Đầu',
+      email: 'newbie@fitnessbattle.vn',
+      avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=NewbieHero&backgroundColor=d1f7c4',
+      level: 1,
+      xp: 0,
+      xpToNextLevel: 500,
+      streak: 1,
+      totalPoints: 50,
+      rank: 999,
+      ruby: 20,
+      stamina: 100,
+      maxStamina: 100,
+      coins: 200,
+      isVIP: false,
+      fitnessLevel: 'beginner',
     }
   }
 };
@@ -772,28 +808,27 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const completeOnboarding = (data: OnboardingData) => {
     const avatarUrl = `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(data.avatarSeed)}&backgroundColor=${data.avatarColor}`;
+    const levelType = data.fitnessLevel || 'beginner';
+
+    const levelStats = levelType === 'advanced'
+      ? { level: 15, xp: 3500, xpToNextLevel: 5000, stamina: 200, maxStamina: 200, coins: 2500, ruby: 150, rank: 50, streak: 15, totalPoints: 4200 }
+      : levelType === 'intermediate'
+      ? { level: 5, xp: 800, xpToNextLevel: 1500, stamina: 150, maxStamina: 150, coins: 800, ruby: 60, rank: 250, streak: 5, totalPoints: 950 }
+      : { level: 1, xp: 0, xpToNextLevel: 500, stamina: 100, maxStamina: 100, coins: 300, ruby: 25, rank: 999, streak: 1, totalPoints: 50 };
 
     const updated: User = {
       ...user,
       name: data.name,
       email: data.email,
       avatar: avatarUrl,
-      level: 1,
-      xp: 0,
-      xpToNextLevel: 500,
-      streak: 0,
-      totalPoints: 0,
-      rank: 999,
-      winCount: 0,
-      loseCount: 0,
-      ruby: 10,
-      stamina: 100,
-      maxStamina: 100,
-      coins: 200,
+      fitnessLevel: levelType,
+      winCount: levelType === 'advanced' ? 12 : levelType === 'intermediate' ? 4 : 0,
+      loseCount: levelType === 'advanced' ? 2 : 0,
       coinsExpiringDays: 14,
       hasBattlePass: true,
-      battlePassTier: 0,
+      battlePassTier: levelType === 'advanced' ? 8 : levelType === 'intermediate' ? 3 : 0,
       isVIP: false,
+      ...levelStats,
     };
 
     setUser(updated);
@@ -812,17 +847,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatarSeed: data.avatarSeed,
           avatarColor: data.avatarColor,
           avatarEmoji: data.avatarEmoji,
+          fitnessLevel: levelType,
         }
       }));
       localStorage.setItem(CURRENT_ACCOUNT_KEY, data.email.toLowerCase());
     }
   };
 
-  const register = (name: string, email: string, password: string): { success: boolean; error?: string } => {
+  const register = (
+    name: string,
+    email: string,
+    password: string,
+    fitnessLevel: 'beginner' | 'intermediate' | 'advanced' = 'beginner'
+  ): { success: boolean; error?: string } => {
     const emailKey = email.toLowerCase().trim();
     if (accountsMap[emailKey]) {
       return { success: false, error: 'Email này đã được đăng ký.' };
     }
+
+    const levelStats = fitnessLevel === 'advanced'
+      ? { level: 15, xp: 3500, xpToNextLevel: 5000, stamina: 200, maxStamina: 200, coins: 2500, ruby: 150, rank: 50, streak: 15, totalPoints: 4200, winCount: 12, loseCount: 2 }
+      : fitnessLevel === 'intermediate'
+      ? { level: 5, xp: 800, xpToNextLevel: 1500, stamina: 150, maxStamina: 150, coins: 800, ruby: 60, rank: 250, streak: 5, totalPoints: 950, winCount: 4, loseCount: 1 }
+      : { level: 1, xp: 0, xpToNextLevel: 500, stamina: 100, maxStamina: 100, coins: 300, ruby: 25, rank: 999, streak: 1, totalPoints: 50, winCount: 0, loseCount: 0 };
 
     const newUser: User = {
       ...defaultUser,
@@ -830,26 +877,17 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: name.trim(),
       email: emailKey,
       avatar: `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(name)}&backgroundColor=b6e3f4`,
-      level: 1,
-      xp: 0,
-      xpToNextLevel: 500,
-      streak: 1,
-      totalPoints: 100,
-      rank: 500,
-      winCount: 0,
-      loseCount: 0,
-      ruby: 20,
-      stamina: 100,
-      maxStamina: 100,
-      coins: 300,
+      fitnessLevel,
       isVIP: false,
       joinDate: new Date().toISOString().split('T')[0],
+      ...levelStats,
     };
 
     const newAccount: StoredAccount = {
       email: emailKey,
       password,
       user: newUser,
+      fitnessLevel,
     };
 
     setAccountsMap(prev => ({ ...prev, [emailKey]: newAccount }));
@@ -858,8 +896,34 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(ONBOARDED_KEY, 'true');
     localStorage.setItem(CURRENT_ACCOUNT_KEY, emailKey);
     setIsOnboarded(true);
-    showToast('🎉 Tạo tài khoản thành công! Đã đăng nhập.', 'success');
+    showToast(`🎉 Tạo tài khoản thành công (${fitnessLevel === 'advanced' ? 'Đã tập lâu năm' : fitnessLevel === 'intermediate' ? 'Đã tập một thời gian' : 'Mới bắt đầu'})!`, 'success');
     return { success: true };
+  };
+
+  const updateFitnessLevel = (level: 'beginner' | 'intermediate' | 'advanced') => {
+    setUser(prev => {
+      const updated = { ...prev, fitnessLevel: level };
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+      return updated;
+    });
+
+    if (user.email) {
+      const emailKey = user.email.toLowerCase();
+      setAccountsMap(prev => {
+        if (!prev[emailKey]) return prev;
+        const updatedAcc = {
+          ...prev[emailKey],
+          fitnessLevel: level,
+          user: { ...prev[emailKey].user, fitnessLevel: level }
+        };
+        const next = { ...prev, [emailKey]: updatedAcc };
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
+        return next;
+      });
+    }
+
+    const label = level === 'advanced' ? 'Tập lâu năm / Nâng cao' : level === 'intermediate' ? 'Đã tập một thời gian' : 'Mới bắt đầu';
+    showToast(`Đã cập nhật cấp độ thể lực: ${label}!`, 'success');
   };
 
   const login = (email: string, password: string): { success: boolean; error?: string } => {
@@ -881,6 +945,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       avatarColor: account.avatarColor || 'b6e3f4',
       avatarEmoji: account.avatarEmoji || '🏃',
       email: account.email,
+      fitnessLevel: account.fitnessLevel || account.user.fitnessLevel || 'beginner',
     });
     localStorage.setItem(USER_KEY, JSON.stringify(account.user));
     localStorage.setItem(ONBOARDED_KEY, 'true');
@@ -928,7 +993,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       switchAccount,
       resetDatabase,
       recordExerciseSession, addManualSteps, claimChallenge, buyShopItem, joinBattle, upgradeMembership,
-      completeOnboarding, updateBattleResult, login, register, resetOnboarding,
+      completeOnboarding, updateBattleResult, login, register, updateFitnessLevel, resetOnboarding,
       upgradeToVIP, deductStamina, refillStamina, buyRuby, addXP, addCoins,
       toasts, showToast, dismissToast
     }}>

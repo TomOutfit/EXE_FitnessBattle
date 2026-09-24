@@ -28,6 +28,7 @@ export interface User {
   equippedSkinFrame?: string;
   equippedTitle?: string;
   lastStaminaRefillAt?: string;
+  fitnessLevel?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export interface AppAccount {
