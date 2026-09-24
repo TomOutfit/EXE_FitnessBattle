@@ -85,6 +85,10 @@ export const PoseSkeletonCanvas3D: React.FC<PoseSkeletonCanvas3DProps> = ({
       boneCylinders.push(cylinder);
     });
 
+    const _tempMid = new THREE.Vector3();
+    const _tempMatrix = new THREE.Matrix4();
+    const _upVec = new THREE.Vector3(0, 1, 0);
+
     const updateBones = () => {
       boneConnections.forEach(([startIdx, endIdx], i) => {
         const start = jointSpheres[startIdx].position;
@@ -94,12 +98,11 @@ export const PoseSkeletonCanvas3D: React.FC<PoseSkeletonCanvas3DProps> = ({
         const distance = start.distanceTo(end);
         cylinder.scale.set(1, distance, 1);
 
-        const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-        cylinder.position.copy(mid);
+        _tempMid.addVectors(start, end).multiplyScalar(0.5);
+        cylinder.position.copy(_tempMid);
 
-        const orientation = new THREE.Matrix4();
-        orientation.lookAt(start, end, new THREE.Vector3(0, 1, 0));
-        cylinder.quaternion.setFromRotationMatrix(orientation);
+        _tempMatrix.lookAt(start, end, _upVec);
+        cylinder.quaternion.setFromRotationMatrix(_tempMatrix);
         cylinder.rotateX(Math.PI / 2);
       });
     };
@@ -115,46 +118,76 @@ export const PoseSkeletonCanvas3D: React.FC<PoseSkeletonCanvas3DProps> = ({
     ring.position.y = -2.3;
     skeletonGroup.add(ring);
 
-    // Mouse rotation
+    // Mouse and Touch rotation
     let isDragging = false;
-    let prevMouseX = 0;
-    let prevMouseY = 0;
+    let prevPointerX = 0;
+    let prevPointerY = 0;
 
-    const onMouseDown = (e: MouseEvent) => {
+    const onPointerDown = (clientX: number, clientY: number) => {
       if (!interactive) return;
       isDragging = true;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
+      prevPointerX = clientX;
+      prevPointerY = clientY;
     };
 
-    const onMouseMove = (e: MouseEvent) => {
+    const onPointerMove = (clientX: number, clientY: number) => {
       if (!isDragging) return;
-      const deltaX = e.clientX - prevMouseX;
-      const deltaY = e.clientY - prevMouseY;
-      skeletonGroup.rotation.y += deltaX * 0.01;
-      skeletonGroup.rotation.x += deltaY * 0.01;
-      prevMouseX = e.clientX;
-      prevMouseY = e.clientY;
+      const deltaX = clientX - prevPointerX;
+      const deltaY = clientY - prevPointerY;
+      skeletonGroup.rotation.y += deltaX * 0.012;
+      skeletonGroup.rotation.x += deltaY * 0.012;
+      prevPointerX = clientX;
+      prevPointerY = clientY;
     };
 
-    const onMouseUp = () => { isDragging = false; };
+    const onPointerUp = () => {
+      isDragging = false;
+    };
 
-    container.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    const handleMouseDown = (e: MouseEvent) => {
+      e.stopPropagation();
+      onPointerDown(e.clientX, e.clientY);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      onPointerMove(e.clientX, e.clientY);
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isDragging && e.touches.length > 0) {
+        onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    container.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', onPointerUp);
 
     const handleResize = () => {
       if (!container) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
+      const w = container.clientWidth || 300;
+      const h = container.clientHeight || 380;
+      camera.aspect = w / (h || 1);
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setSize(w, h);
     };
 
     window.addEventListener('resize', handleResize);
 
     // Animation Loop
     let animId: number;
-    let clock = new THREE.Clock();
+    const clock = new THREE.Clock();
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
@@ -190,11 +223,14 @@ export const PoseSkeletonCanvas3D: React.FC<PoseSkeletonCanvas3DProps> = ({
 
     return () => {
       cancelAnimationFrame(animId);
-      container.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      container.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      container.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', onPointerUp);
       window.removeEventListener('resize', handleResize);
-      if (container && renderer.domElement) {
+      if (container && renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
       renderer.dispose();

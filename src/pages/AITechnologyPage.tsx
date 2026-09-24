@@ -50,7 +50,7 @@ export const AITechnologyPage: React.FC = () => {
           alignItems: 'center',
         }}>
           {/* 3D Skeleton Visualizer in 3D Card */}
-          <Interactive3DCard glowColor="#00E5FF" depth={22} style={{ borderRadius: 24 }}>
+          <Interactive3DCard glowColor="#00E5FF" depth={0} disabled={true} style={{ borderRadius: 24 }}>
             <div style={{
               background: 'linear-gradient(145deg, #14142B, #0E0E1F)',
               borderRadius: 24,

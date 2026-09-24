@@ -91,6 +91,7 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
       // Create 3D Holographic Dumbbell
       const createDumbbell = (x: number, y: number, z: number, colorHex: number) => {
         const dumbbell = new THREE.Group();
+        dumbbell.userData = { baseY: y };
         const barGeo = new THREE.CylinderGeometry(0.1, 0.1, 2.2, 12);
         const weightGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.35, 16);
         const mat = new THREE.MeshStandardMaterial({
@@ -134,6 +135,7 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
       const shield = new THREE.Mesh(shieldGeo, shieldMat);
       shield.rotation.x = Math.PI;
       const shieldGroup = new THREE.Group();
+      shieldGroup.userData = { baseY: 2 };
       shieldGroup.add(shield);
       shieldGroup.position.set(-6, 2, 4);
       scene.add(shieldGroup);
@@ -203,17 +205,19 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!interactive) return;
-      targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
-      targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+      targetMouseX = (e.clientX / (window.innerWidth || 1) - 0.5) * 2;
+      targetMouseY = (e.clientY / (window.innerHeight || 1) - 0.5) * 2;
     };
 
     window.addEventListener('mousemove', handleMouseMove);
 
     const handleResize = () => {
       if (!container) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+      camera.aspect = w / (h || 1);
       camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setSize(w, h);
     };
 
     window.addEventListener('resize', handleResize);
@@ -244,11 +248,12 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
       ring2.rotation.z = -elapsed * 0.2;
       ring3.rotation.z = elapsed * 0.15;
 
-      // Float other 3D artifacts
+      // Float other 3D artifacts (fixed base Y)
       floatingObjects.forEach((obj, idx) => {
         obj.rotation.x = elapsed * (0.3 + idx * 0.1);
         obj.rotation.y = elapsed * (0.4 + idx * 0.1);
-        obj.position.y += Math.sin(elapsed * 2 + idx) * 0.008;
+        const baseY = obj.userData?.baseY ?? 0;
+        obj.position.y = baseY + Math.sin(elapsed * 1.6 + idx * 1.4) * 0.35;
       });
 
       // Upward particle flow
@@ -276,7 +281,7 @@ export const CyberArenaCanvas3D: React.FC<CyberArenaCanvas3DProps> = ({
       cancelAnimationFrame(animId);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
-      if (container && renderer.domElement) {
+      if (container && renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
       renderer.dispose();
