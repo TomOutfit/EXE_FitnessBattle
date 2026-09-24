@@ -24,10 +24,12 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
   String? _loginError;
 
   // Register Controllers
+  int _regStep = 1; // 1: Info, 2: Fitness Level Survey
   final _regNameController = TextEditingController();
   final _regEmailController = TextEditingController();
   final _regPasswordController = TextEditingController();
   final _regConfirmPasswordController = TextEditingController();
+  String _fitnessLevel = 'beginner'; // 'beginner' | 'intermediate' | 'advanced'
   bool _regObscure = true;
   bool _isRegistering = false;
   String? _regError;
@@ -77,7 +79,7 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
     }
   }
 
-  Future<void> _handleRegister() async {
+  void _handleNextRegisterStep() {
     final name = _regNameController.text.trim();
     final email = _regEmailController.text.trim();
     final password = _regPasswordController.text;
@@ -99,6 +101,17 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
     }
 
     setState(() {
+      _regError = null;
+      _regStep = 2;
+    });
+  }
+
+  Future<void> _handleRegister() async {
+    final name = _regNameController.text.trim();
+    final email = _regEmailController.text.trim();
+    final password = _regPasswordController.text;
+
+    setState(() {
       _isRegistering = true;
       _regError = null;
     });
@@ -107,6 +120,7 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
       name: name,
       email: email,
       password: password,
+      fitnessLevel: _fitnessLevel,
     );
 
     if (!mounted) return;
@@ -114,10 +128,15 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
 
     if (res.success && res.user != null) {
       ref.read(userProvider.notifier).updateUser(res.user!);
+      final lvlLabel = _fitnessLevel == 'advanced'
+          ? 'Đã tập lâu năm'
+          : _fitnessLevel == 'intermediate'
+              ? 'Đã tập một thời gian'
+              : 'Mới bắt đầu';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🎉 Tạo tài khoản thành công! Đã đăng nhập.'),
-          backgroundColor: Color(0xFF2ED573),
+        SnackBar(
+          content: Text('🎉 Tạo tài khoản thành công ($lvlLabel)! Đã đăng nhập.'),
+          backgroundColor: const Color(0xFF2ED573),
         ),
       );
       context.go('/home');
@@ -157,8 +176,8 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 20,
+                            color: AppColors.primary.withValues(alpha: 0.45),
+                            blurRadius: 22,
                             offset: const Offset(0, 8),
                           ),
                         ],
@@ -182,13 +201,13 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Luyện tập thông minh • Đấu trường đỉnh cao',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      'Đấu Trường Thể Lực 1v1 • Trọng Tài AI Vision',
+                      style: TextStyle(fontSize: 12, color: AppColors.secondary, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
 
               // Tab Selector (Đăng Nhập / Đăng Ký)
               Container(
@@ -196,7 +215,7 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
                 decoration: BoxDecoration(
                   color: AppColors.surface,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: TabBar(
                   controller: _tabController,
@@ -217,18 +236,17 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
               ),
               const SizedBox(height: 20),
 
-              // Tab Content
-              SizedBox(
-                height: 380,
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
+              // Tab Content with Adaptive Height
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                child: SizedBox(
+                  child: [
                     // --- LOGIN TAB ---
                     _buildLoginTab(),
 
                     // --- REGISTER TAB ---
                     _buildRegisterTab(),
-                  ],
+                  ][_tabController.index],
                 ),
               ),
 
@@ -247,65 +265,58 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.flash_on, color: AppColors.secondary, size: 18),
+                        Icon(Icons.flash_on, color: AppColors.primary, size: 18),
                         SizedBox(width: 8),
                         Text(
-                          'TRUY CẬP NHANH TÀI KHOẢN MẪU',
+                          'TRUY CẬP NHANH THEO CẤP ĐỘ (1-CLICK DEMO)',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: AppColors.primary,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Row(
+                    const SizedBox(height: 12),
+                    Column(
                       children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _fillQuickAccount('demo@fitnessbattle.vn', 'demo123456'),
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                              ),
-                              child: const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('⚔️ Demo Warrior', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                                  SizedBox(height: 2),
-                                  Text('Lv.15 • 350 💎 • 5800 🪙', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                                ],
-                              ),
-                            ),
-                          ),
+                        // Beginner
+                        _buildQuickAccountTile(
+                          icon: '🌱',
+                          title: 'Người Mới Bắt Đầu (Newbie)',
+                          subtitle: 'demo@fitnessbattle.vn • Level 1 • 200 💎',
+                          color: const Color(0xFF2ED573),
+                          onTap: () {
+                            _tabController.animateTo(0);
+                            _fillQuickAccount('demo@fitnessbattle.vn', 'demo123456');
+                          },
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => _fillQuickAccount('vip@fitnessbattle.vn', 'vip123456'),
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFD700).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.3)),
-                              ),
-                              child: const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('👑 VIP Champion', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFFD700))),
-                                  SizedBox(height: 2),
-                                  Text('Lv.25 • 1200 💎 • VIP Frame', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
-                                ],
-                              ),
-                            ),
-                          ),
+                        const SizedBox(height: 8),
+
+                        // Intermediate
+                        _buildQuickAccountTile(
+                          icon: '⚡',
+                          title: 'Trung Cấp - TomOutfit',
+                          subtitle: 'tomoutfit@fitnessbattle.vn • Level 15 • 350 💎',
+                          color: AppColors.primary,
+                          onTap: () {
+                            _tabController.animateTo(0);
+                            _fillQuickAccount('tomoutfit@fitnessbattle.vn', 'tomoutfit123');
+                          },
+                        ),
+                        const SizedBox(height: 8),
+
+                        // VIP Master
+                        _buildQuickAccountTile(
+                          icon: '👑',
+                          title: 'Tập Lâu Năm - VIP Master',
+                          subtitle: 'vip@fitnessbattle.vn • Level 25 • 1200 💎',
+                          color: const Color(0xFFFFD700),
+                          onTap: () {
+                            _tabController.animateTo(0);
+                            _fillQuickAccount('vip@fitnessbattle.vn', 'vip123456');
+                          },
                         ),
                       ],
                     ),
@@ -315,6 +326,44 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
               const SizedBox(height: 20),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickAccountTile({
+    required String icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: color)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 12, color: color),
+          ],
         ),
       ),
     );
@@ -440,6 +489,17 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Step Indicator Breadcrumbs
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildStepIndicator(step: 1, title: 'Tài Khoản', isActive: _regStep == 1, isCompleted: _regStep > 1),
+            Container(width: 30, height: 2, color: _regStep > 1 ? const Color(0xFF2ED573) : AppColors.border),
+            _buildStepIndicator(step: 2, title: 'Trình Độ Thể Lực', isActive: _regStep == 2, isCompleted: false),
+          ],
+        ),
+        const SizedBox(height: 16),
+
         if (_regError != null) ...[
           Container(
             padding: const EdgeInsets.all(10),
@@ -461,78 +521,256 @@ class _AuthPageState extends ConsumerState<AuthPage> with SingleTickerProviderSt
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
         ],
 
-        // Name
-        _buildTextField(
-          controller: _regNameController,
-          label: 'Họ và tên',
-          hint: 'Ví dụ: Tuấn Titan',
-          icon: Icons.person_outline,
-        ),
-        const SizedBox(height: 10),
+        // STEP 1: Account Credentials
+        if (_regStep == 1) ...[
+          _buildTextField(
+            controller: _regNameController,
+            label: 'Họ và tên',
+            hint: 'Ví dụ: Tuấn Titan',
+            icon: Icons.person_outline,
+          ),
+          const SizedBox(height: 10),
 
-        // Email
-        _buildTextField(
-          controller: _regEmailController,
-          label: 'Email',
-          hint: 'Nhập địa chỉ email',
-          icon: Icons.email_outlined,
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 10),
+          _buildTextField(
+            controller: _regEmailController,
+            label: 'Email',
+            hint: 'Nhập địa chỉ email',
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 10),
 
-        // Password
-        _buildTextField(
-          controller: _regPasswordController,
-          label: 'Mật khẩu',
-          hint: 'Tối thiểu 6 ký tự',
-          icon: Icons.lock_outline,
-          obscureText: _regObscure,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _regObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-              color: AppColors.textMuted,
-              size: 20,
+          _buildTextField(
+            controller: _regPasswordController,
+            label: 'Mật khẩu',
+            hint: 'Tối thiểu 6 ký tự',
+            icon: Icons.lock_outline,
+            obscureText: _regObscure,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _regObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                color: AppColors.textMuted,
+                size: 20,
+              ),
+              onPressed: () => setState(() => _regObscure = !_regObscure),
             ),
-            onPressed: () => setState(() => _regObscure = !_regObscure),
           ),
-        ),
-        const SizedBox(height: 10),
+          const SizedBox(height: 10),
 
-        // Confirm Password
-        _buildTextField(
-          controller: _regConfirmPasswordController,
-          label: 'Xác nhận mật khẩu',
-          hint: 'Nhập lại mật khẩu',
-          icon: Icons.lock_outline,
-          obscureText: _regObscure,
-        ),
-        const SizedBox(height: 16),
-
-        // Submit Button
-        ElevatedButton(
-          onPressed: _isRegistering ? null : _handleRegister,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.secondary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 4,
+          _buildTextField(
+            controller: _regConfirmPasswordController,
+            label: 'Xác nhận mật khẩu',
+            hint: 'Nhập lại mật khẩu',
+            icon: Icons.lock_outline,
+            obscureText: _regObscure,
           ),
-          child: _isRegistering
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                )
-              : const Text(
-                  'TẠO TÀI KHOẢN MỚI',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          const SizedBox(height: 16),
+
+          ElevatedButton(
+            onPressed: _handleNextRegisterStep,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Text(
+              'TIẾP TỤC: CHỌN TRÌNH ĐỘ ➔',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+
+        // STEP 2: Fitness Level Selection
+        if (_regStep == 2) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+            ),
+            child: const Text(
+              '🎯 Chọn trình độ tập luyện để AI thiết lập số lượng reps, độ khó bài tập và ghép đối thủ 1v1 phù hợp:',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Option 1: Beginner
+          _buildFitnessLevelCard(
+            id: 'beginner',
+            icon: '🌱',
+            title: 'Chưa Từng Tập / Mới Bắt Đầu',
+            desc: 'Mục tiêu xây dựng thói quen, bài tập nhẹ nhàng, AI hướng dẫn chi tiết.',
+            badge: 'Khởi đầu Level 1 • 5-10 Reps',
+            color: const Color(0xFF2ED573),
+          ),
+          const SizedBox(height: 10),
+
+          // Option 2: Intermediate
+          _buildFitnessLevelCard(
+            id: 'intermediate',
+            icon: '⚡',
+            title: 'Đã Tập Một Thời Gian',
+            desc: 'Đã có nền tảng thể lực, sẵn sàng đấu 1v1 PvP 60s và leo rank.',
+            badge: 'Tặng Level 5 • 15-25 Reps',
+            color: AppColors.primary,
+          ),
+          const SizedBox(height: 10),
+
+          // Option 3: Advanced
+          _buildFitnessLevelCard(
+            id: 'advanced',
+            icon: '👑',
+            title: 'Đã Tập Lâu Năm / Vận Động Viên',
+            desc: 'Thể lực dồi dào, chuyên nghiệp, săn Titan Boss và Top BXH Toàn Quốc.',
+            badge: 'Mở khóa Level 15 • 40+ Reps',
+            color: const Color(0xFFFFD700),
+          ),
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: OutlinedButton(
+                  onPressed: () => setState(() => _regStep = 1),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('Quay Lại', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                 ),
-        ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: _isRegistering ? null : _handleRegister,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2ED573),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: _isRegistering
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text(
+                          'HOÀN TẤT & BẮT ĐẦU ⚡',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildStepIndicator({
+    required int step,
+    required String title,
+    required bool isActive,
+    required bool isCompleted,
+  }) {
+    final color = isCompleted
+        ? const Color(0xFF2ED573)
+        : isActive
+            ? AppColors.primary
+            : AppColors.textMuted;
+
+    return Row(
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withValues(alpha: 0.2),
+            border: Border.all(color: color, width: 1.5),
+          ),
+          child: Center(
+            child: isCompleted
+                ? const Icon(Icons.check, size: 14, color: Color(0xFF2ED573))
+                : Text('$step', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(title, style: TextStyle(fontSize: 11.5, fontWeight: isActive ? FontWeight.bold : FontWeight.w500, color: color)),
+      ],
+    );
+  }
+
+  Widget _buildFitnessLevelCard({
+    required String id,
+    required String icon,
+    required String title,
+    required String desc,
+    required String badge,
+    required Color color,
+  }) {
+    final isSelected = _fitnessLevel == id;
+    return InkWell(
+      onTap: () => setState(() => _fitnessLevel = id),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.15) : AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? color : AppColors.border,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 22)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isSelected ? color : AppColors.textPrimary)),
+                      if (isSelected)
+                        Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                          child: const Icon(Icons.check, size: 12, color: Colors.black),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(desc, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(badge, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: color)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

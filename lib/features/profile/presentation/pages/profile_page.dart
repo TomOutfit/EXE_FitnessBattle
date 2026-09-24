@@ -104,6 +104,40 @@ class ProfilePage extends ConsumerWidget {
                                 ),
                               ),
                             ],
+                            const SizedBox(height: 5),
+                            // Fitness Level Badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: user.fitnessLevel == 'advanced'
+                                    ? const Color(0xFFFFD700).withValues(alpha: 0.25)
+                                    : user.fitnessLevel == 'intermediate'
+                                        ? Colors.white.withValues(alpha: 0.22)
+                                        : const Color(0xFF2ED573).withValues(alpha: 0.25),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: user.fitnessLevel == 'advanced'
+                                      ? const Color(0xFFFFD700)
+                                      : user.fitnessLevel == 'intermediate'
+                                          ? Colors.white54
+                                          : const Color(0xFF2ED573),
+                                ),
+                              ),
+                              child: Text(
+                                user.fitnessLevel == 'advanced'
+                                    ? '👑 Đã Tập Lâu Năm / Pro'
+                                    : user.fitnessLevel == 'intermediate'
+                                        ? '⚡ Đã Tập Một Thời Gian'
+                                        : '🌱 Mới Bắt Đầu (Newbie)',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: user.fitnessLevel == 'advanced'
+                                      ? const Color(0xFFFFF275)
+                                      : Colors.white,
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 6),
                             Row(
                               children: [
