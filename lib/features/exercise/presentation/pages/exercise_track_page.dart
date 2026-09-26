@@ -408,8 +408,8 @@ class _ExerciseCategoryView extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('🔥 Đốt ~${(completed * (isPushup ? 0.5 : 1.2)).round()} kcal', style: const TextStyle(fontSize: 11.5, color: Colors.white90)),
-                  Text('🏆 Kỷ lục: ${isPushup ? stats.bestPushupCount : stats.bestPullupCount} cái', style: const TextStyle(fontSize: 11.5, color: Colors.white90)),
+                  Text('🔥 Đốt ~${(completed * (isPushup ? 0.5 : 1.2)).round()} kcal', style: const TextStyle(fontSize: 11.5, color: Colors.white70)),
+                  Text('🏆 Kỷ lục: ${isPushup ? stats.bestPushupCount : stats.bestPullupCount} cái', style: const TextStyle(fontSize: 11.5, color: Colors.white70)),
                 ],
               ),
             ],
@@ -684,7 +684,6 @@ class _WalkingCategoryView extends ConsumerWidget {
           gradient: const LinearGradient(
             colors: [Color(0xFF2ED573), Color(0xFF7BED9F)],
           ),
-          style: const TextStyle(color: Color(0xFF0D0E15), fontWeight: FontWeight.bold),
           onPressed: () {
             Navigator.push(
               context,
