@@ -65,6 +65,42 @@ export interface UserStats {
 
 export type ExerciseType = 'pushup' | 'pullup' | 'walking';
 
+export type FitnessLevel = 'beginner' | 'intermediate' | 'advanced';
+
+export interface ExerciseVariation {
+  id: string;
+  type: ExerciseType;
+  name: string;
+  vietnameseName: string;
+  level: FitnessLevel;
+  difficultyStars: 1 | 2 | 3 | 4 | 5;
+  icon: string;
+  badge: string;
+  description: string;
+  targetRepsPerSet: string;
+  dailyRecommendedTarget: number;
+  caloriesPerRep: number;
+  targetMuscle: string;
+  aiTargetAngle: string;
+  minAngleThreshold: number; // For AI tracking
+  aiGuidance: string[];
+  proTips: string;
+  suitableFor: string;
+  unlockedAtLevel?: number;
+}
+
+export interface ExerciseRoadmapStage {
+  stage: number;
+  level: FitnessLevel;
+  title: string;
+  subtitle: string;
+  icon: string;
+  requiredLevel: number;
+  description: string;
+  milestones: string[];
+  recommendedReps: string;
+}
+
 export interface ExerciseInfo {
   type: ExerciseType;
   name: string;
@@ -75,6 +111,7 @@ export interface ExerciseInfo {
   caloriesPerRep: number;
   color: string;
   gradient: string;
+  variationsCount?: number;
 }
 
 export interface ExerciseSession {
