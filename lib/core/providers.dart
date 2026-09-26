@@ -222,6 +222,11 @@ class UserNotifier extends StateNotifier<User> {
     );
   }
 
+  void updateFitnessLevel(String level) {
+    state = state.copyWith(fitnessLevel: level);
+    AppDatabase.instance.saveUser(state);
+  }
+
   void upgradeToVIP() {
     state = state.copyWith(
       isVIP: true,

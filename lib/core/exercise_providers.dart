@@ -93,6 +93,27 @@ class DailyExerciseGoalsNotifier extends StateNotifier<DailyExerciseGoals> {
     state = state.copyWith(walkingCompleted: completed);
     AppDatabase.instance.saveDailyGoals(state);
   }
+
+  void updateTargetsForFitnessLevel(String level) {
+    int pTarget = 50;
+    int pullTarget = 20;
+    int wTarget = 10000;
+    if (level == 'beginner') {
+      pTarget = 20;
+      pullTarget = 5;
+      wTarget = 5000;
+    } else if (level == 'advanced') {
+      pTarget = 100;
+      pullTarget = 45;
+      wTarget = 15000;
+    }
+    state = state.copyWith(
+      pushupTarget: pTarget,
+      pullupTarget: pullTarget,
+      walkingTarget: wTarget,
+    );
+    AppDatabase.instance.saveDailyGoals(state);
+  }
 }
 
 final dailyExerciseGoalsProvider = StateNotifierProvider<DailyExerciseGoalsNotifier, DailyExerciseGoals>((ref) {
