@@ -66,8 +66,26 @@ export const HomePage: React.FC = () => {
           onClick={() => navigate('/profile')}
         />
         <div style={{ marginLeft: 12, flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Xin chào, {user.name}! 👋
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Xin chào, {user.name}! 👋
+            </div>
+            <span
+              onClick={() => navigate('/exercise')}
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                padding: '2px 7px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                background: user.fitnessLevel === 'advanced' ? 'rgba(255, 215, 0, 0.2)' : user.fitnessLevel === 'beginner' ? 'rgba(46, 213, 115, 0.2)' : 'rgba(255, 107, 53, 0.2)',
+                color: user.fitnessLevel === 'advanced' ? '#FFD700' : user.fitnessLevel === 'beginner' ? '#2ED573' : '#FF8E53',
+                border: `1px solid ${user.fitnessLevel === 'advanced' ? '#FFD700' : user.fitnessLevel === 'beginner' ? '#2ED573' : '#FF6B35'}`,
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {user.fitnessLevel === 'advanced' ? '👑 Pro' : user.fitnessLevel === 'beginner' ? '🌱 Tân Thủ' : '⚡ Trung Cấp'}
+            </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
             <Flame size={16} color="#FF6B35" />

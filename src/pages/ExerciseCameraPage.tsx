@@ -15,7 +15,8 @@ import {
   X,
 } from 'lucide-react';
 import { initialExercisesSeed as exercises } from '../data/seedData';
-import type { ExerciseType } from '../types';
+import { EXERCISE_VARIATIONS, FITNESS_LEVEL_CONFIG } from '../data/exerciseLibrary';
+import type { ExerciseType, FitnessLevel } from '../types';
 import { useUser } from '../context/UserContext';
 import {
   usePoseDetection,
@@ -35,7 +36,17 @@ export const ExerciseCameraPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const typeParam = (searchParams.get('type') as ExerciseType) || 'pushup';
-  const { recordExerciseSession } = useUser();
+  const variantParam = searchParams.get('variant') || '';
+  const { user, recordExerciseSession } = useUser();
+  const levelParam = (searchParams.get('level') as FitnessLevel) || user.fitnessLevel || 'intermediate';
+
+  const activeVariation = EXERCISE_VARIATIONS.find(v => v.id === variantParam) ||
+    EXERCISE_VARIATIONS.find(v => v.type === typeParam && v.level === levelParam) ||
+    EXERCISE_VARIATIONS.find(v => v.type === typeParam);
+
+  const levelConfig = FITNESS_LEVEL_CONFIG[levelParam];
+  const targetDepthAngle = activeVariation?.minAngleThreshold ||
+    (levelParam === 'beginner' ? 105 : levelParam === 'advanced' ? 85 : 90);
 
   const exercise = exercises.find((e) => e.type === typeParam) || exercises[0];
 
@@ -494,8 +505,8 @@ export const ExerciseCameraPage: React.FC = () => {
         const roundedAngle = Math.round(angle);
         setCurrentJointAngle(roundedAngle);
 
-        // Quy tắc: Tính đạt chuẩn khi góc khuỷu tay <= 90° HOẶC vai hạ ngang/qua khuỷu tay
-        const isDepthMet = angle <= PUSHUP_CONFIG.MAX_DEPTH_ANGLE || isShoulderPastElbow;
+        // Quy tắc: Tính đạt chuẩn khi góc khuỷu tay <= targetDepthAngle HOẶC vai hạ ngang/qua khuỷu tay
+        const isDepthMet = angle <= targetDepthAngle || isShoulderPastElbow;
 
         if (!repCooldownRef.current) {
           // --- BẮT ĐẦU HẠ NGƯỜI (DOWN PHASE) ---
@@ -505,38 +516,38 @@ export const ExerciseCameraPage: React.FC = () => {
             setReachedDepth(false);
             minAngleInRepRef.current = angle;
             setDepthStatus('going_down');
-            setFeedback(`Đang hạ người... Hạ vai ngang hoặc qua khuỷu tay (≤${PUSHUP_CONFIG.MAX_DEPTH_ANGLE}°)`);
+            setFeedback(`Đang hạ người... Hạ vai/khuỷu tay đạt góc ≤${targetDepthAngle}°`);
           }
 
           // --- TRONG PHA HẠ NGƯỜI (DOWN PHASE) ---
           if (repPhaseRef.current === 'down') {
             minAngleInRepRef.current = Math.min(minAngleInRepRef.current, angle);
 
-            // Kiểm tra đạt độ sâu chuẩn (vai = hoặc qua khuỷu tay)
+            // Kiểm tra đạt độ sâu chuẩn
             if (isDepthMet) {
               reachedDepthRef.current = true;
               setReachedDepth(true);
               setDepthStatus('depth_passed');
-              setFeedback('✅ Đã đạt độ sâu chuẩn (vai qua khuỷu tay)! Hãy đẩy thẳng tay lên!');
+              setFeedback('✅ Đã đạt độ sâu chuẩn! Hãy đẩy thẳng tay lên!');
             } else if (!reachedDepthRef.current) {
               setDepthStatus('going_down');
-              setFeedback(`Hạ vai thêm một chút... (${roundedAngle}° → cần ≤${PUSHUP_CONFIG.MAX_DEPTH_ANGLE}°)`);
+              setFeedback(`Hạ thêm một chút... (${roundedAngle}° → cần ≤${targetDepthAngle}°)`);
             }
 
             // --- PHA ĐẨY LÊN HOÀN TẤT REP (UP PHASE) ---
             if (angle >= PUSHUP_CONFIG.EXTENDED_ANGLE) {
               if (reachedDepthRef.current) {
-                // ✅ HỢP LỆ: ĐÃ ĐẠT ĐỘ SÂU (VAI = HOẶC QUA KHUỶU TAY)
+                // ✅ HỢP LỆ: ĐÃ ĐẠT ĐỘ SÂU
                 setReps(prev => prev + 1);
                 setValidReps(prev => prev + 1);
                 const score = Math.min(100, Math.max(90, Math.round(100 - (minAngleInRepRef.current - 65) * 0.3)));
                 setFormAccuracy(score);
                 speakVoice(`${reps + 1}. Chuẩn form!`);
-                setFeedback('🎉 Tuyệt vời! 1 Rep chuẩn form (vai đã qua khuỷu tay)!');
+                setFeedback(`🎉 Tuyệt vời! 1 Rep chuẩn form (${activeVariation?.vietnameseName || 'Hít Đất'})!`);
               } else {
-                // ❌ KHÔNG HỢP LỆ: CHƯA ĐẠT ĐỘ SÂU (CHƯA QUA HOẶC KHÔNG BẰNG KHUỶU TAY)
-                setFeedback(`⚠️ Không tính rep: Vai chưa hạ ngang hoặc qua khuỷu tay (đạt ${Math.round(minAngleInRepRef.current)}°, cần ≤90°)!`);
-                speakVoice('Chưa đủ sâu! Cần hạ vai ngang hoặc qua khuỷu tay.');
+                // ❌ KHÔNG HỢP LỆ: CHƯA ĐẠT ĐỘ SÂU
+                setFeedback(`⚠️ Chưa đạt độ sâu: Góc đạt ${Math.round(minAngleInRepRef.current)}°, cần ≤${targetDepthAngle}°!`);
+                speakVoice('Chưa đủ sâu! Hãy hạ thấp thêm.');
                 setFormAccuracy(prev => Math.max(65, prev - 6));
               }
 
@@ -1125,6 +1136,53 @@ export const ExerciseCameraPage: React.FC = () => {
               {isExercising ? <CheckCircle2 size={14} color="#FF6B81" /> : <X size={14} />}
               <span>{isExercising ? 'KẾT THÚC' : 'THOÁT'}</span>
             </button>
+          </div>
+        </div>
+
+        {/* ── EXERCISE VARIATION & FITNESS LEVEL INFO PILL ─────────────────── */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 56,
+            left: 16,
+            right: 16,
+            zIndex: 42,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'rgba(15, 23, 42, 0.88)',
+            backdropFilter: 'blur(12px)',
+            padding: '6px 12px',
+            borderRadius: 12,
+            border: `1px solid ${levelConfig.color}60`,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+            pointerEvents: 'none'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <span style={{ fontSize: 14 }}>{activeVariation?.icon || '💪'}</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {activeVariation?.vietnameseName || exercise.name}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                color: levelConfig.color,
+                background: levelConfig.bgLight,
+                padding: '2px 6px',
+                borderRadius: 6,
+                border: `1px solid ${levelConfig.color}40`
+              }}
+            >
+              {levelConfig.badge}
+            </span>
+            <span style={{ fontSize: 10.5, color: '#CBD5E1', fontWeight: 700 }}>
+              AI: ≤{targetDepthAngle}°
+            </span>
           </div>
         </div>
 

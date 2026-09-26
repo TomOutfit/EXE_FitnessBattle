@@ -900,10 +900,34 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   };
 
+  const getTargetsForLevel = (lvl: 'beginner' | 'intermediate' | 'advanced') => {
+    switch (lvl) {
+      case 'beginner':
+        return { pushup: 20, pullup: 5, walking: 5000 };
+      case 'advanced':
+        return { pushup: 100, pullup: 45, walking: 15000 };
+      case 'intermediate':
+      default:
+        return { pushup: 50, pullup: 20, walking: 10000 };
+    }
+  };
+
   const updateFitnessLevel = (level: 'beginner' | 'intermediate' | 'advanced') => {
     setUser(prev => {
       const updated = { ...prev, fitnessLevel: level };
       localStorage.setItem(USER_KEY, JSON.stringify(updated));
+      return updated;
+    });
+
+    const targets = getTargetsForLevel(level);
+    setExercises(prev => {
+      const updated = prev.map(ex => {
+        if (ex.type === 'pushup') return { ...ex, targetCount: targets.pushup };
+        if (ex.type === 'pullup') return { ...ex, targetCount: targets.pullup };
+        if (ex.type === 'walking') return { ...ex, targetCount: targets.walking };
+        return ex;
+      });
+      localStorage.setItem(EXERCISES_KEY, JSON.stringify(updated));
       return updated;
     });
 
@@ -922,8 +946,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
 
-    const label = level === 'advanced' ? 'Tập lâu năm / Nâng cao' : level === 'intermediate' ? 'Đã tập một thời gian' : 'Mới bắt đầu';
-    showToast(`Đã cập nhật cấp độ thể lực: ${label}!`, 'success');
+    const label = level === 'advanced' ? 'Tập Lâu Năm / Nâng Cao (Pro)' : level === 'intermediate' ? 'Đã Tập Một Thời Gian (Intermediate)' : 'Mới Bắt Đầu / Tân Thủ (Beginner)';
+    showToast(`Đã điều chỉnh kho bài tập theo cấp độ: ${label}!`, 'success');
   };
 
   const login = (email: string, password: string): { success: boolean; error?: string } => {
