@@ -20,7 +20,8 @@ import {
   Database,
   UserCheck,
   LogOut,
-  Activity
+  Activity,
+  ShieldCheck
 } from 'lucide-react';
 import { AppCard, AvatarWidget, XpProgressBar, StatRow, MenuItem } from '../components/ui';
 import { SwitchAccountModal } from '../components/modals/SwitchAccountModal';
@@ -346,6 +347,15 @@ export const ProfilePage: React.FC = () => {
           title="Quản lý Cơ Sở Dữ Liệu"
           subtitle="Xem bảng, chỉnh sửa & Đặt lại CSDL"
           onTap={() => setShowDatabaseManagerModal(true)}
+        />
+        <div style={{ height: 1, background: '#25253D' }} />
+
+        {/* Policy & Privacy */}
+        <MenuItem
+          icon={<ShieldCheck size={22} color="#00E5FF" />}
+          title="Chính Sách & Bảo Mật"
+          subtitle="Quyền riêng tư camera, Fair Play & Miễn trừ y tế"
+          onTap={() => navigate('/policy')}
         />
         <div style={{ height: 1, background: '#25253D' }} />
 

@@ -74,6 +74,7 @@ export const WebFooter: React.FC = () => {
             <span onClick={() => navigate('/demo')} style={{ cursor: 'pointer', color: '#FF6B35', fontWeight: 700 }}>📱 Trải Nghiệm Trực Tuyến (Live Demo)</span>
             <span onClick={() => navigate('/ai-tech')} style={{ cursor: 'pointer' }}>🛡️ Công Nghệ AI Vision & Anti-Cheat</span>
             <span onClick={() => navigate('/business')} style={{ cursor: 'pointer' }}>💰 Mô Hình Kinh Doanh (Monetization)</span>
+            <span onClick={() => navigate('/policy')} style={{ cursor: 'pointer', color: '#00E5FF', fontWeight: 600 }}>📜 Chính Sách & Quyền Riêng Tư (Privacy First)</span>
             <span onClick={() => navigate('/download')} style={{ cursor: 'pointer' }}>📥 Trung Tâm Tải Về (Cross-Platform)</span>
           </div>
         </div>
@@ -147,7 +148,15 @@ export const WebFooter: React.FC = () => {
         fontSize: 12,
         color: '#6B6B80',
       }}>
-        <div>© 2026 Fitness Battle (EXE Project). All rights reserved.</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div>© 2026 Fitness Battle (EXE Project). All rights reserved.</div>
+          <span
+            onClick={() => navigate('/policy')}
+            style={{ color: '#00E5FF', cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            Chính Sách & Điều Khoản
+          </span>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span>Crafted with</span>
           <Heart size={14} color="#FF4757" fill="#FF4757" />

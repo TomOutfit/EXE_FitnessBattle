@@ -6,6 +6,7 @@ import {
   Cpu,
   TrendingUp,
   Download,
+  ShieldCheck,
   Menu,
   X,
   ExternalLink,
@@ -18,11 +19,12 @@ export const WebNavbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { path: '/', label: 'Tổng Quan Dự Án', icon: Flame },
-    { path: '/demo', label: 'Trải Nghiệm Trực Tuyến', icon: Smartphone, highlight: true },
-    { path: '/ai-tech', label: 'Công Nghệ AI Vision', icon: Cpu },
+    { path: '/', label: 'Tổng Quan', icon: Flame },
+    { path: '/demo', label: 'Trải Nghiệm Live', icon: Smartphone, highlight: true },
+    { path: '/ai-tech', label: 'Công Nghệ AI', icon: Cpu },
     { path: '/business', label: 'Mô Hình Kinh Doanh', icon: TrendingUp },
-    { path: '/download', label: 'Tải Ứng Dụng', icon: Download },
+    { path: '/policy', label: 'Chính Sách & Bảo Mật', icon: ShieldCheck },
+    { path: '/download', label: 'Tải App', icon: Download },
   ];
 
   const currentPath = location.pathname;

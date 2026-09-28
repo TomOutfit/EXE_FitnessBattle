@@ -8,6 +8,7 @@ import { LiveDemoPage } from './pages/LiveDemoPage';
 import { AITechnologyPage } from './pages/AITechnologyPage';
 import { BusinessModelPage } from './pages/BusinessModelPage';
 import { DownloadPage } from './pages/DownloadPage';
+import { PolicyPage } from './pages/PolicyPage';
 import { MobileAppContainer } from './components/mobile/MobileAppContainer';
 
 const WebLayout: React.FC = () => {
@@ -17,7 +18,7 @@ const WebLayout: React.FC = () => {
   const isMobileDirectRoute = location.pathname.startsWith('/app');
 
   // If user is directly on a small mobile device screen and not in a showcase subpage, show Mobile App
-  if (isMobileScreen && !['/overview', '/ai-tech', '/business', '/download'].includes(location.pathname)) {
+  if (isMobileScreen && !['/overview', '/ai-tech', '/business', '/download', '/policy', '/privacy', '/terms'].includes(location.pathname)) {
     return <MobileAppContainer />;
   }
 
@@ -40,6 +41,10 @@ const WebLayout: React.FC = () => {
           <Route path="/ai-tech" element={<AITechnologyPage />} />
           <Route path="/business" element={<BusinessModelPage />} />
           <Route path="/download" element={<DownloadPage />} />
+          <Route path="/policy" element={<PolicyPage />} />
+          <Route path="/privacy" element={<PolicyPage />} />
+          <Route path="/privacy-policy" element={<PolicyPage />} />
+          <Route path="/terms" element={<PolicyPage />} />
           <Route path="/app/*" element={<MobileAppContainer />} />
           <Route path="*" element={<LiveDemoPage />} />
         </Routes>

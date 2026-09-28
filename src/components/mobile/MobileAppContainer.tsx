@@ -16,6 +16,7 @@ import { ExerciseLeaderboardPage } from '../../pages/ExerciseLeaderboardPage';
 import { ShopPage } from '../../pages/ShopPage';
 import { MembershipPage } from '../../pages/MembershipPage';
 import { DeleteAccountPage } from '../../pages/DeleteAccountPage';
+import { PolicyPage } from '../../pages/PolicyPage';
 import { BottomNav } from '../navigation/BottomNav';
 import { ToastContainer } from '../ui';
 
@@ -56,6 +57,8 @@ export const MobileAppContainer: React.FC = () => {
           <Route path="/membership" element={<MembershipPage />} />
           <Route path="/battle-pass" element={<BattlePassPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/policy" element={<PolicyPage />} />
+          <Route path="/privacy" element={<PolicyPage />} />
           <Route path="/delete-account" element={<DeleteAccountPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
