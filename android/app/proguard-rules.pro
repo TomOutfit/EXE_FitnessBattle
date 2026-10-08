@@ -30,7 +30,13 @@
 # 6. Firebase Services & Cloud Firestore Data Models
 -keep class com.google.firebase.** { *; }
 -keep class androidx.** { *; }
+-keep class androidx.concurrent.futures.** { *; }
+-dontwarn androidx.concurrent.futures.**
+-dontwarn androidx.camera.**
+-dontwarn org.jspecify.**
 -dontwarn com.google.firebase.**
+-dontwarn com.google.android.play.core.**
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
 
 # 7. Gson / Jackson JSON Deserialization Models
 -keepclassmembers class * {
