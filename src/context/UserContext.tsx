@@ -250,28 +250,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     } catch {}
-    const defaultInit: User = {
-      ...defaultUser,
-      id: 'user-tomoutfit',
-      name: 'TomOutfit',
-      email: 'tomoutfit@fitnessbattle.vn',
-      avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=TomOutfit&backgroundColor=b6e3f4',
-      level: 15,
-      xp: 4250,
-      xpToNextLevel: 6000,
-      streak: 18,
-      totalPoints: 6850,
-      rank: 28,
-      ruby: 350,
-      stamina: 200,
-      maxStamina: 200,
-      coins: 5800,
-      isVIP: false,
-    };
-    try {
-      localStorage.setItem(USER_KEY, JSON.stringify(defaultInit));
-    } catch {}
-    return defaultInit;
+    return { ...defaultUser };
   });
 
   // 2. Exercises
@@ -348,9 +327,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isOnboarded, setIsOnboarded] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem(ONBOARDED_KEY);
-      return saved === 'true';
+      return saved !== 'false';
     } catch {
-      return false;
+      return true;
     }
   });
   const [toasts, setToasts] = useState<ToastData[]>([]);
