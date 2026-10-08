@@ -406,11 +406,10 @@ class AppDatabase {
         weeklyCalories: List<int>.from(rawStats['weeklyCalories'] ?? [320, 410, 220, 580, 0, 490, 380]),
       );
 
-      final isOldDefault = map['name'] == 'Bạn' || map['name'] == 'Chiến Binh Titan';
       final loadedUser = User(
-        id: isOldDefault ? 'user-tomoutfit' : (map['id'] ?? initialUserSeed.id),
-        name: isOldDefault ? 'TomOutfit' : (map['name'] ?? initialUserSeed.name),
-        avatar: isOldDefault ? initialUserSeed.avatar : (map['avatar'] ?? initialUserSeed.avatar),
+        id: map['id'] ?? initialUserSeed.id,
+        name: map['name'] ?? initialUserSeed.name,
+        avatar: map['avatar'] ?? initialUserSeed.avatar,
         level: map['level'] ?? initialUserSeed.level,
         xp: map['xp'] ?? initialUserSeed.xp,
         xpToNextLevel: map['xpToNextLevel'] ?? initialUserSeed.xpToNextLevel,

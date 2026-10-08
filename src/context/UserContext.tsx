@@ -245,7 +245,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem(USER_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.name === 'TomOutfit' && parsed.level >= 15) {
+        if (parsed && parsed.id && parsed.name) {
           return parsed;
         }
       }
@@ -348,9 +348,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isOnboarded, setIsOnboarded] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem(ONBOARDED_KEY);
-      return saved !== 'false';
+      return saved === 'true';
     } catch {
-      return true;
+      return false;
     }
   });
   const [toasts, setToasts] = useState<ToastData[]>([]);
@@ -369,9 +369,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sync to LocalStorage
   useEffect(() => {
     try {
-      localStorage.setItem(ONBOARDED_KEY, 'true');
+      localStorage.setItem(ONBOARDED_KEY, isOnboarded ? 'true' : 'false');
     } catch {}
-  }, []);
+  }, [isOnboarded]);
 
   useEffect(() => {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
@@ -896,6 +896,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(ONBOARDED_KEY, 'true');
     localStorage.setItem(CURRENT_ACCOUNT_KEY, emailKey);
     setIsOnboarded(true);
+
+    // Đồng bộ ngay lập tức lên Cloud DB
+    initUserInFirestore(newUser);
+    initChallengesInFirestore(newUser.id, defaultChallenges);
+
     showToast(`🎉 Tạo tài khoản thành công (${fitnessLevel === 'advanced' ? 'Đã tập lâu năm' : fitnessLevel === 'intermediate' ? 'Đã tập một thời gian' : 'Mới bắt đầu'})!`, 'success');
     return { success: true };
   };

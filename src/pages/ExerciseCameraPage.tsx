@@ -95,7 +95,6 @@ export const ExerciseCameraPage: React.FC = () => {
   const lockFramesCountRef = useRef<number>(0);
   const lastSeenUserTimeRef = useRef<number>(Date.now());
   const isUserAwayRef = useRef<boolean>(false);
-  const strangerAlertCooldownRef = useRef<boolean>(false);
 
   // Rep tracking state & refs
   const [reachedDepth, setReachedDepth] = useState<boolean>(false);
@@ -387,45 +386,41 @@ export const ExerciseCameraPage: React.FC = () => {
       const match = compareBiometricSignatures(lockedSignatureRef.current, currentSig);
       setSubjectMatchScore(match.similarity);
 
-      // TRƯỜNG HỢP 2A: PHÁT HIỆN NGƯỜI KHÁC BƯỚC VÀO -> CHẶN TUYỆT ĐỐI!
+      // TRƯỜNG HỢP 2A: PHÁT HIỆN NGƯỜI KHÁC BƯỚC VÀO (độ khớp < 45% liên tục)
       if (!match.isSamePerson) {
         setSubjectStatus('stranger_detected');
-        setAntiCheatAlert(`🚫 PHÁT HIỆN NGƯỜI KHÁC: Hệ thống đã khóa với người tập ban đầu! (Độ khớp: ${match.similarity}%)`);
-        setFeedback(`🚫 Không phải người tập ban đầu! Đang khóa với bạn (Độ khớp: ${match.similarity}% < 68%)`);
+        setAntiCheatAlert(`⚠️ PHÁT HIỆN NGƯỜI KHÁC HOẶC GÓC CAMERA THAY ĐỔI: Hệ thống giữ nguyên khóa nhận diện! (Độ khớp: ${match.similarity}%)`);
+        setFeedback(`⚠️ Nhận diện góc camera/người mới (Độ khớp: ${match.similarity}%)`);
 
-        // Vẽ khung xương cảnh báo màu đỏ
+        // Vẽ khung xương màu cam
         drawPose(ctx, results, {
-          color: '#FF4757',
+          color: '#FFA502',
           lineWidth: 4,
           pointRadius: 6,
           mirror: true,
         });
 
-        if (!strangerAlertCooldownRef.current) {
-          speakVoice('Phát hiện người khác. Hệ thống đã khóa với người tập ban đầu.');
-          strangerAlertCooldownRef.current = true;
-          setTimeout(() => { strangerAlertCooldownRef.current = false; }, 4000);
+        // Vẫn cho phép đếm rep nếu đang tập thực tế để tránh chặn nhầm người dùng
+      } else {
+        // TRƯỜNG HỢP 2B: ĐÚNG LÀ NGƯỜI BAN ĐẦU - Cập nhật liên tục chữ ký thích ứng
+        lastSeenUserTimeRef.current = Date.now();
+        if (isUserAwayRef.current) {
+          isUserAwayRef.current = false;
+          speakVoice('Chào mừng bạn quay lại!');
         }
-
-        // Hủy chu kỳ rep dở dang
-        if (repPhaseRef.current === 'down') {
-          repPhaseRef.current = 'up';
-          reachedDepthRef.current = false;
-          setReachedDepth(false);
-          setDepthStatus('ready');
-        }
-
-        return; // CHẶN HOÀN TOÀN: TUYỆT ĐỐI KHÔNG THIẾT LẬP LÊN NGƯỜI KHÁC & KHÔNG ĐẾM REP
+        // Cập nhật chữ ký thích ứng nhẹ với chuyển động
+        lockedSignatureRef.current = {
+          shoulderWidth: lockedSignatureRef.current.shoulderWidth * 0.9 + currentSig.shoulderWidth * 0.1,
+          torsoHeight: lockedSignatureRef.current.torsoHeight * 0.9 + currentSig.torsoHeight * 0.1,
+          shoulderToTorso: lockedSignatureRef.current.shoulderToTorso * 0.9 + currentSig.shoulderToTorso * 0.1,
+          armToTorso: lockedSignatureRef.current.armToTorso * 0.9 + currentSig.armToTorso * 0.1,
+          foreArmToUpperArm: lockedSignatureRef.current.foreArmToUpperArm * 0.9 + currentSig.foreArmToUpperArm * 0.1,
+          headToTorso: lockedSignatureRef.current.headToTorso * 0.9 + currentSig.headToTorso * 0.1,
+          bodyAspectRatio: lockedSignatureRef.current.bodyAspectRatio * 0.9 + currentSig.bodyAspectRatio * 0.1,
+        };
+        setSubjectStatus('matched');
+        setAntiCheatAlert('');
       }
-
-      // TRƯỜNG HỢP 2B: ĐÚNG LÀ NGƯỜI BAN ĐẦU
-      lastSeenUserTimeRef.current = Date.now();
-      if (isUserAwayRef.current) {
-        isUserAwayRef.current = false;
-        speakVoice('Chào mừng bạn quay lại!');
-      }
-      setSubjectStatus('matched');
-      setAntiCheatAlert('');
     }
 
     // Đã xác nhận là con người thật VÀ đúng đối tượng duy nhất đã khóa

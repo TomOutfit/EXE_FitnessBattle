@@ -206,21 +206,19 @@ export function validateHumanPose(landmarks: any[]): HumanValidationResult {
   // 6. Điểm tin cậy các khớp trọng yếu cơ thể người (9 core human points)
   const coreLandmarks = [nose, leftShoulder, rightShoulder, leftElbow, rightElbow, leftWrist, rightWrist, leftHip, rightHip];
   const avgVisibility = coreLandmarks.reduce((sum, lm) => sum + (lm?.visibility || 0), 0) / coreLandmarks.length;
-  const reliableCorePoints = coreLandmarks.filter(lm => (lm?.visibility || 0) >= 0.45).length;
+  const reliableCorePoints = coreLandmarks.filter(lm => (lm?.visibility || 0) >= 0.35).length;
 
-  // Tiêu chí con người chuẩn: Đầy đủ đầu + vai + tay + thân + tỷ lệ hợp lý + >= 5 điểm mấu chốt tin cậy
-  const isHuman = hasHead && hasShoulders && hasArms && hasTorso && anatomyRatioValid && reliableCorePoints >= 5 && avgVisibility >= 0.45;
+  // Tiêu chí con người linh hoạt cho tập luyện: Cần vai + tay (hoặc vai + thân/đầu) và ít nhất 3 khớp rõ nét
+  const isHuman = (hasShoulders && (hasArms || hasTorso || hasHead)) && anatomyRatioValid && reliableCorePoints >= 3 && avgVisibility >= 0.30;
 
   let reason: string = 'Đã xác thực con người';
-  if (!hasHead) reason = 'Vui lòng đứng vào khung hình để camera nhận diện khuôn mặt';
-  else if (!hasShoulders) reason = 'Vui lòng lùi lại một chút để camera nhận diện bờ vai';
-  else if (!hasArms) reason = 'Vui lòng để camera nhìn thấy hai cánh tay của bạn';
-  else if (!hasTorso) reason = 'Vui lòng lùi lại một chút để camera thấy rõ toàn thân';
-  else if (!anatomyRatioValid) reason = 'Đang nhận diện tỷ lệ cơ thể người';
-  else if (reliableCorePoints < 5 || avgVisibility < 0.45) reason = 'Vui lòng đứng ở nơi đủ ánh sáng rõ nét';
+  if (!hasShoulders) reason = 'Vui lòng đứng vào vị trí để camera nhìn thấy bờ vai';
+  else if (!hasArms && !hasTorso) reason = 'Vui lòng di chuyển vào giữa khung hình';
+  else if (!anatomyRatioValid) reason = 'Đang nhận diện tư thế người';
+  else if (reliableCorePoints < 3 || avgVisibility < 0.30) reason = 'Vui lòng bật thêm đèn hoặc điều chỉnh góc camera';
 
   const confidence = Math.round(
-    (headAvgVis * 0.2 + Math.max(leftArmVis, rightArmVis) * 0.3 + ((leftShoulderVis + rightShoulderVis) / 2) * 0.25 + avgVisibility * 0.25) * 100
+    (headAvgVis * 0.15 + Math.max(leftArmVis, rightArmVis) * 0.4 + ((leftShoulderVis + rightShoulderVis) / 2) * 0.25 + avgVisibility * 0.20) * 100
   );
 
   return {
@@ -354,9 +352,9 @@ export function compareBiometricSignatures(
   // Tính điểm similarity (100% khi trùng khớp hoàn toàn, giảm khi có sự khác biệt)
   const similarity = Math.max(0, Math.min(100, Math.round((1 - Math.min(1, totalDiff)) * 100)));
 
-  // Ngưỡng: Nếu độ tương đồng >= 68% thì xác nhận là cùng 1 người.
-  // Ngược lại nếu similarity < 68% -> Khẳng định là người khác (chặn nhận diện).
-  const isSamePerson = similarity >= 68;
+  // Ngưỡng: Nếu độ tương đồng >= 45% thì xác nhận là cùng 1 người (cho phép biến dạng 2D khi tập luyện).
+  // Ngược lại nếu similarity < 45% -> Khẳng định là người khác (chặn nhận diện).
+  const isSamePerson = similarity >= 45;
 
   return { similarity, isSamePerson };
 }

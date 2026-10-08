@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Zap, RefreshCw } from 'lucide-react';
 import { useUser } from '../context/UserContext';
-import { usePoseDetection, drawPose } from '../hooks/usePoseDetection';
-import type { Results } from '../hooks/usePoseDetection';
+import {
+  usePoseDetection,
+  drawPose,
+  LANDMARKS,
+  validateHumanPose
+} from '../hooks/usePoseDetection';
+import type { Results, PoseData } from '../hooks/usePoseDetection';
 
 export const BattleCameraPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,13 +25,88 @@ export const BattleCameraPage: React.FC = () => {
   const [oppScore, setOppScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
 
+  // Real AI Pose Detection State
+  const [currentAngle, setCurrentAngle] = useState<number>(160);
+  const [formFeedback, setFormFeedback] = useState<string>('Sẵn sàng thi đấu! Đứng trước camera');
+  const [hasPerson, setHasPerson] = useState<boolean>(false);
+  const [aiConfidence, setAiConfidence] = useState<number>(0);
+
+  // Rep tracking ref state machine
+  const repPhaseRef = useRef<'up' | 'down'>('up');
+  const reachedDepthRef = useRef<boolean>(false);
+
   const opponent = {
     name: 'Thu Hà',
     avatar: 'https://api.dicebear.com/9.x/avataaars/png?seed=ThuHa&backgroundColor=c0aede',
     rank: '#2',
   };
 
-  // AI Pose Detection for Battle
+  // Helper function to calculate angle between 3 points
+  const calculateAngle = (
+    p1: { x: number; y: number },
+    p2: { x: number; y: number },
+    p3: { x: number; y: number }
+  ) => {
+    const rad = Math.atan2(p3.y - p2.y, p3.x - p2.x) - Math.atan2(p1.y - p2.y, p1.x - p2.x);
+    let angle = Math.abs((rad * 180) / Math.PI);
+    if (angle > 180) angle = 360 - angle;
+    return Math.round(angle);
+  };
+
+  // Real-time AI Pose Data Callback
+  const handlePoseData = useCallback((poseData: PoseData) => {
+    if (!poseData.hasPose || !poseData.landmarks || poseData.landmarks.length < 33) {
+      setHasPerson(false);
+      setFormFeedback('Đang tìm đấu thủ trước camera...');
+      return;
+    }
+
+    setHasPerson(true);
+    const lm = poseData.landmarks;
+
+    const leftShoulder = lm[LANDMARKS.LEFT_SHOULDER];
+    const rightShoulder = lm[LANDMARKS.RIGHT_SHOULDER];
+    const leftElbow = lm[LANDMARKS.LEFT_ELBOW];
+    const rightElbow = lm[LANDMARKS.RIGHT_ELBOW];
+    const leftWrist = lm[LANDMARKS.LEFT_WRIST];
+    const rightWrist = lm[LANDMARKS.RIGHT_WRIST];
+
+    if (!leftShoulder || !rightShoulder || !leftElbow || !rightElbow || !leftWrist || !rightWrist) return;
+
+    // Calculate elbow angles
+    const leftAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
+    const rightAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
+    const avgAngle = Math.round((leftAngle + rightAngle) / 2);
+
+    setCurrentAngle(avgAngle);
+
+    // Dynamic Rep State Machine based on Exercise Type
+    const isPushup = exercise.toLowerCase().includes('hít đất') || exercise.toLowerCase().includes('pushup');
+    const targetDepth = isPushup ? 95 : 85;
+    const returnThreshold = isPushup ? 145 : 140;
+
+    if (repPhaseRef.current === 'up') {
+      if (avgAngle <= targetDepth) {
+        repPhaseRef.current = 'down';
+        reachedDepthRef.current = true;
+        setFormFeedback('Đạt độ sâu! Đang đẩy lên...');
+      } else if (avgAngle < 130) {
+        setFormFeedback('Hạ thấp hơn nữa!');
+      } else {
+        setFormFeedback('Giữ tư thế chuẩn & Bắt đầu làm rep!');
+      }
+    } else if (repPhaseRef.current === 'down') {
+      if (avgAngle >= returnThreshold && reachedDepthRef.current) {
+        // REP COMPLETED SUCCESSFULLY BY AI VISION!
+        repPhaseRef.current = 'up';
+        reachedDepthRef.current = false;
+        setMyScore((prev) => prev + 1);
+        setFormFeedback('✨ 1 Rep chuẩn AI!');
+      }
+    }
+  }, [exercise]);
+
+  // Canvas Skeleton Rendering Callback
   const handleResults = useCallback((results: Results) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -36,14 +116,17 @@ export const BattleCameraPage: React.FC = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const video = videoRef.current;
-    if (video) {
-      canvas.width = video.videoWidth || 480;
-      canvas.height = video.videoHeight || 480;
+    if (video && video.videoWidth > 0) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
     }
 
     if (results.poseLandmarks) {
+      const check = validateHumanPose(results.poseLandmarks);
+      setAiConfidence(check.confidence);
+
       drawPose(ctx, results, {
-        color: '#00E5FF',
+        color: check.isHuman ? '#00E5FF' : '#FF4757',
         lineWidth: 4,
         pointRadius: 6,
         mirror: true,
@@ -53,10 +136,11 @@ export const BattleCameraPage: React.FC = () => {
 
   const { detectPose } = usePoseDetection({
     onResults: handleResults,
+    onPoseData: handlePoseData,
     enableSmoothing: true,
   });
 
-  // Setup video stream
+  // Camera Setup
   useEffect(() => {
     let stream: MediaStream | null = null;
     navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false })
@@ -67,14 +151,16 @@ export const BattleCameraPage: React.FC = () => {
           videoRef.current.play().catch(() => {});
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Camera stream error in Battle mode:', err);
+      });
 
     return () => {
       if (stream) stream.getTracks().forEach((t) => t.stop());
     };
   }, []);
 
-  // Frame detection loop
+  // Frame Loop
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -91,7 +177,7 @@ export const BattleCameraPage: React.FC = () => {
     return () => cancelAnimationFrame(animId);
   }, [detectPose]);
 
-  // Match countdown loop & Simulated scoring
+  // Match Countdown Timer & Realistic Opponent AI Counter
   useEffect(() => {
     if (isFinished) return;
 
@@ -106,19 +192,13 @@ export const BattleCameraPage: React.FC = () => {
       });
     }, 1000);
 
-    // My score increments
-    const myInterval = setInterval(() => {
-      setMyScore((s) => s + 1);
-    }, 2400);
-
-    // Opponent score increments
+    // Opponent score increments realistically based on human rep rhythm (~2.8s per rep)
     const oppInterval = setInterval(() => {
       setOppScore((s) => s + 1);
-    }, 2700);
+    }, 2800 + Math.random() * 400);
 
     return () => {
       clearInterval(timer);
-      clearInterval(myInterval);
       clearInterval(oppInterval);
     };
   }, [isFinished]);
@@ -126,7 +206,7 @@ export const BattleCameraPage: React.FC = () => {
   const isWin = myScore >= oppScore;
 
   const handleClaimRewards = () => {
-    const exType = exercise === 'Kéo Xà' ? 'pullup' : 'pushup';
+    const exType = exercise.toLowerCase().includes('kéo xà') ? 'pullup' : 'pushup';
     updateBattleResult(myScore, oppScore, isWin ? 'win' : 'lose');
     recordExerciseSession(exType, myScore, 1, Math.round(myScore * 0.5));
 
@@ -136,6 +216,11 @@ export const BattleCameraPage: React.FC = () => {
       showToast('Cố gắng ở trận sau! +100 XP an ủi', 'info');
     }
     navigate('/battle');
+  };
+
+  const handleManualRep = () => {
+    setMyScore((s) => s + 1);
+    setFormFeedback('✨ Thêm 1 Rep (Test Thủ Công)');
   };
 
   return (
@@ -186,13 +271,13 @@ export const BattleCameraPage: React.FC = () => {
           color: '#2ED573', fontSize: 11, fontWeight: 700,
         }}>
           <ShieldCheck size={14} />
-          <span>Anti-Cheat AI</span>
+          <span>AI Vision Active ({aiConfidence > 0 ? `${aiConfidence}%` : 'Đang quét...'})</span>
         </div>
       </div>
 
       {/* Split-Screen 2 Player Battle Viewport */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        {/* Player 1 (You - Live Camera) */}
+        {/* Player 1 (You - Real MediaPipe Camera) */}
         <div style={{
           flex: 1, position: 'relative', background: '#12121e',
           borderBottom: '2px solid var(--primary)', overflow: 'hidden',
@@ -211,8 +296,6 @@ export const BattleCameraPage: React.FC = () => {
           {/* Player 1 AI Pose Skeleton Overlay */}
           <canvas
             ref={canvasRef}
-            width={480}
-            height={480}
             style={{
               position: 'absolute',
               top: 0, left: 0,
@@ -221,12 +304,12 @@ export const BattleCameraPage: React.FC = () => {
             }}
           />
 
-          {/* Player 1 Overlay Info */}
+          {/* Player 1 Overlay Info & AI Gauges */}
           <div style={{
             position: 'absolute', top: 12, left: 12,
             display: 'flex', alignItems: 'center', gap: 10,
-            background: 'rgba(0,0,0,0.6)', padding: '6px 12px', borderRadius: 14,
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(0,0,0,0.7)', padding: '6px 12px', borderRadius: 14,
+            backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)'
           }}>
             <img
               src={user.avatar}
@@ -235,17 +318,44 @@ export const BattleCameraPage: React.FC = () => {
             />
             <div>
               <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>Bạn (Player 1)</div>
-              <div style={{ fontSize: 10, color: 'var(--primary)' }}>Level {user.level}</div>
+              <div style={{ fontSize: 10, color: hasPerson ? '#00E5FF' : '#FF4757', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Zap size={12} /> {hasPerson ? `Angle: ${currentAngle}°` : 'Chờ người tập...'}
+              </div>
             </div>
           </div>
+
+          {/* Live AI Form Feedback Pill */}
+          <div style={{
+            position: 'absolute', top: 12, right: 12,
+            background: 'rgba(0,0,0,0.75)', padding: '6px 12px', borderRadius: 20,
+            fontSize: 11, fontWeight: 700, color: '#00E5FF',
+            border: '1px solid rgba(0, 229, 255, 0.4)',
+            backdropFilter: 'blur(8px)'
+          }}>
+            {formFeedback}
+          </div>
+
+          {/* Test Manual Rep Button floating */}
+          <button
+            onClick={handleManualRep}
+            style={{
+              position: 'absolute', bottom: 16, left: 16,
+              background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
+              color: '#fff', fontSize: 11, fontWeight: 700,
+              padding: '6px 12px', borderRadius: 12, cursor: 'pointer',
+              backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', gap: 6
+            }}
+          >
+            <RefreshCw size={12} /> Test +1 Rep
+          </button>
 
           {/* Player 1 Score Badge */}
           <div style={{
             position: 'absolute', bottom: 16, right: 16,
-            background: 'rgba(255, 107, 53, 0.9)', padding: '10px 18px', borderRadius: 16,
+            background: 'rgba(255, 107, 53, 0.95)', padding: '10px 18px', borderRadius: 16,
             textAlign: 'center', boxShadow: '0 4px 20px rgba(255,107,53,0.5)',
           }}>
-            <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' }}>Số Rep</div>
+            <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase' }}>Rep AI Đếm</div>
             <div style={{ fontSize: 28, fontWeight: 900 }}>{myScore}</div>
           </div>
         </div>
@@ -342,7 +452,7 @@ export const BattleCameraPage: React.FC = () => {
               background: 'var(--bg-card)', padding: 16, borderRadius: 16, marginBottom: 20,
             }}>
               <div>
-                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Bạn</div>
+                <div style={{ fontSize: 11, color: 'var(--text3)' }}>Bạn (AI Vision)</div>
                 <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--primary)' }}>{myScore}</div>
               </div>
               <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text3)' }}>-</div>

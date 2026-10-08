@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { Flame, Zap, Trophy, CheckCircle, Flag, Dumbbell } from 'lucide-react';
+import { Flame, Zap, Trophy, CheckCircle, Flag, Dumbbell, Sparkles, Play } from 'lucide-react';
 import { AppCard, AvatarWidget, XpProgressBar, ProgressBar } from '../components/ui';
 
 export const HomePage: React.FC = () => {
@@ -97,13 +97,67 @@ export const HomePage: React.FC = () => {
       </div>
 
       {/* XP Progress Card */}
-      <AppCard style={{ marginBottom: 20 }}>
+      <AppCard style={{ marginBottom: 16 }}>
         <XpProgressBar
           currentXp={user.xp}
           xpToNextLevel={user.xpToNextLevel}
           level={user.level}
         />
       </AppCard>
+
+      {/* NEW UPGRADE CARD: Flash 60s AI Express Workout & AI Health Insight */}
+      <div
+        onClick={() => navigate('/exercise-camera?type=pushup')}
+        style={{
+          background: 'linear-gradient(135deg, #1C1936 0%, #0F0F23 100%)',
+          border: '1.5px solid rgba(0, 229, 255, 0.4)',
+          borderRadius: 18,
+          padding: '14px 16px',
+          marginBottom: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          boxShadow: '0 6px 20px rgba(0, 229, 255, 0.15)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 14,
+            background: 'linear-gradient(135deg, #00E5FF, #70A1FF)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 16px rgba(0, 229, 255, 0.5)'
+          }}>
+            <Sparkles size={24} color="#FFFFFF" />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: 15, fontWeight: 900, color: '#FFFFFF' }}>
+                ⚡ Flash 60s AI Vision
+              </div>
+              <span style={{
+                background: 'rgba(255, 107, 53, 0.25)', border: '1px solid #FF6B35',
+                color: '#FF6B35', fontSize: 10, fontWeight: 900, padding: '2px 6px', borderRadius: 8
+              }}>
+                +50% XP Bonus
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: '#B0B0C3', marginTop: 3 }}>
+              Tập nhanh 60s đếm Rep AI • Nhận thưởng ngay
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          width: 36, height: 36, borderRadius: '50%',
+          background: '#00E5FF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 0 12px rgba(0, 229, 255, 0.8)'
+        }}>
+          <Play size={18} color="#0D0E15" fill="#0D0E15" style={{ marginLeft: 2 }} />
+        </div>
+      </div>
 
       {/* Quick Stats Grid (3 columns) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
