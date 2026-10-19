@@ -13,6 +13,8 @@ import '../features/exercise_leaderboard/presentation/pages/exercise_leaderboard
 import '../features/shop/presentation/pages/shop_page.dart';
 import '../features/membership/presentation/pages/membership_page.dart';
 import '../features/auth/presentation/pages/auth_page.dart';
+import '../features/onboarding/presentation/pages/intro_page.dart';
+import '../core/services/app_database.dart';
 import '../core/widgets/bottom_nav_bar.dart';
 import '../core/theme/app_theme.dart';
 import '../core/models_exercise.dart';
@@ -22,8 +24,24 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final router = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/home',
+  initialLocation: AppDatabase.instance.hasSeenOnboarding() ? '/home' : '/intro',
+  redirect: (context, state) {
+    final hasSeen = AppDatabase.instance.hasSeenOnboarding();
+    final isIntro = state.matchedLocation == '/intro';
+    final isAuth = state.matchedLocation == '/auth';
+
+    // First time user: redirect to intro
+    if (!hasSeen && !isIntro && !isAuth) {
+      return '/intro';
+    }
+    return null;
+  },
   routes: [
+    // Intro / Onboarding Screen (First-time user or replay)
+    GoRoute(
+      path: '/intro',
+      builder: (context, state) => const IntroPage(),
+    ),
     // Authentication Page (Login / Register)
     GoRoute(
       path: '/auth',

@@ -396,6 +396,12 @@ class ProfilePage extends ConsumerWidget {
                     subtitle: 'Nâng cấp tài khoản',
                     onTap: () => context.go('/membership'),
                   ),
+                  _MenuItem(
+                    icon: Icons.auto_awesome_motion_outlined,
+                    title: 'Giới Thiệu Ứng Dụng (Intro)',
+                    subtitle: 'Xem lại màn hình chào mừng & tính năng',
+                    onTap: () => context.push('/intro'),
+                  ),
                   const Divider(color: AppColors.surfaceLight, height: 1),
                   _MenuItem(
                     icon: Icons.storage,

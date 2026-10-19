@@ -21,6 +21,7 @@ class AppDatabase {
   static const String _keyArenas = 'fb_db_arenas';
   static const String _keyShopItems = 'fb_db_shop_items';
   static const String _keyLeaderboard = 'fb_db_leaderboard';
+  static const String _keyHasSeenOnboarding = 'fb_has_seen_onboarding';
 
   static AppDatabase? _instance;
   static AppDatabase get instance => _instance ??= AppDatabase._();
@@ -178,6 +179,18 @@ class AppDatabase {
   // ============================================================
   bool isLoggedIn() {
     return _prefs?.getBool(_keyIsLoggedIn) ?? true;
+  }
+
+  // ============================================================
+  // ONBOARDING / INTRO METHODS
+  // ============================================================
+  bool hasSeenOnboarding() {
+    return _prefs?.getBool(_keyHasSeenOnboarding) ?? false;
+  }
+
+  Future<void> setHasSeenOnboarding(bool seen) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.setBool(_keyHasSeenOnboarding, seen);
   }
 
   String getCurrentAccountId() {
